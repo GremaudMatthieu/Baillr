@@ -1,0 +1,127 @@
+# generated: 2026-02-08
+# project: Baillr
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Implementation complete, ready for review
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-02-08
+project: Baillr
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # Epic 1: Project Foundation & Authentication (4 stories)
+  epic-1: in-progress
+  1-1-initialize-repository-and-development-environment: done
+  1-2-configure-clerk-authentication-with-jwt-verification: backlog
+  1-3-implement-core-layout-shell-with-responsive-design: backlog
+  1-4-create-empty-dashboard-with-action-feed-placeholder: backlog
+  epic-1-retrospective: optional
+
+  # Epic 2: Portfolio Setup — Entities, Properties & Units (6 stories)
+  epic-2: backlog
+  2-1-create-and-manage-ownership-entities: backlog
+  2-2-associate-bank-accounts-to-an-entity: backlog
+  2-3-implement-entity-switcher-component: backlog
+  2-4-create-properties-under-an-entity: backlog
+  2-5-create-and-configure-units-within-a-property: backlog
+  2-6-display-unit-mosaic-on-dashboard: backlog
+  epic-2-retrospective: optional
+
+  # Epic 3: Tenant & Lease Management (6 stories)
+  epic-3: backlog
+  3-1-register-tenants-with-contact-information: backlog
+  3-2-track-tenant-insurance-with-expiry-alerts: backlog
+  3-3-create-a-lease-linking-tenant-to-unit: backlog
+  3-4-configure-billing-lines-per-lease: backlog
+  3-5-configure-lease-revision-parameters: backlog
+  3-6-terminate-a-lease-with-pro-rata-calculation: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4: Rent Call Generation & Email Sending (3 stories)
+  epic-4: backlog
+  4-1-generate-rent-calls-for-all-active-leases-in-batch: backlog
+  4-2-generate-rent-call-pdf-documents: backlog
+  4-3-send-rent-calls-by-email-in-batch-with-pdf-attachments: backlog
+  epic-4-retrospective: optional
+
+  # Epic 5: Bank Reconciliation & Payment Management (6 stories)
+  epic-5: backlog
+  5-1-import-bank-statements-from-csv-excel: backlog
+  5-2-auto-match-payments-to-rent-calls: backlog
+  5-3-validate-reject-or-manually-assign-payment-matches: backlog
+  5-4-record-manual-payments-cash-check: backlog
+  5-5-handle-partial-payments-overpayments-and-tenant-current-account: backlog
+  5-6-generate-receipts-quittances-and-partial-payment-receipts: backlog
+  epic-5-retrospective: optional
+
+  # Epic 6: Unpaid Rent Management & Reminders (5 stories)
+  epic-6: backlog
+  6-1-detect-late-payments-and-display-unpaid-status: backlog
+  6-2-propose-3-tier-escalation-actions: backlog
+  6-3-send-email-reminders-tier-1: backlog
+  6-4-generate-formal-notices-mise-en-demeure-tier-2: backlog
+  6-5-generate-stakeholder-notification-letters-tier-3: backlog
+  epic-6-retrospective: optional
+
+  # Epic 7: Index Revision & Annual Charges (8 stories)
+  epic-7: backlog
+  7-1-enter-and-validate-insee-indices-irl-ilc-icc: backlog
+  7-2-calculate-revised-rent-using-official-formula: backlog
+  7-3-review-and-batch-approve-pending-revisions: backlog
+  7-4-generate-irl-ilc-icc-revision-letters: backlog
+  7-5-enter-actual-annual-charges-by-category: backlog
+  7-6-enter-individual-water-meter-readings-per-unit: backlog
+  7-7-calculate-and-generate-charge-regularization-statements: backlog
+  7-8-apply-regularization-credits-debits-to-tenant-accounts: backlog
+  epic-7-retrospective: optional
+
+  # Epic 8: Dashboard, Accounting & Monitoring (8 stories)
+  epic-8: backlog
+  8-1-implement-event-sourced-account-book-livre-de-comptes: backlog
+  8-2-view-and-filter-the-account-book: backlog
+  8-3-export-account-book-as-excel-for-2072-tax-declaration: backlog
+  8-4-display-dashboard-with-unit-payment-status-mosaic: backlog
+  8-5-display-kpis-and-collection-rate: backlog
+  8-6-display-action-feed-with-pending-tasks: backlog
+  8-7-display-treasury-chart-income-vs-expenses-over-time: backlog
+  8-8-send-email-alerts-for-critical-events: backlog
+  epic-8-retrospective: optional
+
+  # Epic 9: Integrations & Advanced Features (4 stories)
+  epic-9: backlog
+  9-1-connect-to-bank-via-open-banking-api: backlog
+  9-2-send-registered-mail-via-ar24-maileva-integration: backlog
+  9-3-automatic-insee-index-retrieval: backlog
+  9-4-grant-accountant-read-only-access: backlog
+  epic-9-retrospective: optional

@@ -1,0 +1,38 @@
+services:
+  kurrentdb:
+    image: kurrentplatform/kurrentdb:25.1.0
+    container_name: kurrentdb
+    ports:
+      - "2113:2113"
+    environment:
+      - KURRENTDB_INSECURE=true
+      - KURRENTDB_ENABLE_ATOM_PUB_OVER_HTTP=true
+      - KURRENTDB_RUN_PROJECTIONS=All
+    volumes:
+      - kurrentdb-data:/var/lib/kurrentdb
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2113/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:18-alpine
+    container_name: baillr-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=baillr
+      - POSTGRES_PASSWORD=baillr_dev
+      - POSTGRES_DB=baillr_dev
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U baillr -d baillr_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  kurrentdb-data:
+  postgres-data:

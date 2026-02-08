@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Environment files (secrets)
+.env
+.env.local
+.env.*.local
+
+# Do NOT gitignore these:
+# .env.example — committed (no secrets, only placeholders)
+# prisma/migrations/ — committed (tracks schema evolution)
+
+# Build outputs
+dist/
+.next/
+.turbo/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Personal documents
+*.pdf
