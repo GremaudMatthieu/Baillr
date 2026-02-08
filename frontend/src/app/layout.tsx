@@ -1,21 +1,17 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: "Baillr",
-  description: "Property management platform for French landlords",
+  description: "Gestion locative pour bailleurs",
 };
 
 export default function RootLayout({
@@ -25,10 +21,13 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="fr">
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
+      <html lang="fr" suppressHydrationWarning>
+        <body className={`${inter.variable} font-sans antialiased`}>
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `(function(){try{var t=localStorage.getItem('baillr-theme');if(t==='dark'||((!t||t==='system')&&window.matchMedia('(prefers-color-scheme:dark)').matches)){document.documentElement.classList.add('dark')}}catch(e){}})()`,
+            }}
+          />
           {children}
         </body>
       </html>

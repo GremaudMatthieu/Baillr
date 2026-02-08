@@ -24,7 +24,7 @@ describe('DomainExceptionFilter', () => {
       switchToRpc: () => ({}) as never,
       switchToWs: () => ({}) as never,
       getType: () => 'http',
-    };
+    } as unknown as ArgumentsHost;
   });
 
   it('should respond with correct status code and body', () => {
