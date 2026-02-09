@@ -519,10 +519,9 @@ Global NestJS `ExceptionFilter` normalizing all errors:
 
 **Eventual Consistency Strategy:**
 After a command, projections may not be immediately updated. Two approaches:
-- **Optimistic UI** (default): TanStack Query `onMutate` / `onError` / `onSettled` pattern — cache is updated immediately with optimistic data, rolled back on error, and synced via `invalidateQueries` on settle. See Frontend Architecture section for the full pattern.
+- **Optimistic UI + delayed reconciliation** (default): TanStack Query `onMutate` / `onError` / `onSettled` pattern — cache is updated immediately with optimistic data, rolled back on error. `onSettled` triggers a delayed `invalidateQueries` (1.5s) to let the projection catch up, then reconcile the cache with the actual read model. See Frontend Architecture section for the full pattern.
 - **Short polling**: for batch operations (rent call generation), frontend polls a status endpoint.
 - No WebSocket — management tool, not real-time application.
-- **FORBIDDEN**: `setTimeout` / `waitForProjection` delays — always use optimistic updates instead.
 
 ### Frontend Architecture
 
@@ -535,7 +534,7 @@ After a command, projections may not be immediately updated. Two approaches:
 Every mutation hook follows the `onMutate` / `onError` / `onSettled` pattern:
 - `onMutate`: cancel in-flight queries, snapshot previous cache, construct optimistic data, update cache immediately.
 - `onError`: rollback cache to snapshot from context.
-- `onSettled`: **no `invalidateQueries`** — CQRS/ES projections may not have caught up yet, so an immediate refetch would overwrite optimistic data with stale server state. Instead, rely on `staleTime` (default 30s in `QueryProvider`) for eventual reconciliation.
+- `onSettled`: **delayed `invalidateQueries`** (1.5s via `setTimeout`) — gives the projection time to process the event, then reconciles the cache with the actual read model. The optimistic data bridges the gap: user sees immediate feedback, and the delayed refetch ensures completeness (e.g., other entities already in the database).
 
 ```typescript
 // Create: append optimistic entry to list cache
@@ -564,8 +563,8 @@ onMutate: async ({ id, payload }) => {
 ```
 
 **Anti-Patterns:**
-- Never use `setTimeout` or `waitForProjection` delays — always use optimistic updates.
-- Never call `invalidateQueries` in `onSettled` — projection lag will overwrite optimistic data. Let `staleTime` handle reconciliation.
+- Never call `invalidateQueries` **immediately** (without delay) in `onSettled` — projection lag will overwrite optimistic data with stale server state.
+- Never skip optimistic updates and rely solely on `invalidateQueries` — user must see immediate feedback.
 
 **State Management:**
 No global store (no Redux, no Zustand). TanStack Query manages server state. Only global client state: active management entity (SCI / personal name) via React Context.
@@ -893,11 +892,10 @@ POST /api/tenants
 - Querying without `entityId` filter (breaks multi-tenant isolation)
 - Creating shared packages between frontend and backend
 - Using global state stores (Redux/Zustand) instead of TanStack Query
-- Using `setTimeout` / `waitForProjection` delays instead of TanStack Query optimistic updates (`onMutate` / `onError` / `onSettled`)
 - Writing `useMutation` hooks without optimistic update pattern (all mutations MUST handle eventual consistency)
+- Calling `invalidateQueries` **immediately** in `onSettled` (without delay) — projection lag overwrites optimistic data with stale server state
 - Hardcoding IDs server-side in command handlers
 - **Importing between bounded contexts** (e.g., `tenancy/` importing from `portfolio/`) — use events and IDs only
-- **Calling `invalidateQueries` in `onSettled`** — projection lag overwrites optimistic data with stale server state
 
 ## Project Structure & Boundaries
 

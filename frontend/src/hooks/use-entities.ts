@@ -63,8 +63,11 @@ export function useCreateEntity() {
       }
     },
     onSettled: () => {
-      // No immediate invalidation — CQRS/ES eventual consistency:
-      // optimistic data is already in cache, staleTime handles reconciliation
+      // Delayed invalidation: let the projection process the event,
+      // then reconcile the cache with the actual read model
+      setTimeout(() => {
+        void queryClient.invalidateQueries({ queryKey: ["entities"] });
+      }, 1500);
     },
   });
 }
@@ -117,9 +120,11 @@ export function useUpdateEntity() {
         queryClient.setQueryData(["entities", id], context.previousDetail);
       }
     },
-    onSettled: () => {
-      // No immediate invalidation — CQRS/ES eventual consistency:
-      // optimistic data is already in cache, staleTime handles reconciliation
+    onSettled: (_data, _error, { id }) => {
+      setTimeout(() => {
+        void queryClient.invalidateQueries({ queryKey: ["entities"] });
+        void queryClient.invalidateQueries({ queryKey: ["entities", id] });
+      }, 1500);
     },
   });
 }
