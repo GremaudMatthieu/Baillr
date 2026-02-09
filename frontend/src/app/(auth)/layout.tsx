@@ -3,6 +3,7 @@
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { SkipLink } from "@/components/layout/skip-link";
+import { QueryProvider } from "@/components/providers/query-provider";
 import { useState } from "react";
 
 export default function AuthLayout({
@@ -23,7 +24,7 @@ export default function AuthLayout({
           className="flex-1 overflow-y-auto"
         >
           <div className="mx-auto w-full max-w-[1280px] p-6">
-            {children}
+            <QueryProvider>{children}</QueryProvider>
           </div>
         </main>
       </div>

@@ -30,16 +30,43 @@ declare module 'nestjs-cqrx' {
     static forFeatureAsync(factories?: unknown[]): DynamicModule;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  export class Event<TData = any> {
+    streamId: string;
+    id: string;
+    revision: bigint;
+    created: Date;
+    isJson: boolean;
+    type: string;
+    data: TData;
+    metadata: Record<string, unknown>;
+    constructor(data?: TData, metadata?: Record<string, unknown>);
+    static isRecordedEvent(event: unknown): boolean;
+  }
+
+  export function EventHandler(
+    event: Type,
+  ): (target: object, key: string, descriptor: PropertyDescriptor) => PropertyDescriptor;
+
   export class AggregateRoot {
+    streamId: string;
+    id: string;
+    constructor(id?: string);
+    get version(): number;
+    get revision(): bigint;
+    apply(event: Event): void;
     commit(): void;
+    getUncommittedEvents(): Event[];
   }
 
   export function InjectAggregateRepository(
     aggregate: Type,
   ): (target: object, key: string | symbol | undefined, index?: number) => void;
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  export class AggregateRepository<T extends AggregateRoot = AggregateRoot> {}
+  export class AggregateRepository<T extends AggregateRoot = AggregateRoot> {
+    save(aggregate: T): Promise<void>;
+    load(id: string): Promise<T>;
+  }
 
   export function aggregateRepositoryToken(aggregate: Type): string;
 

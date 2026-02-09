@@ -74,6 +74,15 @@
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1",
+      "^@shared/(.*)\\.js$": "<rootDir>/shared/$1",
+      "^@shared/(.*)$": "<rootDir>/shared/$1",
+      "^@infrastructure/(.*)\\.js$": "<rootDir>/infrastructure/$1",
+      "^@infrastructure/(.*)$": "<rootDir>/infrastructure/$1",
+      "^@domain/(.*)\\.js$": "<rootDir>/domain/$1",
+      "^@domain/(.*)$": "<rootDir>/domain/$1"
+    },
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],

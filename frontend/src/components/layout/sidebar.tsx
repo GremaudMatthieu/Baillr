@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
+  Landmark,
   Building2,
   Users,
   FileText,
@@ -29,6 +30,7 @@ import {
 
 const navItems = [
   { label: "Tableau de bord", icon: LayoutDashboard, href: "/dashboard" },
+  { label: "Entités", icon: Landmark, href: "/entities" },
   { label: "Biens", icon: Building2, href: "/properties" },
   { label: "Locataires", icon: Users, href: "/tenants" },
   { label: "Baux", icon: FileText, href: "/leases" },
@@ -67,7 +69,7 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate
                     collapsed && "justify-center px-2",
                     isActive
                       ? "bg-sidebar-accent text-sidebar-accent-foreground font-bold"
-                      : "text-sidebar-foreground hover:bg-slate-700"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent/50"
                   )}
                   aria-current={isActive ? "page" : undefined}
                 >
@@ -109,7 +111,7 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate
                   collapsed && "justify-center px-2",
                   isActive
                     ? "bg-sidebar-accent text-sidebar-accent-foreground font-bold"
-                    : "text-sidebar-foreground hover:bg-slate-700"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent/50"
                 )}
                 aria-current={isActive ? "page" : undefined}
               >

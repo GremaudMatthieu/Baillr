@@ -229,6 +229,153 @@ interface IIndexCalculator {
 }
 ```
 
+**Value Objects (Domain-Driven Design):**
+
+Every domain concept is a Value Object (VO). Aggregates manipulate VOs exclusively — never raw primitives (`string`, `number`). VOs are immutable, self-validating via static factory methods, and compared by value.
+
+**VO Rules:**
+- **Private constructor**: All VOs have `private constructor`. Instantiation through static factory methods only (`fromString`, `create`, `fromPrimitives`).
+- **Immutable**: All properties `private readonly`. Exposed via getters.
+- **Self-validating**: Factory method validates invariants, throws a **named domain exception** on invalid input (never raw `DomainException`).
+- **Equality by value**: `equals(other)` method compares properties, not references.
+- **No null in aggregates**: Optional concepts use VO with `static empty()` factory (Null Object pattern). Check absence via `isEmpty` getter.
+- **Serialization at event boundary**: Events carry primitives. Aggregate constructs VOs from primitives when replaying events, serializes VOs to primitives when creating events.
+
+**VO Location (vertical slice — flat in module):**
+- Module-specific: `domain/{module}/` — co-located with aggregate, e.g., `entity-name.ts`, `siret.ts`, `address.ts`
+- Shared across modules: `shared/` — e.g., `user-id.ts`, `money.ts`
+- No `value-objects/` subdirectory — opening a module folder shows everything at a glance
+
+**File naming**: `kebab-case.ts` — e.g., `entity-name.ts`, `user-id.ts` (no `.vo.ts` suffix)
+
+Example — required VO:
+```typescript
+import { InvalidEntityNameException } from './exceptions/invalid-entity-name.exception.js';
+
+export class EntityName {
+  private constructor(private readonly _value: string) {}
+
+  static fromString(value: string): EntityName {
+    const trimmed = value.trim();
+    if (!trimmed) throw InvalidEntityNameException.required();
+    if (trimmed.length > 255) throw InvalidEntityNameException.tooLong();
+    return new EntityName(trimmed);
+  }
+
+  get value(): string { return this._value; }
+  equals(other: EntityName): boolean { return this._value === other._value; }
+}
+```
+
+Example — optional VO (Null Object):
+```typescript
+import { InvalidSiretException } from './exceptions/invalid-siret.exception.js';
+
+export class Siret {
+  private static readonly EMPTY = new Siret(null);
+  private constructor(private readonly _value: string | null) {}
+
+  static create(value: string): Siret {
+    if (!/^\d{14}$/.test(value)) throw InvalidSiretException.invalidFormat();
+    return new Siret(value);
+  }
+  static empty(): Siret { return Siret.EMPTY; }
+
+  get value(): string | null { return this._value; }
+  get isEmpty(): boolean { return this._value === null; }
+  equals(other: Siret): boolean { return this._value === other._value; }
+}
+```
+
+Example — aggregate with VOs (no raw primitives):
+```typescript
+// Aggregate fields — always VOs, never primitives
+private name!: EntityName;
+private type!: EntityType;
+private siret!: Siret;                       // Siret.empty() when absent, never null
+private address!: Address;
+private legalInformation!: LegalInformation; // LegalInformation.empty() when absent
+
+// VOs constructed via factory methods
+const voName = EntityName.fromString(name);
+const voType = EntityType.fromString(type);
+const voSiret = siret ? Siret.create(siret) : Siret.empty();
+
+// Events serialize VOs → primitives at the boundary
+this.apply(new EntityCreated({
+  id: this.id, userId, type: voType.value, name: voName.value,
+  siret: voSiret.value, address: voAddress.toPrimitives(), legalInformation: voLegalInfo.value,
+}));
+```
+
+**Named Domain Exceptions:**
+
+Domain exceptions are specific classes extending `DomainException`, with private constructors and static factory methods. Never throw raw `DomainException` — always use a named subclass.
+
+**Exception Location:**
+- Module-specific: `domain/{module}/exceptions/` — e.g., `entity-already-exists.exception.ts`, `invalid-siret.exception.ts`
+- Shared: `shared/exceptions/` — base `DomainException` + cross-module exceptions (e.g., `invalid-user-id.exception.ts`)
+
+**Exception Rules:**
+- **Private constructor**: Instantiation through named static factory methods only.
+- **Static factory methods**: Descriptive names — `required()`, `invalidFormat()`, `tooLong()`, `streetRequired()`.
+- **One class per logical error group**: An exception class can have multiple factories for related validation errors (e.g., `InvalidAddressException.streetRequired()`, `.cityRequired()`).
+- **Extend `DomainException`**: All exceptions carry `message`, `code`, and `statusCode`.
+
+Example:
+```typescript
+import { DomainException } from '@shared/exceptions/domain.exception.js';
+
+export class InvalidEntityNameException extends DomainException {
+  private constructor(message: string, code: string) {
+    super(message, code, 400);
+  }
+  static required(): InvalidEntityNameException {
+    return new InvalidEntityNameException('Entity name is required', 'ENTITY_NAME_REQUIRED');
+  }
+  static tooLong(): InvalidEntityNameException {
+    return new InvalidEntityNameException('Entity name exceeds 255 characters', 'ENTITY_NAME_TOO_LONG');
+  }
+}
+```
+
+**Controller-per-Action (Single Responsibility):**
+
+Each NestJS controller class handles exactly one route (one HTTP method + path). No fat controllers grouping multiple actions. This follows SRP, simplifies testing, and scales cleanly as the number of actions grows.
+
+- **File naming**: `{verb-a-noun}.controller.ts` — matches the command/query name
+- **Class naming**: `{VerbANoun}Controller` — e.g., `CreateATenantController`, `GetTenantsController`
+- **Single `handle()` method** per controller
+
+Example:
+```typescript
+@Controller('entities')
+export class CreateAnEntityController {
+  constructor(private readonly commandBus: CommandBus) {}
+
+  @Post()
+  @HttpCode(HttpStatus.ACCEPTED)
+  async handle(@Body() dto: CreateAnEntityDto, @CurrentUser() userId: string): Promise<void> {
+    await this.commandBus.execute(new CreateAnEntityCommand(dto.id, userId, ...));
+  }
+}
+```
+
+Presentation module structure (per module):
+```
+presentation/{module}/
+├── controllers/
+│   ├── create-a-{module}.controller.ts    # POST — command
+│   ├── update-a-{module}.controller.ts    # PUT :id — command
+│   ├── get-{module}s.controller.ts        # GET — query (list)
+│   └── get-a-{module}.controller.ts       # GET :id — query (detail)
+├── dto/
+├── queries/
+├── projections/
+├── repositories/
+└── __tests__/
+```
+
 **Naming Conventions:**
 - Command classes: VerbANoun pattern — `CreateATenantCommand`, `GenerateRentCallsCommand` (plural for batch), `ImportABankStatementCommand`
 - Query classes: VerbANoun pattern — `GetATenantQuery`, `GetTenantsQuery`
@@ -295,16 +442,51 @@ Global NestJS `ExceptionFilter` normalizing all errors:
 
 **Eventual Consistency Strategy:**
 After a command, projections may not be immediately updated. Two approaches:
-- **Optimistic UI**: frontend already has the ID and command data — updates local state immediately after `202`, without waiting for projection sync.
+- **Optimistic UI** (default): TanStack Query `onMutate` / `onError` / `onSettled` pattern — cache is updated immediately with optimistic data, rolled back on error, and synced via `invalidateQueries` on settle. See Frontend Architecture section for the full pattern.
 - **Short polling**: for batch operations (rent call generation), frontend polls a status endpoint.
 - No WebSocket — management tool, not real-time application.
+- **FORBIDDEN**: `setTimeout` / `waitForProjection` delays — always use optimistic updates instead.
 
 ### Frontend Architecture
 
 **Data Fetching: TanStack Query (React Query)**
 - Caches GET queries, auto-invalidates after mutations.
 - Handles loading/error states.
-- Supports optimistic updates for immediate UI feedback after commands.
+- **Optimistic updates are MANDATORY** for all `useMutation` hooks — the CQRS/ES projection delay makes this essential.
+
+**Optimistic Update Pattern (established in Story 2.1):**
+Every mutation hook follows the `onMutate` / `onError` / `onSettled` pattern:
+- `onMutate`: cancel in-flight queries, snapshot previous cache, construct optimistic data, update cache immediately.
+- `onError`: rollback cache to snapshot from context.
+- `onSettled`: `invalidateQueries` to sync with real projection.
+
+```typescript
+// Create: append optimistic entry to list cache
+onMutate: async (payload) => {
+  await queryClient.cancelQueries({ queryKey: ["resources"] });
+  const previous = queryClient.getQueryData<Data[]>(["resources"]);
+  const optimistic: Data = { id: payload.id, ...payload, /* defaults */ };
+  queryClient.setQueryData<Data[]>(["resources"], (old) => [...(old ?? []), optimistic]);
+  return { previous };
+},
+
+// Update: apply partial update to BOTH list AND detail caches
+onMutate: async ({ id, payload }) => {
+  await queryClient.cancelQueries({ queryKey: ["resources"] });
+  await queryClient.cancelQueries({ queryKey: ["resources", id] });
+  const previousList = queryClient.getQueryData<Data[]>(["resources"]);
+  const previousDetail = queryClient.getQueryData<Data>(["resources", id]);
+  queryClient.setQueryData<Data[]>(["resources"], (old) =>
+    old?.map((e) => (e.id === id ? { ...e, ...payload } : e)),
+  );
+  if (previousDetail) {
+    queryClient.setQueryData<Data>(["resources", id], { ...previousDetail, ...payload });
+  }
+  return { previousList, previousDetail };
+},
+```
+
+**Anti-Pattern:** Never use `setTimeout` or `waitForProjection` delays — always use optimistic updates.
 
 **State Management:**
 No global store (no Redux, no Zustand). TanStack Query manages server state. Only global client state: active management entity (SCI / personal name) via React Context.
@@ -403,10 +585,11 @@ Environment variables only (`.env` local, Railway dashboard in prod):
 - Query params: `camelCase` → `?entityId=xxx&month=2026-03`
 
 **Backend TypeScript:**
-- Files: `kebab-case` → `create-a-tenant.command.ts`, `tenant-created.event.ts`, `tenants.controller.ts`
-- Classes: `PascalCase` → `CreateATenantCommand`, `TenantsController`, `TenantProjection`
+- Files: `kebab-case` → `create-a-tenant.command.ts`, `tenant-created.event.ts`, `create-a-tenant.controller.ts`, `entity-name.ts`, `invalid-siret.exception.ts`
+- Classes: `PascalCase` → `CreateATenantCommand`, `CreateATenantController`, `TenantProjection`, `EntityName`, `InvalidSiretException`
 - Functions/variables: `camelCase` → `getActiveLease`, `monthlyRentCents`
-- Mandatory suffixes: `.command.ts`, `.query.ts`, `.event.ts`, `.handler.ts`, `.projection.ts`, `.controller.ts`, `.module.ts`, `.guard.ts`
+- Mandatory suffixes: `.command.ts`, `.query.ts`, `.event.ts`, `.handler.ts`, `.projection.ts`, `.controller.ts`, `.module.ts`, `.guard.ts`, `.exception.ts`, `.dto.ts`
+- VOs: no suffix — just `entity-name.ts`, `siret.ts`, `address.ts` (co-located flat in module)
 
 **Frontend TypeScript:**
 - Components: `kebab-case` file, `PascalCase` export → `tenant-card.tsx` exports `TenantCard`
@@ -420,19 +603,28 @@ Environment variables only (`.env` local, Railway dashboard in prod):
 backend/src/
 ├── domain/              # Write side — event store only
 │   ├── tenant/
+│   │   ├── tenant.aggregate.ts
+│   │   ├── tenant-name.ts         # VO — flat in module
+│   │   ├── tenant-type.ts         # VO
 │   │   ├── commands/
 │   │   │   ├── create-a-tenant.command.ts
 │   │   │   └── create-a-tenant.handler.ts
 │   │   ├── events/
 │   │   │   └── tenant-created.event.ts
-│   │   ├── tenant.aggregate.ts
+│   │   ├── exceptions/
+│   │   │   ├── tenant-already-exists.exception.ts
+│   │   │   └── invalid-tenant-name.exception.ts
 │   │   └── __tests__/
 │   ├── lease/
 │   ├── payment/
 │   └── ...
 ├── presentation/        # Read side — PostgreSQL + API
 │   ├── tenant/
-│   │   ├── tenant.controller.ts
+│   │   ├── controllers/
+│   │   │   ├── create-a-tenant.controller.ts
+│   │   │   ├── get-tenants.controller.ts
+│   │   │   └── get-a-tenant.controller.ts
+│   │   ├── dto/
 │   │   ├── queries/
 │   │   ├── projections/
 │   │   └── repositories/
@@ -445,7 +637,9 @@ backend/src/
 │   ├── eventstore/      # KurrentDB connection, upcasters
 │   └── tenant-context/  # EntityId middleware
 ├── shared/
-│   └── types/           # Value objects (Money, etc.)
+│   ├── user-id.ts       # Shared VO — flat
+│   ├── money.ts         # Shared VO — flat
+│   └── exceptions/      # Base DomainException + shared exceptions
 ├── app.module.ts
 └── main.ts
 ```
@@ -511,7 +705,7 @@ POST /api/tenants
 - Dates: ISO 8601 strings → `"2026-03-01"` (date), `"2026-03-01T10:30:00Z"` (datetime)
 - Money: always in **cents** (integer) → `{ monthlyRentCents: 75000 }`
 - Booleans: native JSON `true`/`false`
-- Null: explicit `null` (never omit field)
+- Null: explicit `null` in API JSON responses (never omit field). In domain aggregates, Null Object VOs (`VO.empty()`) replace nullable primitives — no `null` in aggregate state
 
 ### Communication Patterns
 
@@ -521,7 +715,7 @@ POST /api/tenants
 - Versioning: `_v2` suffix for breaking changes
 
 **Logging:**
-- NestJS Logger injected per class → `private readonly logger = new Logger(TenantsController.name)`
+- NestJS Logger injected per class → `private readonly logger = new Logger(CreateATenantController.name)`
 - Levels: `error` (failure), `warn` (abnormal), `log` (business event), `debug` (dev only)
 - Never log sensitive data
 - Always include `correlationId` when available
@@ -550,6 +744,11 @@ POST /api/tenants
 **All AI Agents MUST:**
 - **Zero logic in command handlers** — handler loads aggregate, calls method, saves. Period.
 - **All business logic in aggregates** — validation, rules, event emission all happen in aggregate methods
+- **Use Value Objects for ALL domain concepts** — aggregates never hold raw primitives (`string`, `number`). Every field is a VO. Optional fields use `VO.empty()` (Null Object), never `null`
+- **Private constructors + static factories on VOs** — `EntityName.fromString(value)`, `Siret.create(value)`, `Address.fromPrimitives(data)`. Never `new EntityName(value)`
+- **Named domain exceptions** — never throw raw `DomainException`. Use specific subclasses with static factory: `InvalidEntityNameException.required()`, `EntityAlreadyExistsException.create()`
+- **VOs flat in module** — no `value-objects/` subdirectory. `entity-name.ts`, `siret.ts` co-located next to `entity.aggregate.ts`
+- **One controller per action** — each controller class handles exactly one route with a single `handle()` method. No fat controllers with multiple endpoints
 - **Use interfaces (ports) everywhere** — domain defines interfaces, infrastructure implements them
 - **Pass services as parameters to aggregate methods** — never inject services into aggregates directly
 - Respect domain/presentation separation: domain/ talks to event store only, presentation/ talks to PostgreSQL only
@@ -563,6 +762,11 @@ POST /api/tenants
 
 **Anti-Patterns (Forbidden):**
 - **Putting business logic in command handlers** (handlers are pure orchestration — load, call, save)
+- **Using raw primitives in aggregates** (always use Value Objects — `EntityName` not `string`, `Siret` not `string | null`)
+- **Public constructors on VOs** (always private constructor + static factory: `fromString`, `create`, `fromPrimitives`)
+- **Throwing raw `DomainException`** (always use named subclass: `InvalidSiretException.invalidFormat()`, not `new DomainException('SIRET must be 14 digits', ...)`)
+- **`value-objects/` subdirectory in domain modules** (VOs live flat in module root — vertical slice)
+- **Putting multiple routes in one controller** (one controller = one HTTP action = one `handle()` method)
 - **Importing concrete classes in domain/** (domain only imports its own interfaces/ports)
 - **Injecting services into aggregates via constructor** (pass them as method parameters instead)
 - Importing Prisma or PostgreSQL in domain/ (domain only knows the event store)
@@ -572,6 +776,8 @@ POST /api/tenants
 - Querying without `entityId` filter (breaks multi-tenant isolation)
 - Creating shared packages between frontend and backend
 - Using global state stores (Redux/Zustand) instead of TanStack Query
+- Using `setTimeout` / `waitForProjection` delays instead of TanStack Query optimistic updates (`onMutate` / `onError` / `onSettled`)
+- Writing `useMutation` hooks without optimistic update pattern (all mutations MUST handle eventual consistency)
 - Hardcoding IDs server-side in command handlers
 
 ## Project Structure & Boundaries
@@ -762,66 +968,100 @@ baillr/
         │   │   └── ...
         │   │
         │   ├── entity/
+        │   │   ├── entity.aggregate.ts              # ALL business logic here
+        │   │   ├── entity.module.ts
+        │   │   ├── entity-name.ts                   # VO — flat in module
+        │   │   ├── entity-type.ts                   # VO
+        │   │   ├── siret.ts                         # VO (Null Object)
+        │   │   ├── address.ts                       # VO (composite)
+        │   │   ├── legal-information.ts              # VO (Null Object)
         │   │   ├── commands/
         │   │   │   ├── create-an-entity.command.ts
-        │   │   │   └── create-an-entity.handler.ts  # Zero logic — load, call, save
+        │   │   │   ├── create-an-entity.handler.ts  # Zero logic — load, call, save
+        │   │   │   ├── update-an-entity.command.ts
+        │   │   │   └── update-an-entity.handler.ts
         │   │   ├── events/
-        │   │   │   └── entity-created.event.ts
-        │   │   ├── entity.aggregate.ts              # ALL business logic here
+        │   │   │   ├── entity-created.event.ts
+        │   │   │   └── entity-updated.event.ts
+        │   │   ├── exceptions/
+        │   │   │   ├── entity-already-exists.exception.ts
+        │   │   │   ├── entity-not-found.exception.ts
+        │   │   │   ├── siret-required-for-sci.exception.ts
+        │   │   │   ├── invalid-entity-name.exception.ts
+        │   │   │   ├── invalid-entity-type.exception.ts
+        │   │   │   ├── invalid-siret.exception.ts
+        │   │   │   ├── invalid-address.exception.ts
+        │   │   │   └── invalid-legal-information.exception.ts
         │   │   └── __tests__/
         │   │
         │   ├── property/
+        │   │   ├── property.aggregate.ts
+        │   │   ├── *.ts                             # VOs flat in module
         │   │   ├── commands/
         │   │   ├── events/
-        │   │   ├── property.aggregate.ts
+        │   │   ├── exceptions/
         │   │   └── __tests__/
         │   │
         │   ├── tenant/
+        │   │   ├── tenant.aggregate.ts
+        │   │   ├── *.ts                             # VOs flat in module
         │   │   ├── commands/
         │   │   ├── events/
-        │   │   ├── tenant.aggregate.ts
+        │   │   ├── exceptions/
         │   │   └── __tests__/
         │   │
         │   ├── lease/
+        │   │   ├── lease.aggregate.ts
+        │   │   ├── *.ts                             # VOs flat in module
         │   │   ├── commands/
         │   │   ├── events/
-        │   │   ├── lease.aggregate.ts
+        │   │   ├── exceptions/
         │   │   └── __tests__/
         │   │
         │   ├── rent-call/
+        │   │   ├── rent-call.aggregate.ts
+        │   │   ├── *.ts                             # VOs flat in module
         │   │   ├── commands/
         │   │   ├── events/
-        │   │   ├── rent-call.aggregate.ts
+        │   │   ├── exceptions/
         │   │   └── __tests__/
         │   │
         │   ├── payment/
+        │   │   ├── payment.aggregate.ts
+        │   │   ├── *.ts                             # VOs flat in module
         │   │   ├── commands/
         │   │   ├── events/
+        │   │   ├── exceptions/
         │   │   ├── services/
         │   │   │   └── bank-statement-parser.service.ts
-        │   │   ├── payment.aggregate.ts
         │   │   └── __tests__/
         │   │
         │   ├── reminder/
+        │   │   ├── reminder.aggregate.ts
+        │   │   ├── *.ts                             # VOs flat in module
         │   │   ├── commands/
         │   │   ├── events/
+        │   │   ├── exceptions/
         │   │   ├── sagas/
         │   │   │   └── reminder-escalation.saga.ts
-        │   │   ├── reminder.aggregate.ts
         │   │   └── __tests__/
         │   │
         │   ├── revision/
+        │   │   ├── revision.aggregate.ts
+        │   │   ├── *.ts                             # VOs flat in module
         │   │   ├── commands/
         │   │   ├── events/
+        │   │   ├── exceptions/
         │   │   ├── services/
         │   │   │   └── index-calculator.service.ts
-        │   │   ├── revision.aggregate.ts
         │   │   └── __tests__/
         │   │
         │   ├── charge/
+        │   │   ├── charge.aggregate.ts
+        │   │   ├── *.ts                             # VOs flat in module
         │   │   ├── commands/
         │   │   ├── events/
-        │   │   ├── charge.aggregate.ts
+        │   │   ├── exceptions/
         │   │   └── __tests__/
         │   │
         │   ├── document/
@@ -845,10 +1085,19 @@ baillr/
         │
         ├── presentation/                    # Read side — PostgreSQL + API
         │   ├── entity/
-        │   │   ├── entity.controller.ts
+        │   │   ├── controllers/
+        │   │   │   ├── create-an-entity.controller.ts
+        │   │   │   ├── update-an-entity.controller.ts
+        │   │   │   ├── get-entities.controller.ts
+        │   │   │   └── get-an-entity.controller.ts
+        │   │   ├── dto/
+        │   │   │   ├── create-an-entity.dto.ts
+        │   │   │   └── update-an-entity.dto.ts
         │   │   ├── queries/
         │   │   │   ├── get-entities.query.ts
-        │   │   │   └── get-entities.handler.ts
+        │   │   │   ├── get-entities.handler.ts
+        │   │   │   ├── get-an-entity.query.ts
+        │   │   │   └── get-an-entity.handler.ts
         │   │   ├── projections/
         │   │   │   └── entity.projection.ts
         │   │   ├── repositories/
@@ -856,63 +1105,71 @@ baillr/
         │   │   └── __tests__/
         │   │
         │   ├── property/
-        │   │   ├── property.controller.ts
+        │   │   ├── controllers/             # One controller per action
+        │   │   ├── dto/
         │   │   ├── queries/
         │   │   ├── projections/
         │   │   ├── repositories/
         │   │   └── __tests__/
         │   │
         │   ├── tenant/
-        │   │   ├── tenant.controller.ts
+        │   │   ├── controllers/
+        │   │   ├── dto/
         │   │   ├── queries/
         │   │   ├── projections/
         │   │   ├── repositories/
         │   │   └── __tests__/
         │   │
         │   ├── lease/
-        │   │   ├── lease.controller.ts
+        │   │   ├── controllers/
+        │   │   ├── dto/
         │   │   ├── queries/
         │   │   ├── projections/
         │   │   ├── repositories/
         │   │   └── __tests__/
         │   │
         │   ├── rent-call/
-        │   │   ├── rent-call.controller.ts
+        │   │   ├── controllers/
+        │   │   ├── dto/
         │   │   ├── queries/
         │   │   ├── projections/
         │   │   ├── repositories/
         │   │   └── __tests__/
         │   │
         │   ├── payment/
-        │   │   ├── payment.controller.ts
+        │   │   ├── controllers/
+        │   │   ├── dto/
         │   │   ├── queries/
         │   │   ├── projections/
         │   │   ├── repositories/
         │   │   └── __tests__/
         │   │
         │   ├── reminder/
-        │   │   ├── reminder.controller.ts
+        │   │   ├── controllers/
+        │   │   ├── dto/
         │   │   ├── queries/
         │   │   ├── projections/
         │   │   ├── repositories/
         │   │   └── __tests__/
         │   │
         │   ├── revision/
-        │   │   ├── revision.controller.ts
+        │   │   ├── controllers/
+        │   │   ├── dto/
         │   │   ├── queries/
         │   │   ├── projections/
         │   │   ├── repositories/
         │   │   └── __tests__/
         │   │
         │   ├── charge/
-        │   │   ├── charge.controller.ts
+        │   │   ├── controllers/
+        │   │   ├── dto/
         │   │   ├── queries/
         │   │   ├── projections/
         │   │   ├── repositories/
         │   │   └── __tests__/
         │   │
         │   ├── accounting/                  # Read-only — no domain counterpart
-        │   │   ├── accounting.controller.ts
+        │   │   ├── controllers/
         │   │   ├── queries/
         │   │   ├── projections/
         │   │   │   └── account-entry.projection.ts
@@ -920,7 +1177,7 @@ baillr/
         │   │   └── __tests__/
         │   │
         │   └── document/                    # PDF download endpoints
-        │       ├── document.controller.ts
+        │       ├── controllers/
         │       └── __tests__/
         │
         ├── infrastructure/
@@ -951,10 +1208,11 @@ baillr/
         │       └── registered-mail/            # FR40: AR24/Maileva
         │
         └── shared/
-            ├── types/
-            │   └── money.ts
+            ├── user-id.ts                           # Shared VO — flat
+            ├── money.ts                             # Shared VO — flat
             └── exceptions/
-                └── domain.exception.ts
+                ├── domain.exception.ts               # Base class
+                └── invalid-user-id.exception.ts
 ```
 
 ### Architectural Boundaries
@@ -982,14 +1240,14 @@ baillr/
 
 ```
 1. Frontend generates UUID + sends POST command
-2. presentation/*/controller receives request, dispatches to CommandBus
+2. presentation/*/controllers/* receives request, dispatches to CommandBus
 3. domain/*/commands/handler loads aggregate (events from KurrentDB)
 4. Aggregate applies business logic, emits event(s)
 5. Event(s) persisted to KurrentDB
 6. Catch-up subscription captures event
 7. presentation/*/projections/ updates PostgreSQL via repository
 8. Frontend sends GET query
-9. presentation/*/controller dispatches to QueryBus
+9. presentation/*/controllers/* dispatches to QueryBus
 10. presentation/*/queries/handler reads from repository (PostgreSQL)
 11. Returns 200 OK { data: T }
 ```
@@ -1003,7 +1261,7 @@ baillr/
 | Error normalization | `infrastructure/filters/` | All controllers |
 | Event store connection | `infrastructure/eventstore/` | All domain modules |
 | Database connection | `infrastructure/database/` | All presentation modules |
-| Financial precision | `shared/types/money.ts` | Domain + presentation |
+| Financial precision | `shared/money.ts` | Domain + presentation |
 | Event upcasting | `infrastructure/eventstore/upcasters/` | All event deserialization |
 | Proactive alerts | `infrastructure/scheduling/` | Insurance expiry, unpaid detection, escalation thresholds |
 | GDPR compliance | `infrastructure/gdpr/` | Tenant personal data encryption/shredding |

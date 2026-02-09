@@ -4,8 +4,23 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
-// Read models will be added by subsequent stories.
-// This file is intentionally minimal for Story 1.1.
+model OwnershipEntity {
+  id                String   @id @default(uuid())
+  userId            String   @map("user_id")
+  type              String   // 'sci' | 'nom_propre'
+  name              String
+  siret             String?
+  addressStreet     String   @map("address_street")
+  addressPostalCode String   @map("address_postal_code")
+  addressCity       String   @map("address_city")
+  addressCountry    String   @map("address_country") @default("France")
+  addressComplement String?  @map("address_complement")
+  legalInformation  String?  @map("legal_information")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("ownership_entities")
+  @@index([userId])
+}

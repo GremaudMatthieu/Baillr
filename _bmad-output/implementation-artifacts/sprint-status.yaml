@@ -49,8 +49,8 @@ development_status:
   epic-1-retrospective: optional
 
   # Epic 2: Portfolio Setup — Entities, Properties & Units (6 stories)
-  epic-2: backlog
-  2-1-create-and-manage-ownership-entities: backlog
+  epic-2: in-progress
+  2-1-create-and-manage-ownership-entities: done
   2-2-associate-bank-accounts-to-an-entity: backlog
   2-3-implement-entity-switcher-component: backlog
   2-4-create-properties-under-an-entity: backlog
