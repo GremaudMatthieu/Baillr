@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import type { OwnershipEntity } from '@prisma/client';
-import { PrismaService } from '../../../infrastructure/database/prisma.service.js';
+import { PrismaService } from '@infrastructure/database/prisma.service';
 
 @Injectable()
-export class EntityRepository {
+export class EntityFinder {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAllByUserId(userId: string): Promise<OwnershipEntity[]> {

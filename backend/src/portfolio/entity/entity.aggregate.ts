@@ -10,6 +10,7 @@ import { EntityUpdated, type EntityUpdatedData } from './events/entity-updated.e
 import { EntityAlreadyExistsException } from './exceptions/entity-already-exists.exception.js';
 import { EntityNotFoundException } from './exceptions/entity-not-found.exception.js';
 import { SiretRequiredForSciException } from './exceptions/siret-required-for-sci.exception.js';
+import { UnauthorizedEntityAccessException } from './exceptions/unauthorized-entity-access.exception.js';
 
 export interface UpdateEntityFields {
   name?: string;
@@ -28,10 +29,6 @@ export class EntityAggregate extends AggregateRoot {
   private created = false;
 
   static readonly streamName = 'entity';
-
-  get ownerUserId(): string {
-    return this.userId.value;
-  }
 
   create(
     userId: string,
@@ -75,9 +72,12 @@ export class EntityAggregate extends AggregateRoot {
     );
   }
 
-  update(fields: UpdateEntityFields): void {
+  update(userId: string, fields: UpdateEntityFields): void {
     if (!this.created) {
       throw EntityNotFoundException.create();
+    }
+    if (this.userId.value !== userId) {
+      throw UnauthorizedEntityAccessException.create();
     }
 
     // Validate each provided field through its VO

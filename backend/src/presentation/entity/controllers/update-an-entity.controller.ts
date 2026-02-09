@@ -11,7 +11,7 @@ import {
 import { CommandBus } from '@nestjs/cqrs';
 import { CurrentUser } from '@infrastructure/auth/user.decorator';
 import { UpdateAnEntityDto } from '../dto/update-an-entity.dto.js';
-import { UpdateAnEntityCommand } from '@domain/entity/commands/update-an-entity.command';
+import { UpdateAnEntityCommand } from '@portfolio/entity/commands/update-an-entity.command';
 
 @Controller('entities')
 export class UpdateAnEntityController {

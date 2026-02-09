@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CommandBus } from '@nestjs/cqrs';
 import { UnauthorizedException } from '@nestjs/common';
 import { UpdateAnEntityController } from '../controllers/update-an-entity.controller';
-import { UpdateAnEntityCommand } from '../../../domain/entity/commands/update-an-entity.command';
+import { UpdateAnEntityCommand } from '../../../portfolio/entity/commands/update-an-entity.command';
 
 describe('UpdateAnEntityController', () => {
   let controller: UpdateAnEntityController;

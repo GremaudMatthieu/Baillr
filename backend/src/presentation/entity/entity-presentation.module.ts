@@ -7,7 +7,7 @@ import { GetAnEntityController } from './controllers/get-an-entity.controller.js
 import { GetEntitiesHandler } from './queries/get-entities.handler.js';
 import { GetAnEntityHandler } from './queries/get-an-entity.handler.js';
 import { EntityProjection } from './projections/entity.projection.js';
-import { EntityRepository } from './repositories/entity.repository.js';
+import { EntityFinder } from './finders/entity.finder.js';
 
 @Module({
   imports: [CqrsModule],
@@ -17,6 +17,6 @@ import { EntityRepository } from './repositories/entity.repository.js';
     GetEntitiesController,
     GetAnEntityController,
   ],
-  providers: [GetEntitiesHandler, GetAnEntityHandler, EntityProjection, EntityRepository],
+  providers: [GetEntitiesHandler, GetAnEntityHandler, EntityProjection, EntityFinder],
 })
 export class EntityPresentationModule {}

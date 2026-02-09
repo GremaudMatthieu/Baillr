@@ -2,7 +2,6 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { InjectAggregateRepository, AggregateRepository } from 'nestjs-cqrx';
 import { EntityAggregate } from '../entity.aggregate.js';
 import { UpdateAnEntityCommand } from './update-an-entity.command.js';
-import { UnauthorizedEntityAccessException } from '../exceptions/unauthorized-entity-access.exception.js';
 
 @CommandHandler(UpdateAnEntityCommand)
 export class UpdateAnEntityHandler implements ICommandHandler<UpdateAnEntityCommand> {
@@ -13,10 +12,7 @@ export class UpdateAnEntityHandler implements ICommandHandler<UpdateAnEntityComm
 
   async execute(command: UpdateAnEntityCommand): Promise<void> {
     const entity = await this.repository.load(command.id);
-    if (entity.ownerUserId !== command.userId) {
-      throw UnauthorizedEntityAccessException.create();
-    }
-    entity.update({
+    entity.update(command.userId, {
       name: command.name,
       siret: command.siret,
       address: command.address,

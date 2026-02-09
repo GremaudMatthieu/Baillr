@@ -208,7 +208,7 @@ describe('EntityAggregate', () => {
     });
 
     it('should update entity name', () => {
-      aggregate.update({ name: 'SCI UPDATED' });
+      aggregate.update('user_clerk_123', { name: 'SCI UPDATED' });
 
       const events = aggregate.getUncommittedEvents();
       expect(events).toHaveLength(1);
@@ -224,14 +224,14 @@ describe('EntityAggregate', () => {
         country: 'France',
         complement: 'Bât. A',
       };
-      aggregate.update({ address: newAddress });
+      aggregate.update('user_clerk_123', { address: newAddress });
 
       const events = aggregate.getUncommittedEvents();
       expect((events[0] as EntityUpdated).data.address).toEqual(newAddress);
     });
 
     it('should update legal information', () => {
-      aggregate.update({ legalInformation: 'Capital: 5000€' });
+      aggregate.update('user_clerk_123', { legalInformation: 'Capital: 5000€' });
 
       const events = aggregate.getUncommittedEvents();
       expect((events[0] as EntityUpdated).data.legalInformation).toBe('Capital: 5000€');
@@ -239,20 +239,26 @@ describe('EntityAggregate', () => {
 
     it('should throw when updating non-existent entity', () => {
       const freshAggregate = new EntityAggregate('new-id');
-      expect(() => freshAggregate.update({ name: 'test' })).toThrow('Entity does not exist');
+      expect(() => freshAggregate.update('user_clerk_123', { name: 'test' })).toThrow(
+        'Entity does not exist',
+      );
     });
 
     it('should throw when updating name to empty', () => {
-      expect(() => aggregate.update({ name: '' })).toThrow('Entity name is required');
+      expect(() => aggregate.update('user_clerk_123', { name: '' })).toThrow(
+        'Entity name is required',
+      );
     });
 
     it('should throw for invalid SIRET on update', () => {
-      expect(() => aggregate.update({ siret: 'abc' })).toThrow('SIRET must be 14 digits');
+      expect(() => aggregate.update('user_clerk_123', { siret: 'abc' })).toThrow(
+        'SIRET must be 14 digits',
+      );
     });
 
     it('should throw for incomplete address on update', () => {
       expect(() =>
-        aggregate.update({
+        aggregate.update('user_clerk_123', {
           address: {
             street: '',
             postalCode: '75001',
@@ -269,7 +275,7 @@ describe('EntityAggregate', () => {
       callCreate(nomPropreAggregate, { type: 'nom_propre', siret: null });
       nomPropreAggregate.commit();
 
-      nomPropreAggregate.update({ siret: null });
+      nomPropreAggregate.update('user_clerk_123', { siret: null });
 
       const events = nomPropreAggregate.getUncommittedEvents();
       expect((events[0] as EntityUpdated).data.siret).toBeNull();
@@ -277,7 +283,15 @@ describe('EntityAggregate', () => {
 
     it('should throw when removing SIRET from SCI entity', () => {
       // aggregate is an SCI with SIRET (from beforeEach)
-      expect(() => aggregate.update({ siret: null })).toThrow('SIRET is required for SCI entities');
+      expect(() => aggregate.update('user_clerk_123', { siret: null })).toThrow(
+        'SIRET is required for SCI entities',
+      );
+    });
+
+    it('should throw when user does not own the entity', () => {
+      expect(() => aggregate.update('user_another', { name: 'Hacked' })).toThrow(
+        'You are not authorized to modify this entity',
+      );
     });
   });
 
@@ -287,7 +301,7 @@ describe('EntityAggregate', () => {
 
       // After applying, the aggregate should be created (no error on update)
       aggregate.commit();
-      aggregate.update({ name: 'Updated Name' });
+      aggregate.update('user_clerk_123', { name: 'Updated Name' });
 
       const events = aggregate.getUncommittedEvents();
       expect(events).toHaveLength(1);
@@ -297,11 +311,11 @@ describe('EntityAggregate', () => {
       callCreate(aggregate);
       aggregate.commit();
 
-      aggregate.update({ name: 'First Update' });
+      aggregate.update('user_clerk_123', { name: 'First Update' });
       aggregate.commit();
 
       // Should still be able to update again
-      aggregate.update({ name: 'Second Update' });
+      aggregate.update('user_clerk_123', { name: 'Second Update' });
       const events = aggregate.getUncommittedEvents();
       expect((events[0] as EntityUpdated).data.name).toBe('Second Update');
     });

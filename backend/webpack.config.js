@@ -9,7 +9,7 @@ module.exports = (options) => ({
     },
     alias: {
       '@shared': path.resolve(__dirname, 'src/shared'),
-      '@domain': path.resolve(__dirname, 'src/domain'),
+      '@portfolio': path.resolve(__dirname, 'src/portfolio'),
       '@infrastructure': path.resolve(__dirname, 'src/infrastructure'),
     },
   },

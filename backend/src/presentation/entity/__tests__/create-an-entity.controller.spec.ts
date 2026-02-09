@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CommandBus } from '@nestjs/cqrs';
 import { UnauthorizedException } from '@nestjs/common';
 import { CreateAnEntityController } from '../controllers/create-an-entity.controller';
-import { CreateAnEntityCommand } from '../../../domain/entity/commands/create-an-entity.command';
+import { CreateAnEntityCommand } from '../../../portfolio/entity/commands/create-an-entity.command';
 
 describe('CreateAnEntityController', () => {
   let controller: CreateAnEntityController;

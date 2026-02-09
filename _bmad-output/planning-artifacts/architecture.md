@@ -27,7 +27,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 - Primary domain: Full-stack SaaS (Next.js frontend, NestJS backend)
 - Complexity level: High (event sourcing + financial domain + legal compliance)
-- Estimated architectural components: 8-10 bounded contexts
+- Estimated architectural components: 5 bounded contexts (Portfolio, Tenancy, Billing, Recovery, Indexation) + presentation gateway
 - Users: single bailleur initially (dogfooding), designed for multi-tenant SaaS
 
 ### Technical Constraints & Dependencies
@@ -242,8 +242,8 @@ Every domain concept is a Value Object (VO). Aggregates manipulate VOs exclusive
 - **Serialization at event boundary**: Events carry primitives. Aggregate constructs VOs from primitives when replaying events, serializes VOs to primitives when creating events.
 
 **VO Location (vertical slice — flat in module):**
-- Module-specific: `domain/{module}/` — co-located with aggregate, e.g., `entity-name.ts`, `siret.ts`, `address.ts`
-- Shared across modules: `shared/` — e.g., `user-id.ts`, `money.ts`
+- Module-specific: `{bc}/{aggregate}/` — co-located with aggregate, e.g., `portfolio/entity/entity-name.ts`, `portfolio/entity/siret.ts`
+- Shared across BCs: `shared/` — e.g., `user-id.ts`, `money.ts`
 - No `value-objects/` subdirectory — opening a module folder shows everything at a glance
 
 **File naming**: `kebab-case.ts` — e.g., `entity-name.ts`, `user-id.ts` (no `.vo.ts` suffix)
@@ -313,7 +313,7 @@ this.apply(new EntityCreated({
 Domain exceptions are specific classes extending `DomainException`, with private constructors and static factory methods. Never throw raw `DomainException` — always use a named subclass.
 
 **Exception Location:**
-- Module-specific: `domain/{module}/exceptions/` — e.g., `entity-already-exists.exception.ts`, `invalid-siret.exception.ts`
+- Module-specific: `{bc}/{aggregate}/exceptions/` — e.g., `portfolio/entity/exceptions/invalid-siret.exception.ts`
 - Shared: `shared/exceptions/` — base `DomainException` + cross-module exceptions (e.g., `invalid-user-id.exception.ts`)
 
 **Exception Rules:**
@@ -372,7 +372,7 @@ presentation/{module}/
 ├── dto/
 ├── queries/
 ├── projections/
-├── repositories/
+├── finders/
 └── __tests__/
 ```
 
@@ -387,6 +387,83 @@ All monetary values stored as **integer cents** (e.g., 75000 = 750.00€). No fl
 
 **Caching:**
 No caching layer at launch. PostgreSQL read models are sufficient for single-user scale.
+
+### Bounded Contexts & Context Map
+
+Each bounded context (BC) is a self-contained semantic boundary with its own ubiquitous language, aggregates, and module structure. **BCs contain domain logic only** (aggregates, commands, events, VOs, exceptions). The presentation layer (controllers, DTOs, queries, projections, finders) lives **outside** the BCs as a separate API gateway layer.
+
+**5 Bounded Contexts (domain only):**
+
+| BC | Directory | Aggregates | FR Coverage | Core Concept |
+|----|-----------|-----------|-------------|--------------|
+| Portfolio | `portfolio/` | Entity, Property, Unit | FR1-8, FR57-60 | Real estate ownership structure |
+| Tenancy | `tenancy/` | Tenant, Lease | FR9-17 | Tenant lifecycle and lease contracts |
+| Billing | `billing/` | RentCall, Payment | FR18-22, FR28-34 | Revenue generation and collection |
+| Recovery | `recovery/` | Reminder | FR35-41 | Unpaid rent detection and escalation |
+| Indexation | `indexation/` | Revision, Charge | FR42-52 | Annual adjustments per French law |
+
+**Presentation Gateway** (`presentation/`): Sits outside BCs. Organized by resource (entity/, tenant/, lease/, etc.). Acts as the API gateway layer — receives HTTP requests, dispatches commands to BCs, reads from PostgreSQL projections. `presentation/accounting/` is a **read-only module** (FR53-56) with no domain counterpart — it projects financial events from Billing, Recovery, and Indexation into the account book.
+
+**Shared Kernel** (`shared/`): Cross-BC value objects (`UserId`, `Money`) and base exceptions (`DomainException`). These are the **only** allowed cross-BC imports.
+
+**Context Map — Event-Driven Relationships:**
+```
+Portfolio ──(UnitCreated)──► Tenancy ──(LeaseCreated)──► Billing
+                                │                           │
+                     (LeaseCreated)               (RentCallUnpaid)
+                                │                           │
+                                ▼                           ▼
+                           Indexation                   Recovery
+
+                    presentation/accounting/
+                    projects financial events from
+                    Billing, Recovery, Indexation
+```
+
+- **Portfolio → Tenancy**: Lease references a Unit by `unitId`. Tenancy subscribes to `UnitCreated`/`UnitUpdated` events for denormalized read models.
+- **Tenancy → Billing**: RentCall references a Lease by `leaseId`. Billing subscribes to `LeaseCreated`/`LeaseTerminated` to know active leases.
+- **Tenancy → Indexation**: Revision references a Lease by `leaseId`. Indexation subscribes to `LeaseCreated` to know which leases need annual revision.
+- **Billing → Recovery**: Reminder references unpaid RentCalls. Recovery subscribes to `RentCallGenerated`/`PaymentReceived` to detect unpaid status.
+- **All → Accounting (presentation)**: `presentation/accounting/` projects financial events (`RentCallGenerated`, `PaymentReceived`, `ChargeRegularized`, etc.) into the account book read model.
+
+**Inter-BC Communication Rules:**
+1. BCs communicate **exclusively via domain events** (KurrentDB catch-up subscriptions)
+2. No direct imports between BC domain modules — only `shared/` imports allowed
+3. References between BCs are **by ID only** (e.g., a Lease stores `unitId: string`, never imports Unit aggregate)
+4. Each BC has its own root NestJS module that registers its domain sub-modules
+5. `presentation/` is a separate layer — it dispatches commands to BCs and queries its own read models
+6. `infrastructure/` remains global — provides cross-cutting adapters (auth, database, eventstore, document generation, email)
+
+**Document & Email Services:**
+Document generation (`PdfGeneratorService`) and email delivery (`SmtpService`) are **infrastructure services**, not bounded contexts. They have no business invariants — they execute on behalf of other BCs via the command bus. Located in `infrastructure/document/` and `infrastructure/email/`.
+
+**BC Directory Pattern (domain only):**
+```
+{bounded-context}/
+├── {aggregate}/
+│   ├── {aggregate}.aggregate.ts
+│   ├── {aggregate}.module.ts
+│   ├── *.ts                     # VOs flat in module
+│   ├── commands/
+│   ├── events/
+│   ├── exceptions/
+│   └── __tests__/
+└── {bounded-context}.module.ts   # Registers aggregate domain modules
+```
+
+**Presentation Directory Pattern (gateway):**
+```
+presentation/
+├── {resource}/
+│   ├── controllers/             # One controller per action
+│   ├── dto/
+│   ├── queries/
+│   ├── projections/
+│   ├── finders/
+│   ├── {resource}-presentation.module.ts
+│   └── __tests__/
+└── accounting/                  # Read-only, no BC counterpart
+```
 
 ### Authentication & Security
 
@@ -458,7 +535,7 @@ After a command, projections may not be immediately updated. Two approaches:
 Every mutation hook follows the `onMutate` / `onError` / `onSettled` pattern:
 - `onMutate`: cancel in-flight queries, snapshot previous cache, construct optimistic data, update cache immediately.
 - `onError`: rollback cache to snapshot from context.
-- `onSettled`: `invalidateQueries` to sync with real projection.
+- `onSettled`: **no `invalidateQueries`** — CQRS/ES projections may not have caught up yet, so an immediate refetch would overwrite optimistic data with stale server state. Instead, rely on `staleTime` (default 30s in `QueryProvider`) for eventual reconciliation.
 
 ```typescript
 // Create: append optimistic entry to list cache
@@ -486,7 +563,9 @@ onMutate: async ({ id, payload }) => {
 },
 ```
 
-**Anti-Pattern:** Never use `setTimeout` or `waitForProjection` delays — always use optimistic updates.
+**Anti-Patterns:**
+- Never use `setTimeout` or `waitForProjection` delays — always use optimistic updates.
+- Never call `invalidateQueries` in `onSettled` — projection lag will overwrite optimistic data. Let `staleTime` handle reconciliation.
 
 **State Management:**
 No global store (no Redux, no Zustand). TanStack Query manages server state. Only global client state: active management entity (SCI / personal name) via React Context.
@@ -598,48 +677,86 @@ Environment variables only (`.env` local, Railway dashboard in prod):
 
 ### Structure Patterns
 
-**Backend — domain/presentation separation (hexagonal CQRS):**
+**Backend — bounded contexts (domain) + presentation gateway (hexagonal CQRS):**
 ```
 backend/src/
-├── domain/              # Write side — event store only
-│   ├── tenant/
-│   │   ├── tenant.aggregate.ts
-│   │   ├── tenant-name.ts         # VO — flat in module
-│   │   ├── tenant-type.ts         # VO
+│
+│ ── Bounded Contexts (domain only) ──
+│
+├── portfolio/                   # BC: Real estate ownership
+│   ├── entity/                  # Aggregate: SCI, nom propre
+│   │   ├── entity.aggregate.ts
+│   │   ├── entity.module.ts
+│   │   ├── entity-name.ts       # VO — flat in module
 │   │   ├── commands/
-│   │   │   ├── create-a-tenant.command.ts
-│   │   │   └── create-a-tenant.handler.ts
 │   │   ├── events/
-│   │   │   └── tenant-created.event.ts
 │   │   ├── exceptions/
-│   │   │   ├── tenant-already-exists.exception.ts
-│   │   │   └── invalid-tenant-name.exception.ts
 │   │   └── __tests__/
-│   ├── lease/
-│   ├── payment/
-│   └── ...
-├── presentation/        # Read side — PostgreSQL + API
+│   ├── property/                # Aggregate: Properties & units
+│   └── portfolio.module.ts
+│
+├── tenancy/                     # BC: Tenant lifecycle & leases
 │   ├── tenant/
-│   │   ├── controllers/
-│   │   │   ├── create-a-tenant.controller.ts
-│   │   │   ├── get-tenants.controller.ts
-│   │   │   └── get-a-tenant.controller.ts
+│   ├── lease/
+│   └── tenancy.module.ts
+│
+├── billing/                     # BC: Revenue collection
+│   ├── rent-call/
+│   ├── payment/
+│   └── billing.module.ts
+│
+├── recovery/                    # BC: Unpaid management
+│   ├── reminder/
+│   └── recovery.module.ts
+│
+├── indexation/                  # BC: Annual adjustments
+│   ├── revision/
+│   ├── charge/
+│   └── indexation.module.ts
+│
+│ ── Presentation Gateway (API layer) ──
+│
+├── presentation/                # Outside BCs — REST gateway
+│   ├── entity/
+│   │   ├── controllers/         # One controller per action
 │   │   ├── dto/
 │   │   ├── queries/
 │   │   ├── projections/
-│   │   └── repositories/
+│   │   ├── finders/
+│   │   └── __tests__/
+│   ├── property/
+│   ├── tenant/
 │   ├── lease/
-│   ├── accounting/      # Read-only, no domain counterpart
-│   └── ...
+│   ├── rent-call/
+│   ├── payment/
+│   ├── reminder/
+│   ├── revision/
+│   ├── charge/
+│   └── accounting/              # Read-only — no BC counterpart
+│       ├── controllers/
+│       ├── queries/
+│       ├── projections/
+│       ├── finders/
+│       └── __tests__/
+│
+│ ── Cross-cutting ──
+│
 ├── infrastructure/
-│   ├── auth/            # Clerk AuthGuard
-│   ├── database/        # Prisma service
-│   ├── eventstore/      # KurrentDB connection, upcasters
-│   └── tenant-context/  # EntityId middleware
-├── shared/
-│   ├── user-id.ts       # Shared VO — flat
-│   ├── money.ts         # Shared VO — flat
-│   └── exceptions/      # Base DomainException + shared exceptions
+│   ├── auth/                    # Clerk AuthGuard
+│   ├── database/                # Prisma service
+│   ├── eventstore/              # KurrentDB connection, upcasters
+│   ├── tenant-context/          # EntityId middleware
+│   ├── document/                # PDF generation service
+│   ├── email/                   # SMTP service
+│   ├── scheduling/              # Cron jobs
+│   ├── gdpr/                    # Crypto-shredding
+│   └── integrations/            # External APIs (INSEE, banking, AR24)
+│
+├── shared/                      # Shared kernel
+│   ├── user-id.ts
+│   ├── money.ts
+│   └── exceptions/
+│
 ├── app.module.ts
 └── main.ts
 ```
@@ -779,25 +896,27 @@ POST /api/tenants
 - Using `setTimeout` / `waitForProjection` delays instead of TanStack Query optimistic updates (`onMutate` / `onError` / `onSettled`)
 - Writing `useMutation` hooks without optimistic update pattern (all mutations MUST handle eventual consistency)
 - Hardcoding IDs server-side in command handlers
+- **Importing between bounded contexts** (e.g., `tenancy/` importing from `portfolio/`) — use events and IDs only
+- **Calling `invalidateQueries` in `onSettled`** — projection lag overwrites optimistic data with stale server state
 
 ## Project Structure & Boundaries
 
 ### Requirements to Structure Mapping
 
-| FR Domain | Domain Module | Presentation Module | Frontend Feature |
-|-----------|--------------|-------------------|-----------------|
-| FR1-5: Property Management | `domain/property/` | `presentation/property/` | `properties/` |
-| FR6-10: Tenant Management | `domain/tenant/` | `presentation/tenant/` | `tenants/` |
-| FR11-17: Lease Management | `domain/lease/` | `presentation/lease/` | `leases/` |
-| FR18-22: Rent Call Generation | `domain/rent-call/` | `presentation/rent-call/` | `rent-calls/` |
-| FR23-27: Documents & Emails | `domain/document/` + `domain/email/` | `presentation/document/` | (integrated) |
-| FR28-34: Bank Import & Matching | `domain/payment/` | `presentation/payment/` | `payments/` |
-| FR35-41: Reminder Escalation | `domain/reminder/` | `presentation/reminder/` | `reminders/` |
-| FR42-47: INSEE Index Revision | `domain/revision/` | `presentation/revision/` | `revisions/` |
-| FR48-52: Charge Management | `domain/charge/` | `presentation/charge/` | `charges/` |
-| FR53-56: Accounting | — (event store IS the ledger) | `presentation/accounting/` | `accounting/` |
-| FR57-60: Management Entities | `domain/entity/` | `presentation/entity/` | `entities/` |
-| FR61-64: Settings | `domain/settings/` | `presentation/settings/` | `settings/` |
+| FR Domain | Bounded Context | Domain Path | Presentation Path | Frontend Feature |
+|-----------|----------------|-------------|-------------------|-----------------|
+| FR57-60: Management Entities | Portfolio | `portfolio/entity/` | `presentation/entity/` | `entities/` |
+| FR1-5: Property Management | Portfolio | `portfolio/property/` | `presentation/property/` | `properties/` |
+| FR6-10: Tenant Management | Tenancy | `tenancy/tenant/` | `presentation/tenant/` | `tenants/` |
+| FR11-17: Lease Management | Tenancy | `tenancy/lease/` | `presentation/lease/` | `leases/` |
+| FR18-22: Rent Call Generation | Billing | `billing/rent-call/` | `presentation/rent-call/` | `rent-calls/` |
+| FR28-34: Bank Import & Matching | Billing | `billing/payment/` | `presentation/payment/` | `payments/` |
+| FR35-41: Reminder Escalation | Recovery | `recovery/reminder/` | `presentation/reminder/` | `reminders/` |
+| FR42-47: INSEE Index Revision | Indexation | `indexation/revision/` | `presentation/revision/` | `revisions/` |
+| FR48-52: Charge Management | Indexation | `indexation/charge/` | `presentation/charge/` | `charges/` |
+| FR53-56: Accounting | — (read-only) | — | `presentation/accounting/` | `accounting/` |
+| FR23-27: Documents & Emails | — (infra) | `infrastructure/document/` + `infrastructure/email/` | — | (integrated) |
+| FR61-64: Settings | — (infra) | `infrastructure/` | — | `settings/` |
 
 ### Complete Project Directory Structure
 
@@ -961,23 +1080,20 @@ baillr/
         ├── main.ts
         ├── app.module.ts
         │
-        ├── domain/                          # Write side — KurrentDB only
-        │   ├── ports/                       # Shared interfaces (hexagonal)
-        │   │   ├── index-calculator.port.ts
-        │   │   ├── aggregate-repository.port.ts
-        │   │   └── ...
-        │   │
+        │   ┌─── Bounded Contexts (domain only) ───┐
+        │
+        ├── portfolio/                       # BC: Real estate ownership
         │   ├── entity/
-        │   │   ├── entity.aggregate.ts              # ALL business logic here
+        │   │   ├── entity.aggregate.ts
         │   │   ├── entity.module.ts
         │   │   ├── entity-name.ts                   # VO — flat in module
         │   │   ├── entity-type.ts                   # VO
         │   │   ├── siret.ts                         # VO (Null Object)
         │   │   ├── address.ts                       # VO (composite)
-        │   │   ├── legal-information.ts              # VO (Null Object)
+        │   │   ├── legal-information.ts             # VO (Null Object)
         │   │   ├── commands/
         │   │   │   ├── create-an-entity.command.ts
-        │   │   │   ├── create-an-entity.handler.ts  # Zero logic — load, call, save
+        │   │   │   ├── create-an-entity.handler.ts
         │   │   │   ├── update-an-entity.command.ts
         │   │   │   └── update-an-entity.handler.ts
         │   │   ├── events/
@@ -993,15 +1109,13 @@ baillr/
         │   │   │   ├── invalid-address.exception.ts
         │   │   │   └── invalid-legal-information.exception.ts
         │   │   └── __tests__/
-        │   │
-        │   ├── property/
-        │   │   ├── property.aggregate.ts
-        │   │   ├── *.ts                             # VOs flat in module
-        │   │   ├── commands/
-        │   │   ├── events/
-        │   │   ├── exceptions/
-        │   │   └── __tests__/
-        │   │
+        │   │       ├── entity.aggregate.spec.ts
+        │   │       ├── create-an-entity.handler.spec.ts
+        │   │       └── update-an-entity.handler.spec.ts
+        │   │   # property/                  # Future: Story 2.4
+        │   └── portfolio.module.ts
+        │
+        ├── tenancy/                         # BC: Tenant lifecycle & leases
         │   ├── tenant/
         │   │   ├── tenant.aggregate.ts
         │   │   ├── *.ts                             # VOs flat in module
@@ -1009,81 +1123,68 @@ baillr/
         │   │   ├── events/
         │   │   ├── exceptions/
         │   │   └── __tests__/
-        │   │
         │   ├── lease/
         │   │   ├── lease.aggregate.ts
-        │   │   ├── *.ts                             # VOs flat in module
+        │   │   ├── *.ts
         │   │   ├── commands/
         │   │   ├── events/
         │   │   ├── exceptions/
         │   │   └── __tests__/
-        │   │
+        │   └── tenancy.module.ts
+        │
+        ├── billing/                         # BC: Revenue collection
         │   ├── rent-call/
         │   │   ├── rent-call.aggregate.ts
-        │   │   ├── *.ts                             # VOs flat in module
+        │   │   ├── *.ts
         │   │   ├── commands/
         │   │   ├── events/
         │   │   ├── exceptions/
         │   │   └── __tests__/
-        │   │
         │   ├── payment/
         │   │   ├── payment.aggregate.ts
-        │   │   ├── *.ts                             # VOs flat in module
+        │   │   ├── *.ts
         │   │   ├── commands/
         │   │   ├── events/
         │   │   ├── exceptions/
         │   │   ├── services/
         │   │   │   └── bank-statement-parser.service.ts
         │   │   └── __tests__/
-        │   │
+        │   └── billing.module.ts
+        │
+        ├── recovery/                        # BC: Unpaid management
         │   ├── reminder/
         │   │   ├── reminder.aggregate.ts
-        │   │   ├── *.ts                             # VOs flat in module
+        │   │   ├── *.ts
         │   │   ├── commands/
         │   │   ├── events/
         │   │   ├── exceptions/
         │   │   ├── sagas/
         │   │   │   └── reminder-escalation.saga.ts
         │   │   └── __tests__/
-        │   │
+        │   └── recovery.module.ts
+        │
+        ├── indexation/                      # BC: Annual adjustments
         │   ├── revision/
         │   │   ├── revision.aggregate.ts
-        │   │   ├── *.ts                             # VOs flat in module
+        │   │   ├── *.ts
         │   │   ├── commands/
         │   │   ├── events/
         │   │   ├── exceptions/
         │   │   ├── services/
         │   │   │   └── index-calculator.service.ts
         │   │   └── __tests__/
-        │   │
         │   ├── charge/
         │   │   ├── charge.aggregate.ts
-        │   │   ├── *.ts                             # VOs flat in module
+        │   │   ├── *.ts
         │   │   ├── commands/
         │   │   ├── events/
         │   │   ├── exceptions/
         │   │   └── __tests__/
-        │   │
-        │   ├── document/
-        │   │   ├── commands/
-        │   │   ├── events/
-        │   │   └── services/
-        │   │       ├── pdf-generator.service.ts
-        │   │       └── templates/
-        │   │           ├── rent-call.template.ts
-        │   │           ├── receipt.template.ts
-        │   │           ├── revision-letter.template.ts
-        │   │           ├── formal-notice.template.ts
-        │   │           ├── charge-statement.template.ts
-        │   │           └── stakeholder-letter.template.ts
-        │   │
-        │   └── email/
-        │       ├── commands/
-        │       ├── events/
-        │       └── services/
-        │           └── smtp.service.ts
+        │   └── indexation.module.ts
         │
-        ├── presentation/                    # Read side — PostgreSQL + API
+        │   └─── Presentation Gateway (API layer) ───┘
+        │
+        ├── presentation/                    # Outside BCs — REST + read models
         │   ├── entity/
         │   │   ├── controllers/
         │   │   │   ├── create-an-entity.controller.ts
@@ -1100,84 +1201,33 @@ baillr/
         │   │   │   └── get-an-entity.handler.ts
         │   │   ├── projections/
         │   │   │   └── entity.projection.ts
-        │   │   ├── repositories/
-        │   │   │   └── entity.repository.ts
+        │   │   ├── finders/
+        │   │   │   └── entity.finder.ts
+        │   │   ├── entity-presentation.module.ts
         │   │   └── __tests__/
         │   │
-        │   ├── property/
-        │   │   ├── controllers/             # One controller per action
+        │   ├── property/                    # Same pattern per resource
+        │   │   ├── controllers/
         │   │   ├── dto/
         │   │   ├── queries/
         │   │   ├── projections/
-        │   │   ├── repositories/
+        │   │   ├── finders/
         │   │   └── __tests__/
         │   │
         │   ├── tenant/
-        │   │   ├── controllers/
-        │   │   ├── dto/
-        │   │   ├── queries/
-        │   │   ├── projections/
-        │   │   ├── repositories/
-        │   │   └── __tests__/
-        │   │
         │   ├── lease/
-        │   │   ├── controllers/
-        │   │   ├── dto/
-        │   │   ├── queries/
-        │   │   ├── projections/
-        │   │   ├── repositories/
-        │   │   └── __tests__/
-        │   │
         │   ├── rent-call/
-        │   │   ├── controllers/
-        │   │   ├── dto/
-        │   │   ├── queries/
-        │   │   ├── projections/
-        │   │   ├── repositories/
-        │   │   └── __tests__/
-        │   │
         │   ├── payment/
-        │   │   ├── controllers/
-        │   │   ├── dto/
-        │   │   ├── queries/
-        │   │   ├── projections/
-        │   │   ├── repositories/
-        │   │   └── __tests__/
-        │   │
         │   ├── reminder/
-        │   │   ├── controllers/
-        │   │   ├── dto/
-        │   │   ├── queries/
-        │   │   ├── projections/
-        │   │   ├── repositories/
-        │   │   └── __tests__/
-        │   │
         │   ├── revision/
-        │   │   ├── controllers/
-        │   │   ├── dto/
-        │   │   ├── queries/
-        │   │   ├── projections/
-        │   │   ├── repositories/
-        │   │   └── __tests__/
-        │   │
         │   ├── charge/
-        │   │   ├── controllers/
-        │   │   ├── dto/
-        │   │   ├── queries/
-        │   │   ├── projections/
-        │   │   ├── repositories/
-        │   │   └── __tests__/
         │   │
-        │   ├── accounting/                  # Read-only — no domain counterpart
-        │   │   ├── controllers/
-        │   │   ├── queries/
-        │   │   ├── projections/
-        │   │   │   └── account-entry.projection.ts
-        │   │   ├── repositories/
-        │   │   └── __tests__/
-        │   │
-        │   └── document/                    # PDF download endpoints
+        │   └── accounting/                  # Read-only — no BC counterpart
         │       ├── controllers/
+        │       ├── queries/
+        │       ├── projections/
+        │       │   └── account-entry.projection.ts
+        │       ├── finders/
         │       └── __tests__/
         │
         ├── infrastructure/
@@ -1198,38 +1248,60 @@ baillr/
         │   │   └── tenant-context.module.ts
         │   ├── filters/
         │   │   └── domain-exception.filter.ts
+        │   ├── document/                        # PDF generation service
+        │   │   ├── pdf-generator.service.ts
+        │   │   └── templates/
+        │   │       ├── rent-call.template.ts
+        │   │       ├── receipt.template.ts
+        │   │       ├── revision-letter.template.ts
+        │   │       ├── formal-notice.template.ts
+        │   │       ├── charge-statement.template.ts
+        │   │       └── stakeholder-letter.template.ts
+        │   ├── email/                           # SMTP service
+        │   │   └── smtp.service.ts
         │   ├── scheduling/
-        │   │   └── alert-scheduler.service.ts  # @nestjs/schedule cron jobs
+        │   │   └── alert-scheduler.service.ts
         │   ├── gdpr/
-        │   │   └── crypto-shredding.service.ts # Per-tenant encryption key management
-        │   └── integrations/                   # External service adapters (future)
-        │       ├── insee/                      # FR47: auto INSEE index retrieval
-        │       ├── banking/                    # FR34: Open Banking API
-        │       └── registered-mail/            # FR40: AR24/Maileva
+        │   │   └── crypto-shredding.service.ts
+        │   └── integrations/
+        │       ├── insee/
+        │       ├── banking/
+        │       └── registered-mail/
         │
         └── shared/
-            ├── user-id.ts                           # Shared VO — flat
-            ├── money.ts                             # Shared VO — flat
+            ├── user-id.ts
+            ├── money.ts
             └── exceptions/
-                ├── domain.exception.ts               # Base class
+                ├── domain.exception.ts
                 └── invalid-user-id.exception.ts
 ```
 
 ### Architectural Boundaries
 
+**Bounded Context Isolation (domain only):**
+- Each BC (`portfolio/`, `tenancy/`, `billing/`, `recovery/`, `indexation/`) contains **only domain logic** (aggregates, commands, events, VOs, exceptions)
+- **No direct imports between BC domain modules** — the only allowed cross-BC imports come from `shared/` (shared kernel)
+- References between BCs are **by ID only** (e.g., a Lease stores `unitId: string`, never imports the Unit aggregate)
+- Each BC has a root NestJS module (`portfolio.module.ts`, `tenancy.module.ts`, etc.) that registers its aggregate sub-modules
+
+**Presentation as Gateway (outside BCs):**
+- `presentation/` is a separate top-level layer — it does **not** belong to any BC
+- `presentation/` dispatches commands to BC aggregates via CommandBus, and reads from its own PostgreSQL projections via QueryBus
+- `presentation/*/projections/` consume events via KurrentDB catch-up subscriptions (read from event store, write to PostgreSQL)
+- `presentation/accounting/` is a read-only module (no BC counterpart) that projects financial events from Billing, Recovery, and Indexation
+
 **Domain / Presentation Separation (Hexagonal):**
-- `domain/` depends on: its own interfaces (`domain/ports/`), shared types — **never** concrete infrastructure classes, Prisma, or PostgreSQL
-- `domain/ports/` defines interfaces for repositories, services, and external dependencies — implemented by `infrastructure/`
-- `presentation/` depends on: PostgreSQL/Prisma (via infrastructure/database), shared types — **never** KurrentDB client directly
-- Exception: `presentation/*/projections/` consume events via KurrentDB catch-up subscriptions (read from event store, write to PostgreSQL)
-- `infrastructure/` provides concrete adapters for domain ports (eventstore repository, services) and presentation needs (database, auth)
+- BC domain modules depend on: their own interfaces (ports), `shared/` — **never** concrete infrastructure classes, Prisma, or PostgreSQL
+- Ports (interfaces) are defined within the domain module that needs them — implemented by `infrastructure/`
+- `presentation/` depends on: PostgreSQL/Prisma (via infrastructure/database), `shared/` — **never** KurrentDB client directly (except projections)
+- `infrastructure/` provides concrete adapters for domain ports and presentation needs (database, auth, document, email)
 - NestJS module registration wires interface → implementation via dependency injection
 
-**Inter-Module Communication:**
-- Domain modules communicate **only via events** (event bus), never by direct import
-- `document/` and `email/` are infrastructure-like domain modules consumed via command bus
-- `accounting/` exists only in presentation — it projects financial events from other domain modules
-- No Prisma JOINs across module tables — each presentation module owns its projections
+**Inter-BC Communication:**
+- BCs communicate **only via domain events** (KurrentDB catch-up subscriptions), never by direct import
+- `document/` and `email/` are infrastructure services consumed via command bus from any BC
+- Presentation projections can consume events from **any BC** to build denormalized read models
+- No Prisma JOINs across presentation module tables — each presentation module owns its projections
 
 **Frontend / Backend Boundary:**
 - Single integration point: HTTP/REST API
@@ -1241,15 +1313,16 @@ baillr/
 ```
 1. Frontend generates UUID + sends POST command
 2. presentation/*/controllers/* receives request, dispatches to CommandBus
-3. domain/*/commands/handler loads aggregate (events from KurrentDB)
+3. {bc}/*/commands/handler loads aggregate (events from KurrentDB)
 4. Aggregate applies business logic, emits event(s)
 5. Event(s) persisted to KurrentDB
 6. Catch-up subscription captures event
-7. presentation/*/projections/ updates PostgreSQL via repository
-8. Frontend sends GET query
-9. presentation/*/controllers/* dispatches to QueryBus
-10. presentation/*/queries/handler reads from repository (PostgreSQL)
-11. Returns 200 OK { data: T }
+7. presentation/*/projections/ updates PostgreSQL via Prisma
+8. (Optional) Other presentation modules also consume the event for denormalized read models
+9. Frontend sends GET query
+10. presentation/*/controllers/* dispatches to QueryBus
+11. presentation/*/queries/handler reads from finder (PostgreSQL)
+12. Returns 200 OK { data: T }
 ```
 
 ### Cross-Cutting Concerns Mapping
@@ -1257,7 +1330,7 @@ baillr/
 | Concern | Location | Scope |
 |---------|----------|-------|
 | Authentication | `infrastructure/auth/` | All controllers |
-| Multi-tenant isolation | `infrastructure/tenant-context/` | All domain handlers + all repositories |
+| Multi-tenant isolation | `infrastructure/tenant-context/` | All domain handlers + all finders |
 | Error normalization | `infrastructure/filters/` | All controllers |
 | Event store connection | `infrastructure/eventstore/` | All domain modules |
 | Database connection | `infrastructure/database/` | All presentation modules |
@@ -1284,20 +1357,21 @@ Project structure directly supports all architectural decisions. Each bounded co
 
 **64 Functional Requirements Coverage:**
 
-| FR Range | Domain | Status | Notes |
-|----------|--------|--------|-------|
-| FR1-4 | Entity Management | ✅ | `domain/entity/` + `presentation/entity/` |
-| FR5-8 | Property & Units | ✅ | `domain/property/` + `presentation/property/` |
-| FR9-11 | Tenant Management | ✅ | FR11 alerts via `infrastructure/scheduling/` |
-| FR12-17 | Lease Management | ✅ | Pro-rata in lease aggregate |
-| FR18-27 | Documents & Email | ✅ | `domain/document/` + `domain/email/` + PDF templates |
-| FR28-34 | Payment & Bank | ✅ | FR34 Open Banking via `infrastructure/integrations/banking/` |
-| FR35-41 | Reminders | ✅ | Saga + FR40 AR24 via `infrastructure/integrations/registered-mail/` |
-| FR42-47 | Index Revision | ✅ | FR47 auto-retrieval via `infrastructure/integrations/insee/` |
-| FR48-52 | Charges | ✅ | `domain/charge/` + `presentation/charge/` |
-| FR53-56 | Accounting | ✅ | Presentation-only (event store IS the ledger) |
-| FR57-61 | Dashboard & Alerts | ✅ | FR61 email alerts via `infrastructure/scheduling/` |
-| FR62-64 | User & Access | ✅ | FR63 accountant read-only via role-based guard |
+| FR Range | Domain | BC | Status | Notes |
+|----------|--------|----|--------|-------|
+| FR1-4 | Entity Management | Portfolio | ✅ | `portfolio/entity/` + `presentation/entity/` |
+| FR5-8 | Property & Units | Portfolio | ✅ | `portfolio/property/` + `presentation/property/` |
+| FR9-11 | Tenant Management | Tenancy | ✅ | FR11 alerts via `infrastructure/scheduling/` |
+| FR12-17 | Lease Management | Tenancy | ✅ | Pro-rata in lease aggregate |
+| FR18-22 | Rent Call Generation | Billing | ✅ | `billing/rent-call/` + `presentation/rent-call/` |
+| FR23-27 | Documents & Email | — (infra) | ✅ | `infrastructure/document/` + `infrastructure/email/` |
+| FR28-34 | Payment & Bank | Billing | ✅ | FR34 Open Banking via `infrastructure/integrations/banking/` |
+| FR35-41 | Reminders | Recovery | ✅ | Saga + FR40 AR24 via `infrastructure/integrations/registered-mail/` |
+| FR42-47 | Index Revision | Indexation | ✅ | FR47 auto-retrieval via `infrastructure/integrations/insee/` |
+| FR48-52 | Charges | Indexation | ✅ | `indexation/charge/` + `presentation/charge/` |
+| FR53-56 | Accounting | — (read-only) | ✅ | `presentation/accounting/` — no domain (event store IS the ledger) |
+| FR57-61 | Dashboard & Alerts | — (cross) | ✅ | FR61 email alerts via `infrastructure/scheduling/` |
+| FR62-64 | User & Access | — (infra) | ✅ | FR63 accountant read-only via role-based guard |
 
 **21 Non-Functional Requirements Coverage:**
 

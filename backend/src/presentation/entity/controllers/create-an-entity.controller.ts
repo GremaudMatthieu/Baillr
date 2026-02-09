@@ -9,7 +9,7 @@ import {
 import { CommandBus } from '@nestjs/cqrs';
 import { CurrentUser } from '@infrastructure/auth/user.decorator';
 import { CreateAnEntityDto } from '../dto/create-an-entity.dto.js';
-import { CreateAnEntityCommand } from '@domain/entity/commands/create-an-entity.command';
+import { CreateAnEntityCommand } from '@portfolio/entity/commands/create-an-entity.command';
 
 @Controller('entities')
 export class CreateAnEntityController {
