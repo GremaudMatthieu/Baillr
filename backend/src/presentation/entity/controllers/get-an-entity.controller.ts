@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseUUIDPipe, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import type { OwnershipEntity } from '@prisma/client';
 import { CurrentUser } from '@infrastructure/auth/user.decorator';
@@ -13,9 +13,6 @@ export class GetAnEntityController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() userId: string,
   ): Promise<{ data: OwnershipEntity }> {
-    if (!userId) {
-      throw new UnauthorizedException('User ID is required');
-    }
     const entity: OwnershipEntity = await this.queryBus.execute(new GetAnEntityQuery(id, userId));
     return { data: entity };
   }

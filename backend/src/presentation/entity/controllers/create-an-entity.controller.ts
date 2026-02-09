@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Post,
-  Body,
-  HttpCode,
-  HttpStatus,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import { CurrentUser } from '@infrastructure/auth/user.decorator';
 import { CreateAnEntityDto } from '../dto/create-an-entity.dto.js';
@@ -18,9 +11,6 @@ export class CreateAnEntityController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async handle(@Body() dto: CreateAnEntityDto, @CurrentUser() userId: string): Promise<void> {
-    if (!userId) {
-      throw new UnauthorizedException('User ID is required');
-    }
     await this.commandBus.execute(
       new CreateAnEntityCommand(
         dto.id,

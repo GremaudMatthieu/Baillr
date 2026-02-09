@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CommandBus } from '@nestjs/cqrs';
-import { UnauthorizedException } from '@nestjs/common';
 import { CreateAnEntityController } from '../controllers/create-an-entity.controller';
 import { CreateAnEntityCommand } from '../../../portfolio/entity/commands/create-an-entity.command';
 
@@ -87,25 +86,5 @@ describe('CreateAnEntityController', () => {
 
     const result = await controller.handle(dto, 'user_clerk_789');
     expect(result).toBeUndefined();
-  });
-
-  it('should throw UnauthorizedException when userId is missing', async () => {
-    const dto = {
-      id: '880e8400-e29b-41d4-a716-446655440003',
-      type: 'sci' as const,
-      name: 'SCI Test',
-      siret: '12345678901234',
-      address: {
-        street: 'rue',
-        postalCode: '75000',
-        city: 'Paris',
-        country: 'France',
-        complement: null,
-      },
-    };
-
-    await expect(controller.handle(dto, undefined as unknown as string)).rejects.toThrow(
-      UnauthorizedException,
-    );
   });
 });

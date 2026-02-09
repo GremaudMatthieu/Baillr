@@ -2,67 +2,8 @@ import { EntityAggregate } from '../entity.aggregate';
 import { EntityCreated } from '../events/entity-created.event';
 import { EntityUpdated } from '../events/entity-updated.event';
 import { DomainException } from '../../../shared/exceptions/domain.exception';
-
-// Mock nestjs-cqrx to avoid runtime dependency on KurrentDB
-jest.mock('nestjs-cqrx', () => {
-  class MockEvent {
-    data: Record<string, unknown>;
-    metadata: Record<string, unknown>;
-    type: string;
-    constructor(data?: Record<string, unknown>, metadata?: Record<string, unknown>) {
-      this.data = data ?? {};
-      this.metadata = metadata ?? {};
-      this.type = this.constructor.name;
-    }
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  function MockEventHandler(_event: unknown) {
-    return function (_target: object, _key: string, descriptor: PropertyDescriptor) {
-      return descriptor;
-    };
-  }
-
-  const EVENTS = Symbol('events');
-
-  class MockAggregateRoot {
-    streamId: string;
-    id: string;
-    [EVENTS]: unknown[] = [];
-    constructor(id: string) {
-      this.id = id;
-      const streamName =
-        'streamName' in this.constructor &&
-        typeof (this.constructor as Record<string, unknown>).streamName === 'string'
-          ? (this.constructor as Record<string, unknown>).streamName
-          : this.constructor.name;
-      this.streamId = `${String(streamName)}_${id}`;
-    }
-    apply(event: { constructor: { name: string }; data: Record<string, unknown> }) {
-      this[EVENTS].push(event);
-      const handlerName = `on${event.constructor.name}`;
-      const self = this as unknown as Record<string, (...args: unknown[]) => void>;
-      if (typeof self[handlerName] === 'function') {
-        self[handlerName](event);
-      }
-    }
-    getUncommittedEvents() {
-      return [...this[EVENTS]];
-    }
-    commit() {
-      this[EVENTS].length = 0;
-    }
-  }
-
-  return {
-    AggregateRoot: MockAggregateRoot,
-    Event: MockEvent,
-    EventHandler: MockEventHandler,
-    InjectAggregateRepository: () => () => {},
-    AggregateRepository: class {},
-    CqrxModule: { forRoot: () => ({}), forFeature: () => ({}) },
-  };
-});
+// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
+jest.mock('nestjs-cqrx', () => require('./mock-cqrx').mockCqrx);
 
 interface CreateParams {
   userId: string;

@@ -2,6 +2,8 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { KurrentDbService } from '../../../infrastructure/eventstore/kurrentdb.service.js';
 import { PrismaService } from '../../../infrastructure/database/prisma.service.js';
 import { START, streamNameFilter } from '@kurrent/kurrentdb-client';
+import type { EntityCreatedData } from '@portfolio/entity/events/entity-created.event';
+import type { EntityUpdatedData } from '@portfolio/entity/events/entity-updated.event';
 
 @Injectable()
 export class EntityProjection implements OnModuleInit {
@@ -45,74 +47,71 @@ export class EntityProjection implements OnModuleInit {
     try {
       switch (eventType) {
         case 'EntityCreated':
-          await this.onEntityCreated(data);
+          await this.onEntityCreated(data as unknown as EntityCreatedData);
           break;
         case 'EntityUpdated':
-          await this.onEntityUpdated(data);
+          await this.onEntityUpdated(data as unknown as EntityUpdatedData);
           break;
         default:
           break;
       }
     } catch (error) {
       this.logger.error(
-        `Failed to project ${eventType} for entity ${data.id as string}: ${(error as Error).message}`,
+        `Failed to project ${eventType} for entity ${(data as { id: string }).id}: ${(error as Error).message}`,
         (error as Error).stack,
       );
     }
   }
 
-  private async onEntityCreated(data: Record<string, unknown>): Promise<void> {
-    const address = data.address as Record<string, string>;
+  private async onEntityCreated(data: EntityCreatedData): Promise<void> {
     await this.prisma.ownershipEntity.upsert({
-      where: { id: data.id as string },
+      where: { id: data.id },
       create: {
-        id: data.id as string,
-        userId: data.userId as string,
-        type: data.type as string,
-        name: data.name as string,
-        siret: (data.siret as string) ?? null,
-        addressStreet: address.street,
-        addressPostalCode: address.postalCode,
-        addressCity: address.city,
-        addressCountry: address.country,
-        addressComplement: address.complement ?? null,
-        legalInformation: (data.legalInformation as string) ?? null,
+        id: data.id,
+        userId: data.userId,
+        type: data.type,
+        name: data.name,
+        siret: data.siret,
+        addressStreet: data.address.street,
+        addressPostalCode: data.address.postalCode,
+        addressCity: data.address.city,
+        addressCountry: data.address.country,
+        addressComplement: data.address.complement,
+        legalInformation: data.legalInformation,
       },
       update: {},
     });
-    this.logger.log(`Projected EntityCreated for ${data.id as string}`);
+    this.logger.log(`Projected EntityCreated for ${data.id}`);
   }
 
-  private async onEntityUpdated(data: Record<string, unknown>): Promise<void> {
+  private async onEntityUpdated(data: EntityUpdatedData): Promise<void> {
     const updateData: Record<string, unknown> = {};
 
     if (data.name !== undefined) updateData.name = data.name;
     if (data.siret !== undefined) updateData.siret = data.siret;
     if (data.legalInformation !== undefined) updateData.legalInformation = data.legalInformation;
     if (data.address !== undefined) {
-      const address = data.address as Record<string, string>;
-      updateData.addressStreet = address.street;
-      updateData.addressPostalCode = address.postalCode;
-      updateData.addressCity = address.city;
-      updateData.addressCountry = address.country;
-      updateData.addressComplement = address.complement ?? null;
+      updateData.addressStreet = data.address.street;
+      updateData.addressPostalCode = data.address.postalCode;
+      updateData.addressCity = data.address.city;
+      updateData.addressCountry = data.address.country;
+      updateData.addressComplement = data.address.complement;
     }
 
-    const id = data.id as string;
     const exists = await this.prisma.ownershipEntity.findUnique({
-      where: { id },
+      where: { id: data.id },
       select: { id: true },
     });
     if (!exists) {
       this.logger.warn(
-        `EntityUpdated received for ${id} but no read model exists — EntityCreated may have been missed`,
+        `EntityUpdated received for ${data.id} but no read model exists — EntityCreated may have been missed`,
       );
       return;
     }
     await this.prisma.ownershipEntity.update({
-      where: { id },
+      where: { id: data.id },
       data: updateData,
     });
-    this.logger.log(`Projected EntityUpdated for ${id}`);
+    this.logger.log(`Projected EntityUpdated for ${data.id}`);
   }
 }

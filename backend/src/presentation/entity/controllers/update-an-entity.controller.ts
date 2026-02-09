@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Put,
-  Param,
-  Body,
-  HttpCode,
-  HttpStatus,
-  ParseUUIDPipe,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Controller, Put, Param, Body, HttpCode, HttpStatus, ParseUUIDPipe } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import { CurrentUser } from '@infrastructure/auth/user.decorator';
 import { UpdateAnEntityDto } from '../dto/update-an-entity.dto.js';
@@ -24,9 +15,6 @@ export class UpdateAnEntityController {
     @Body() dto: UpdateAnEntityDto,
     @CurrentUser() userId: string,
   ): Promise<void> {
-    if (!userId) {
-      throw new UnauthorizedException('User ID is required');
-    }
     await this.commandBus.execute(
       new UpdateAnEntityCommand(
         id,

@@ -1,4 +1,4 @@
-import { ExecutionContext } from '@nestjs/common';
+import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
 import { CurrentUser } from '../user.decorator';
 
@@ -37,12 +37,10 @@ describe('CurrentUser decorator', () => {
     expect(result).toBe('user_abc123');
   });
 
-  it('should return undefined when request.user is not set', () => {
+  it('should throw UnauthorizedException when request.user is not set', () => {
     const factory = getParamDecoratorFactory();
     const ctx = createMockExecutionContext(undefined);
 
-    const result = factory(undefined, ctx);
-
-    expect(result).toBeUndefined();
+    expect(() => factory(undefined, ctx)).toThrow(UnauthorizedException);
   });
 });

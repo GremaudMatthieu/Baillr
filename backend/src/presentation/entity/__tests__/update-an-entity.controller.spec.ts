@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CommandBus } from '@nestjs/cqrs';
-import { UnauthorizedException } from '@nestjs/common';
 import { UpdateAnEntityController } from '../controllers/update-an-entity.controller';
 import { UpdateAnEntityCommand } from '../../../portfolio/entity/commands/update-an-entity.command';
 
@@ -63,17 +62,5 @@ describe('UpdateAnEntityController', () => {
       'user_clerk_789',
     );
     expect(result).toBeUndefined();
-  });
-
-  it('should throw UnauthorizedException when userId is missing', async () => {
-    const dto = { name: 'Test' };
-
-    await expect(
-      controller.handle(
-        '880e8400-e29b-41d4-a716-446655440003',
-        dto,
-        undefined as unknown as string,
-      ),
-    ).rejects.toThrow(UnauthorizedException);
   });
 });
