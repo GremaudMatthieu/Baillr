@@ -21,6 +21,26 @@ model OwnershipEntity {
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
+  bankAccounts BankAccount[]
+
   @@map("ownership_entities")
   @@index([userId])
+}
+
+model BankAccount {
+  id        String   @id @default(uuid())
+  entityId  String   @map("entity_id")
+  type      String   // 'bank_account' | 'cash_register'
+  label     String
+  iban      String?
+  bic       String?
+  bankName  String?  @map("bank_name")
+  isDefault Boolean  @default(false) @map("is_default")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  entity OwnershipEntity @relation(fields: [entityId], references: [id])
+
+  @@map("bank_accounts")
+  @@index([entityId])
 }

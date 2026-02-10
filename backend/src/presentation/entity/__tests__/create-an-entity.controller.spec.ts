@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CommandBus } from '@nestjs/cqrs';
 import { CreateAnEntityController } from '../controllers/create-an-entity.controller';
-import { CreateAnEntityCommand } from '../../../portfolio/entity/commands/create-an-entity.command';
+import { CreateAnEntityCommand } from '@portfolio/entity/commands/create-an-entity.command';
 
 describe('CreateAnEntityController', () => {
   let controller: CreateAnEntityController;

@@ -2,13 +2,13 @@
 
 import { use } from "react";
 import Link from "next/link";
-import { Landmark } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useEntity } from "@/hooks/use-entities";
-import { EntityForm } from "@/components/features/entities/entity-form";
+import { BankAccountList } from "@/components/features/entities/bank-account-list";
 
-export default function EditEntityPage({
+export default function BankAccountsPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -34,21 +34,23 @@ export default function EditEntityPage({
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold tracking-tight">
-        Modifier l&apos;entité
-      </h1>
-      <div className="max-w-2xl">
-        <EntityForm entity={entity} />
-
-        <div className="mt-8 border-t pt-6">
-          <Button variant="outline" asChild>
-            <Link href={`/entities/${id}/bank-accounts`}>
-              <Landmark className="h-4 w-4" aria-hidden="true" />
-              Comptes bancaires
-            </Link>
-          </Button>
+      <div className="mb-6 flex items-center gap-3">
+        <Button variant="ghost" size="icon-sm" asChild>
+          <Link
+            href={`/entities/${id}/edit`}
+            aria-label="Retour à l'entité"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Comptes bancaires
+          </h1>
+          <p className="text-sm text-muted-foreground">{entity.name}</p>
         </div>
       </div>
+      <BankAccountList entityId={id} />
     </div>
   );
 }

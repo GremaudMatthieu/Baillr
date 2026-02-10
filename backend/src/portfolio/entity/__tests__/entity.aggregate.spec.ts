@@ -1,6 +1,9 @@
 import { EntityAggregate } from '../entity.aggregate';
 import { EntityCreated } from '../events/entity-created.event';
 import { EntityUpdated } from '../events/entity-updated.event';
+import { BankAccountAdded } from '../events/bank-account-added.event';
+import { BankAccountUpdated } from '../events/bank-account-updated.event';
+import { BankAccountRemoved } from '../events/bank-account-removed.event';
 import { DomainException } from '../../../shared/exceptions/domain.exception';
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
 jest.mock('nestjs-cqrx', () => require('./mock-cqrx').mockCqrx);
@@ -259,6 +262,436 @@ describe('EntityAggregate', () => {
       aggregate.update('user_clerk_123', { name: 'Second Update' });
       const events = aggregate.getUncommittedEvents();
       expect((events[0] as EntityUpdated).data.name).toBe('Second Update');
+    });
+  });
+
+  describe('addBankAccount', () => {
+    beforeEach(() => {
+      callCreate(aggregate);
+      aggregate.commit();
+    });
+
+    it('should add a bank account with valid data', () => {
+      aggregate.addBankAccount(
+        'user_clerk_123',
+        'acc-1',
+        'bank_account',
+        'Compte LCL',
+        'FR7630002005500000157845Z02',
+        'CRLYFRPP',
+        'LCL',
+        true,
+      );
+
+      const events = aggregate.getUncommittedEvents();
+      expect(events).toHaveLength(1);
+      expect(events[0]).toBeInstanceOf(BankAccountAdded);
+      expect((events[0] as BankAccountAdded).data).toMatchObject({
+        accountId: 'acc-1',
+        type: 'bank_account',
+        label: 'Compte LCL',
+        iban: 'FR7630002005500000157845Z02',
+        bic: 'CRLYFRPP',
+        bankName: 'LCL',
+        isDefault: true,
+      });
+    });
+
+    it('should add a cash register', () => {
+      aggregate.addBankAccount(
+        'user_clerk_123',
+        'acc-1',
+        'cash_register',
+        'Caisse',
+        null,
+        null,
+        null,
+        false,
+      );
+
+      const events = aggregate.getUncommittedEvents();
+      expect(events).toHaveLength(1);
+      expect((events[0] as BankAccountAdded).data.type).toBe('cash_register');
+    });
+
+    it('should throw when entity does not exist', () => {
+      const fresh = new EntityAggregate('new-id');
+      expect(() =>
+        fresh.addBankAccount(
+          'user_clerk_123',
+          'acc-1',
+          'bank_account',
+          'Test',
+          'FR7630002005500000157845Z02',
+          null,
+          null,
+          false,
+        ),
+      ).toThrow('Entity does not exist');
+    });
+
+    it('should throw when user does not own entity', () => {
+      expect(() =>
+        aggregate.addBankAccount(
+          'user_wrong',
+          'acc-1',
+          'bank_account',
+          'Test',
+          'FR7630002005500000157845Z02',
+          null,
+          null,
+          false,
+        ),
+      ).toThrow('You are not authorized to modify this entity');
+    });
+
+    it('should throw when bank account has no IBAN', () => {
+      expect(() =>
+        aggregate.addBankAccount(
+          'user_clerk_123',
+          'acc-1',
+          'bank_account',
+          'Test',
+          null,
+          null,
+          null,
+          false,
+        ),
+      ).toThrow('IBAN is required for bank accounts');
+    });
+
+    it('should throw for invalid IBAN format', () => {
+      expect(() =>
+        aggregate.addBankAccount(
+          'user_clerk_123',
+          'acc-1',
+          'bank_account',
+          'Test',
+          'INVALID',
+          null,
+          null,
+          false,
+        ),
+      ).toThrow('IBAN format is invalid');
+    });
+
+    it('should throw for invalid BIC format', () => {
+      expect(() =>
+        aggregate.addBankAccount(
+          'user_clerk_123',
+          'acc-1',
+          'bank_account',
+          'Test',
+          'FR7630002005500000157845Z02',
+          'XX',
+          null,
+          false,
+        ),
+      ).toThrow('BIC format is invalid');
+    });
+
+    it('should throw for empty label', () => {
+      expect(() =>
+        aggregate.addBankAccount(
+          'user_clerk_123',
+          'acc-1',
+          'bank_account',
+          '',
+          'FR7630002005500000157845Z02',
+          null,
+          null,
+          false,
+        ),
+      ).toThrow('Bank account label is required');
+    });
+
+    it('should throw for invalid bank account type', () => {
+      expect(() =>
+        aggregate.addBankAccount(
+          'user_clerk_123',
+          'acc-1',
+          'invalid_type',
+          'Test',
+          'FR7630002005500000157845Z02',
+          null,
+          null,
+          false,
+        ),
+      ).toThrow('Invalid bank account type: invalid_type');
+    });
+
+    it('should throw when cash register is set as default', () => {
+      expect(() =>
+        aggregate.addBankAccount(
+          'user_clerk_123',
+          'acc-1',
+          'cash_register',
+          'Caisse',
+          null,
+          null,
+          null,
+          true,
+        ),
+      ).toThrow('Cash register cannot be set as default account');
+    });
+
+    it('should enforce single cash register per entity', () => {
+      aggregate.addBankAccount(
+        'user_clerk_123',
+        'acc-1',
+        'cash_register',
+        'Caisse',
+        null,
+        null,
+        null,
+        false,
+      );
+      aggregate.commit();
+
+      expect(() =>
+        aggregate.addBankAccount(
+          'user_clerk_123',
+          'acc-2',
+          'cash_register',
+          'Caisse 2',
+          null,
+          null,
+          null,
+          false,
+        ),
+      ).toThrow('Entity already has a cash register');
+    });
+
+    it('should unset previous default when adding new default', () => {
+      aggregate.addBankAccount(
+        'user_clerk_123',
+        'acc-1',
+        'bank_account',
+        'Compte 1',
+        'FR7630002005500000157845Z02',
+        null,
+        null,
+        true,
+      );
+      aggregate.commit();
+
+      aggregate.addBankAccount(
+        'user_clerk_123',
+        'acc-2',
+        'bank_account',
+        'Compte 2',
+        'FR7612345678901234567890123',
+        null,
+        null,
+        true,
+      );
+
+      const events = aggregate.getUncommittedEvents();
+      // First event: unset previous default, second: add new
+      expect(events).toHaveLength(2);
+      expect(events[0]).toBeInstanceOf(BankAccountUpdated);
+      expect((events[0] as BankAccountUpdated).data).toMatchObject({
+        accountId: 'acc-1',
+        isDefault: false,
+      });
+      expect(events[1]).toBeInstanceOf(BankAccountAdded);
+      expect((events[1] as BankAccountAdded).data.isDefault).toBe(true);
+    });
+  });
+
+  describe('updateBankAccount', () => {
+    beforeEach(() => {
+      callCreate(aggregate);
+      aggregate.addBankAccount(
+        'user_clerk_123',
+        'acc-1',
+        'bank_account',
+        'Compte LCL',
+        'FR7630002005500000157845Z02',
+        'CRLYFRPP',
+        'LCL',
+        true,
+      );
+      aggregate.commit();
+    });
+
+    it('should update bank account label', () => {
+      aggregate.updateBankAccount('user_clerk_123', 'acc-1', { label: 'Nouveau nom' });
+
+      const events = aggregate.getUncommittedEvents();
+      expect(events).toHaveLength(1);
+      expect(events[0]).toBeInstanceOf(BankAccountUpdated);
+      expect((events[0] as BankAccountUpdated).data.label).toBe('Nouveau nom');
+    });
+
+    it('should throw for non-existent account', () => {
+      expect(() =>
+        aggregate.updateBankAccount('user_clerk_123', 'non-existent', { label: 'Test' }),
+      ).toThrow('Bank account non-existent not found');
+    });
+
+    it('should throw when user does not own entity', () => {
+      expect(() => aggregate.updateBankAccount('user_wrong', 'acc-1', { label: 'Hacked' })).toThrow(
+        'You are not authorized to modify this entity',
+      );
+    });
+
+    it('should throw when cash register is set as default', () => {
+      aggregate.addBankAccount(
+        'user_clerk_123',
+        'acc-cash',
+        'cash_register',
+        'Caisse',
+        null,
+        null,
+        null,
+        false,
+      );
+      aggregate.commit();
+
+      expect(() =>
+        aggregate.updateBankAccount('user_clerk_123', 'acc-cash', { isDefault: true }),
+      ).toThrow('Cash register cannot be set as default account');
+    });
+
+    it('should throw when removing IBAN from bank account', () => {
+      expect(() => aggregate.updateBankAccount('user_clerk_123', 'acc-1', { iban: null })).toThrow(
+        'IBAN is required for bank accounts',
+      );
+    });
+
+    it('should unset previous default when setting new default', () => {
+      aggregate.addBankAccount(
+        'user_clerk_123',
+        'acc-2',
+        'bank_account',
+        'Compte 2',
+        'FR7612345678901234567890123',
+        null,
+        null,
+        false,
+      );
+      aggregate.commit();
+
+      aggregate.updateBankAccount('user_clerk_123', 'acc-2', { isDefault: true });
+
+      const events = aggregate.getUncommittedEvents();
+      // First: unset acc-1 default, second: update acc-2
+      expect(events).toHaveLength(2);
+      expect((events[0] as BankAccountUpdated).data).toMatchObject({
+        accountId: 'acc-1',
+        isDefault: false,
+      });
+      expect((events[1] as BankAccountUpdated).data).toMatchObject({
+        accountId: 'acc-2',
+        isDefault: true,
+      });
+    });
+  });
+
+  describe('removeBankAccount', () => {
+    beforeEach(() => {
+      callCreate(aggregate);
+      aggregate.addBankAccount(
+        'user_clerk_123',
+        'acc-1',
+        'bank_account',
+        'Compte LCL',
+        'FR7630002005500000157845Z02',
+        null,
+        null,
+        true,
+      );
+      aggregate.commit();
+    });
+
+    it('should remove bank account', () => {
+      aggregate.removeBankAccount('user_clerk_123', 'acc-1');
+
+      const events = aggregate.getUncommittedEvents();
+      expect(events).toHaveLength(1);
+      expect(events[0]).toBeInstanceOf(BankAccountRemoved);
+      expect((events[0] as BankAccountRemoved).data.accountId).toBe('acc-1');
+    });
+
+    it('should throw for non-existent account', () => {
+      expect(() => aggregate.removeBankAccount('user_clerk_123', 'non-existent')).toThrow(
+        'Bank account non-existent not found',
+      );
+    });
+
+    it('should throw when user does not own entity', () => {
+      expect(() => aggregate.removeBankAccount('user_wrong', 'acc-1')).toThrow(
+        'You are not authorized to modify this entity',
+      );
+    });
+
+    it('should not auto-reassign default after removal', () => {
+      aggregate.addBankAccount(
+        'user_clerk_123',
+        'acc-2',
+        'bank_account',
+        'Compte 2',
+        'FR7612345678901234567890123',
+        null,
+        null,
+        false,
+      );
+      aggregate.commit();
+
+      aggregate.removeBankAccount('user_clerk_123', 'acc-1');
+
+      const events = aggregate.getUncommittedEvents();
+      // Only remove event, no auto-reassign
+      expect(events).toHaveLength(1);
+      expect(events[0]).toBeInstanceOf(BankAccountRemoved);
+    });
+  });
+
+  describe('bank account event handlers', () => {
+    beforeEach(() => {
+      callCreate(aggregate);
+      aggregate.commit();
+    });
+
+    it('should apply BankAccountAdded and track state', () => {
+      aggregate.addBankAccount(
+        'user_clerk_123',
+        'acc-1',
+        'bank_account',
+        'Compte 1',
+        'FR7630002005500000157845Z02',
+        null,
+        null,
+        false,
+      );
+      aggregate.commit();
+
+      // Should be able to update the added account
+      aggregate.updateBankAccount('user_clerk_123', 'acc-1', { label: 'Updated' });
+      expect(aggregate.getUncommittedEvents()).toHaveLength(1);
+    });
+
+    it('should apply BankAccountRemoved and clean state', () => {
+      aggregate.addBankAccount(
+        'user_clerk_123',
+        'acc-1',
+        'bank_account',
+        'Compte 1',
+        'FR7630002005500000157845Z02',
+        null,
+        null,
+        false,
+      );
+      aggregate.commit();
+
+      aggregate.removeBankAccount('user_clerk_123', 'acc-1');
+      aggregate.commit();
+
+      // Should throw when trying to update removed account
+      expect(() =>
+        aggregate.updateBankAccount('user_clerk_123', 'acc-1', { label: 'Test' }),
+      ).toThrow('Bank account acc-1 not found');
     });
   });
 });

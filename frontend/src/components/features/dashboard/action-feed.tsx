@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
-import { Building2, ClipboardList, Plus, ArrowRight } from "lucide-react";
+import { Building2, ClipboardList, Landmark, Plus, ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,7 @@ const iconMap: Record<string, LucideIcon> = {
   Plus,
   Building2,
   ClipboardList,
+  Landmark,
 };
 
 export interface ActionItem {
@@ -35,6 +36,15 @@ const onboardingActions: ActionItem[] = [
       "Commencez par configurer votre SCI ou votre nom propre pour gérer vos biens",
     href: "/entities/new",
     priority: "high",
+  },
+  {
+    id: "onboarding-add-bank-account",
+    icon: "Landmark",
+    title: "Ajoutez un compte bancaire",
+    description:
+      "Configurez les coordonnées bancaires de votre entité pour les appels de loyer",
+    href: "/entities",
+    priority: "medium",
   },
   {
     id: "onboarding-add-property",

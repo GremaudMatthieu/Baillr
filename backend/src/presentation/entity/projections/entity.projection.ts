@@ -1,9 +1,12 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { KurrentDbService } from '../../../infrastructure/eventstore/kurrentdb.service.js';
-import { PrismaService } from '../../../infrastructure/database/prisma.service.js';
+import { KurrentDbService } from '@infrastructure/eventstore/kurrentdb.service';
+import { PrismaService } from '@infrastructure/database/prisma.service';
 import { START, streamNameFilter } from '@kurrent/kurrentdb-client';
 import type { EntityCreatedData } from '@portfolio/entity/events/entity-created.event';
 import type { EntityUpdatedData } from '@portfolio/entity/events/entity-updated.event';
+import type { BankAccountAddedData } from '@portfolio/entity/events/bank-account-added.event';
+import type { BankAccountUpdatedData } from '@portfolio/entity/events/bank-account-updated.event';
+import type { BankAccountRemovedData } from '@portfolio/entity/events/bank-account-removed.event';
 
 @Injectable()
 export class EntityProjection implements OnModuleInit {
@@ -51,6 +54,15 @@ export class EntityProjection implements OnModuleInit {
           break;
         case 'EntityUpdated':
           await this.onEntityUpdated(data as unknown as EntityUpdatedData);
+          break;
+        case 'BankAccountAdded':
+          await this.onBankAccountAdded(data as unknown as BankAccountAddedData);
+          break;
+        case 'BankAccountUpdated':
+          await this.onBankAccountUpdated(data as unknown as BankAccountUpdatedData);
+          break;
+        case 'BankAccountRemoved':
+          await this.onBankAccountRemoved(data as unknown as BankAccountRemovedData);
           break;
         default:
           break;
@@ -113,5 +125,67 @@ export class EntityProjection implements OnModuleInit {
       data: updateData,
     });
     this.logger.log(`Projected EntityUpdated for ${data.id}`);
+  }
+
+  private async onBankAccountAdded(data: BankAccountAddedData): Promise<void> {
+    await this.prisma.bankAccount.upsert({
+      where: { id: data.accountId },
+      create: {
+        id: data.accountId,
+        entityId: data.entityId,
+        type: data.type,
+        label: data.label,
+        iban: data.iban,
+        bic: data.bic,
+        bankName: data.bankName,
+        isDefault: data.isDefault,
+      },
+      update: {},
+    });
+    this.logger.log(`Projected BankAccountAdded ${data.accountId} for entity ${data.entityId}`);
+  }
+
+  private async onBankAccountUpdated(data: BankAccountUpdatedData): Promise<void> {
+    const exists = await this.prisma.bankAccount.findUnique({
+      where: { id: data.accountId },
+      select: { id: true },
+    });
+    if (!exists) {
+      this.logger.warn(
+        `BankAccountUpdated received for ${data.accountId} but no read model exists — BankAccountAdded may have been missed`,
+      );
+      return;
+    }
+
+    const updateData: Record<string, unknown> = {};
+    if (data.label !== undefined) updateData.label = data.label;
+    if (data.iban !== undefined) updateData.iban = data.iban;
+    if (data.bic !== undefined) updateData.bic = data.bic;
+    if (data.bankName !== undefined) updateData.bankName = data.bankName;
+    if (data.isDefault !== undefined) updateData.isDefault = data.isDefault;
+
+    await this.prisma.bankAccount.update({
+      where: { id: data.accountId },
+      data: updateData,
+    });
+    this.logger.log(`Projected BankAccountUpdated ${data.accountId} for entity ${data.entityId}`);
+  }
+
+  private async onBankAccountRemoved(data: BankAccountRemovedData): Promise<void> {
+    const exists = await this.prisma.bankAccount.findUnique({
+      where: { id: data.accountId },
+      select: { id: true },
+    });
+    if (!exists) {
+      this.logger.warn(
+        `BankAccountRemoved received for ${data.accountId} but no read model exists`,
+      );
+      return;
+    }
+
+    await this.prisma.bankAccount.delete({
+      where: { id: data.accountId },
+    });
+    this.logger.log(`Projected BankAccountRemoved ${data.accountId} for entity ${data.entityId}`);
   }
 }
