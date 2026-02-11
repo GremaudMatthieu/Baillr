@@ -10,13 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUnit } from "@/hooks/use-units";
 import { UnitForm } from "@/components/features/units/unit-form";
-
-const UNIT_TYPE_LABELS: Record<string, string> = {
-  apartment: "Appartement",
-  parking: "Parking",
-  commercial: "Local commercial",
-  storage: "Cave / Garde-meuble",
-};
+import { UNIT_TYPE_LABELS } from "@/lib/constants/unit-types";
 
 export default function UnitDetailPage({
   params,

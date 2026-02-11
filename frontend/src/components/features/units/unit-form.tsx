@@ -25,14 +25,8 @@ import {
 } from "@/components/ui/form";
 import { useCreateUnit, useUpdateUnit } from "@/hooks/use-units";
 import type { UnitData } from "@/lib/api/units-api";
+import { UNIT_TYPE_LABELS } from "@/lib/constants/unit-types";
 import { unitSchema, type UnitFormValues } from "./unit-schema";
-
-const UNIT_TYPE_LABELS: Record<string, string> = {
-  apartment: "Appartement",
-  parking: "Parking",
-  commercial: "Local commercial",
-  storage: "Cave / Garde-meuble",
-};
 
 interface UnitFormProps {
   propertyId: string;

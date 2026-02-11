@@ -14,6 +14,10 @@ export interface UnitData {
   updatedAt: string;
 }
 
+export interface UnitWithPropertyData extends UnitData {
+  propertyName: string;
+}
+
 export interface CreateUnitPayload {
   id: string;
   identifier: string;
@@ -35,6 +39,15 @@ export function useUnitsApi() {
   const { getToken } = useAuth();
 
   return {
+    async getUnitsByEntity(entityId: string): Promise<UnitWithPropertyData[]> {
+      const res = await fetchWithAuth(
+        `/entities/${entityId}/units`,
+        getToken,
+      );
+      const body = (await res.json()) as { data: UnitWithPropertyData[] };
+      return body.data;
+    },
+
     async getUnits(propertyId: string): Promise<UnitData[]> {
       const res = await fetchWithAuth(
         `/properties/${propertyId}/units`,

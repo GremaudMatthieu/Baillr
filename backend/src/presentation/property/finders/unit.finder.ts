@@ -18,4 +18,18 @@ export class UnitFinder {
       where: { id, userId },
     });
   }
+
+  async findAllByEntityAndUser(
+    entityId: string,
+    userId: string,
+  ): Promise<(Unit & { property: { name: string } })[]> {
+    return this.prisma.unit.findMany({
+      where: {
+        userId,
+        property: { entityId, userId },
+      },
+      include: { property: { select: { name: true } } },
+      orderBy: [{ property: { name: 'asc' } }, { identifier: 'asc' }],
+    });
+  }
 }

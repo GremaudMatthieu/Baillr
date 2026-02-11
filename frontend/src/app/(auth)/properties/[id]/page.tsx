@@ -12,13 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useProperty } from "@/hooks/use-properties";
 import { useUnits } from "@/hooks/use-units";
 import { PropertyForm } from "@/components/features/properties/property-form";
-
-const UNIT_TYPE_LABELS: Record<string, string> = {
-  apartment: "Appartement",
-  parking: "Parking",
-  commercial: "Local commercial",
-  storage: "Cave / Garde-meuble",
-};
+import { UNIT_TYPE_LABELS } from "@/lib/constants/unit-types";
 
 export default function PropertyDetailPage({
   params,

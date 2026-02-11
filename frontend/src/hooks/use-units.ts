@@ -8,6 +8,16 @@ import {
   type UnitData,
 } from "@/lib/api/units-api";
 
+export function useEntityUnits(entityId: string) {
+  const api = useUnitsApi();
+  return useQuery({
+    queryKey: ["entities", entityId, "units"],
+    queryFn: () => api.getUnitsByEntity(entityId),
+    enabled: !!entityId,
+    staleTime: 30_000,
+  });
+}
+
 export function useUnits(propertyId: string) {
   const api = useUnitsApi();
   return useQuery({
@@ -71,6 +81,9 @@ export function useCreateUnit(propertyId: string) {
       setTimeout(() => {
         void queryClient.invalidateQueries({
           queryKey: ["properties", propertyId, "units"],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["entities"],
         });
       }, 1500);
     },
@@ -140,6 +153,9 @@ export function useUpdateUnit(unitId: string, propertyId: string) {
         });
         void queryClient.invalidateQueries({
           queryKey: ["units", unitId],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["entities"],
         });
       }, 1500);
     },
