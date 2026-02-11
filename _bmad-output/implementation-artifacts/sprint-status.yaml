@@ -56,7 +56,13 @@ development_status:
   2-4-create-properties-under-an-entity: done
   2-5-create-and-configure-units-within-a-property: done
   2-6-display-unit-mosaic-on-dashboard: done
-  epic-2-retrospective: optional
+  epic-2-retrospective: done
+
+  # Consolidation Sprint — Testing & Anti-Patterns (3 stories, blocking Epic 3)
+  consolidation: in-progress
+  c-1-setup-vitest-and-retrotest-epic2-frontend: done
+  c-2-setup-playwright-e2e-onboarding-scenarios: backlog
+  c-3-centralize-antipatterns-and-dto-checklist: backlog
 
   # Epic 3: Tenant & Lease Management (6 stories)
   epic-3: backlog
