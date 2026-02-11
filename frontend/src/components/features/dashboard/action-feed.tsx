@@ -13,6 +13,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useCurrentEntity } from "@/hooks/use-current-entity";
+import { useBankAccounts } from "@/hooks/use-bank-accounts";
+import { useProperties } from "@/hooks/use-properties";
 
 const iconMap: Record<string, LucideIcon> = {
   Plus,
@@ -32,6 +34,8 @@ export interface ActionItem {
 
 function useOnboardingActions(): ActionItem[] {
   const { entityId } = useCurrentEntity();
+  const { data: bankAccounts } = useBankAccounts(entityId ?? "");
+  const { data: properties } = useProperties(entityId ?? "");
 
   const actions: ActionItem[] = [];
 
@@ -47,28 +51,29 @@ function useOnboardingActions(): ActionItem[] {
     });
   }
 
-  actions.push(
-    {
+  if (entityId && (!bankAccounts || bankAccounts.length === 0)) {
+    actions.push({
       id: "onboarding-add-bank-account",
       icon: "Landmark",
       title: "Ajoutez un compte bancaire",
       description:
         "Configurez les coordonnées bancaires de votre entité pour les appels de loyer",
-      href: entityId
-        ? `/entities/${entityId}/bank-accounts`
-        : "/entities",
+      href: `/entities/${entityId}/bank-accounts`,
       priority: "medium",
-    },
-    {
+    });
+  }
+
+  if (entityId && (!properties || properties.length === 0)) {
+    actions.push({
       id: "onboarding-add-property",
       icon: "Building2",
       title: "Ajoutez un bien immobilier",
       description:
         "Rattachez un bien à votre entité pour commencer la gestion locative",
-      href: "/properties/new",
+      href: entityId ? "/properties/new" : "/entities",
       priority: "medium",
-    },
-  );
+    });
+  }
 
   return actions;
 }

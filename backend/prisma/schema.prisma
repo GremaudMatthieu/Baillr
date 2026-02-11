@@ -22,8 +22,30 @@ model OwnershipEntity {
   updatedAt         DateTime @updatedAt @map("updated_at")
 
   bankAccounts BankAccount[]
+  properties   Property[]
 
   @@map("ownership_entities")
+  @@index([userId])
+}
+
+model Property {
+  id                String   @id @default(uuid())
+  entityId          String   @map("entity_id")
+  userId            String   @map("user_id")
+  name              String
+  type              String?
+  addressStreet     String   @map("address_street")
+  addressPostalCode String   @map("address_postal_code")
+  addressCity       String   @map("address_city")
+  addressCountry    String   @map("address_country") @default("France")
+  addressComplement String?  @map("address_complement")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  entity OwnershipEntity @relation(fields: [entityId], references: [id])
+
+  @@map("properties")
+  @@index([entityId])
   @@index([userId])
 }
 

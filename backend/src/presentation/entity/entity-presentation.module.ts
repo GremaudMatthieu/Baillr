@@ -33,5 +33,6 @@ import { EntityFinder } from './finders/entity.finder.js';
     EntityProjection,
     EntityFinder,
   ],
+  exports: [EntityFinder],
 })
 export class EntityPresentationModule {}

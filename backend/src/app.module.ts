@@ -7,6 +7,7 @@ import { AuthModule } from './infrastructure/auth/auth.module';
 import { ClerkAuthGuard } from './infrastructure/auth/clerk-auth.guard';
 import { PortfolioModule } from './portfolio/portfolio.module';
 import { EntityPresentationModule } from './presentation/entity/entity-presentation.module';
+import { PropertyPresentationModule } from './presentation/property/property-presentation.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -20,6 +21,7 @@ import { AppService } from './app.service';
     AuthModule,
     PortfolioModule,
     EntityPresentationModule,
+    PropertyPresentationModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ClerkAuthGuard }],

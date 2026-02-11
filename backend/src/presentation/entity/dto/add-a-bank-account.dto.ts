@@ -1,4 +1,13 @@
-import { IsBoolean, IsIn, IsOptional, IsString, IsUUID, Length, Matches, MaxLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsIn,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Length,
+  Matches,
+  MaxLength,
+} from 'class-validator';
 
 export class AddABankAccountDto {
   @IsUUID()

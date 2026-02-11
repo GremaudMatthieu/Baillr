@@ -12,6 +12,7 @@ import type { BankAccountRemovedData } from '@portfolio/entity/events/bank-accou
 export class EntityProjection implements OnModuleInit {
   private readonly logger = new Logger(EntityProjection.name);
   private reconnectAttempts = 0;
+  private processingChain: Promise<void> = Promise.resolve();
 
   constructor(
     private readonly kurrentDb: KurrentDbService,
@@ -32,7 +33,9 @@ export class EntityProjection implements OnModuleInit {
     subscription.on('data', ({ event }) => {
       if (!event) return;
       this.reconnectAttempts = 0;
-      void this.handleEvent(event.type, event.data as Record<string, unknown>);
+      this.processingChain = this.processingChain.then(() =>
+        this.handleEvent(event.type, event.data as Record<string, unknown>),
+      );
     });
 
     subscription.on('error', (error: Error) => {

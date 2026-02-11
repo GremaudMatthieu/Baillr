@@ -159,7 +159,7 @@ export class EntityAggregate extends AggregateRoot {
     if (type !== 'bank_account' && type !== 'cash_register') {
       throw InvalidBankAccountTypeException.create(type);
     }
-    const voType = type as 'bank_account' | 'cash_register';
+    const voType = type;
     const voIban = iban ? Iban.fromString(iban) : Iban.empty();
     const voBic = bic ? Bic.fromString(bic) : Bic.empty();
     const voBankName = bankName ? BankName.fromString(bankName) : BankName.empty();
