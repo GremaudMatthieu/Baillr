@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { Building2, ClipboardList, Landmark, Plus, ArrowRight } from "lucide-react";
@@ -10,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useCurrentEntity } from "@/hooks/use-current-entity";
 
 const iconMap: Record<string, LucideIcon> = {
   Plus,
@@ -27,35 +30,48 @@ export interface ActionItem {
   priority: "high" | "medium" | "low";
 }
 
-const onboardingActions: ActionItem[] = [
-  {
-    id: "onboarding-create-entity",
-    icon: "Plus",
-    title: "Créez votre première entité propriétaire",
-    description:
-      "Commencez par configurer votre SCI ou votre nom propre pour gérer vos biens",
-    href: "/entities/new",
-    priority: "high",
-  },
-  {
-    id: "onboarding-add-bank-account",
-    icon: "Landmark",
-    title: "Ajoutez un compte bancaire",
-    description:
-      "Configurez les coordonnées bancaires de votre entité pour les appels de loyer",
-    href: "/entities",
-    priority: "medium",
-  },
-  {
-    id: "onboarding-add-property",
-    icon: "Building2",
-    title: "Ajoutez un bien immobilier",
-    description:
-      "Rattachez un bien à votre entité pour commencer la gestion locative",
-    href: "/properties/new",
-    priority: "medium",
-  },
-];
+function useOnboardingActions(): ActionItem[] {
+  const { entityId } = useCurrentEntity();
+
+  const actions: ActionItem[] = [];
+
+  if (!entityId) {
+    actions.push({
+      id: "onboarding-create-entity",
+      icon: "Plus",
+      title: "Créez votre première entité propriétaire",
+      description:
+        "Commencez par configurer votre SCI ou votre nom propre pour gérer vos biens",
+      href: "/entities/new",
+      priority: "high",
+    });
+  }
+
+  actions.push(
+    {
+      id: "onboarding-add-bank-account",
+      icon: "Landmark",
+      title: "Ajoutez un compte bancaire",
+      description:
+        "Configurez les coordonnées bancaires de votre entité pour les appels de loyer",
+      href: entityId
+        ? `/entities/${entityId}/bank-accounts`
+        : "/entities",
+      priority: "medium",
+    },
+    {
+      id: "onboarding-add-property",
+      icon: "Building2",
+      title: "Ajoutez un bien immobilier",
+      description:
+        "Rattachez un bien à votre entité pour commencer la gestion locative",
+      href: "/properties/new",
+      priority: "medium",
+    },
+  );
+
+  return actions;
+}
 
 const priorityLabels: Record<ActionItem["priority"], string> = {
   high: "Recommandé",
@@ -123,15 +139,17 @@ interface ActionFeedProps {
   actions?: ActionItem[];
 }
 
-export function ActionFeed({ actions = onboardingActions }: ActionFeedProps) {
-  const hasActions = actions.length > 0;
+export function ActionFeed({ actions }: ActionFeedProps) {
+  const onboardingActions = useOnboardingActions();
+  const displayActions = actions ?? onboardingActions;
+  const hasActions = displayActions.length > 0;
 
   return (
     <section>
       <h2 className="mb-4 text-lg font-semibold">Actions en attente</h2>
       <ul aria-label="Actions en attente" className="list-none space-y-4">
         {hasActions ? (
-          actions.map((action) => (
+          displayActions.map((action) => (
             <li key={action.id}>
               <ActionCard action={action} />
             </li>

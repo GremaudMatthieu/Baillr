@@ -1120,7 +1120,7 @@ flowchart TD
 - Sidebar collapsible to 64px (icons only) with toggle button at bottom
 - Breadcrumb trail on all pages except dashboard: `Biens > Résidence Sapiac > Apt 102`
 - Entity switcher always in header bar, above sidebar — context affects all views
-- Back navigation: ghost button "← Retour" + breadcrumb click, never browser back only
+- Back navigation: ghost button "← Retour" using `router.back()` (respects actual navigation history, not hardcoded parent), breadcrumb for hierarchy navigation. Never rely on browser back button alone
 - Mobile: sidebar becomes Sheet (slide-in overlay) with hamburger trigger
 
 ### Modal & Overlay Patterns

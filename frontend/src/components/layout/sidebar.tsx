@@ -27,6 +27,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { EntitySwitcher } from "@/components/layout/entity-switcher";
 
 const navItems = [
   { label: "Tableau de bord", icon: LayoutDashboard, href: "/dashboard" },
@@ -53,57 +54,14 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate
   const pathname = usePathname();
 
   return (
-    <TooltipProvider delayDuration={0}>
-      <nav aria-label="Navigation principale" className="flex flex-1 flex-col">
-        <ScrollArea className="flex-1 px-3 py-4">
-          <ul role="list" className="space-y-1">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-              const linkContent = (
-                <Link
-                  href={item.href}
-                  onClick={onNavigate}
-                  className={cn(
-                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                    collapsed && "justify-center px-2",
-                    isActive
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-bold"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent/50"
-                  )}
-                  aria-current={isActive ? "page" : undefined}
-                >
-                  <item.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-                  {!collapsed && <span>{item.label}</span>}
-                </Link>
-              );
-
-              if (collapsed) {
-                return (
-                  <li key={item.href}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
-                      <TooltipContent side="right" sideOffset={8}>
-                        {item.label}
-                      </TooltipContent>
-                    </Tooltip>
-                  </li>
-                );
-              }
-
-              return <li key={item.href}>{linkContent}</li>;
-            })}
-          </ul>
-        </ScrollArea>
-
-        <Separator className="bg-sidebar-border" />
-
-        <div className="px-3 py-4">
-          {(() => {
-            const isActive = pathname === settingsItem.href || pathname.startsWith(settingsItem.href + "/");
+    <nav aria-label="Navigation principale" className="flex flex-1 flex-col">
+      <ScrollArea className="flex-1 px-3 py-4">
+        <ul role="list" className="space-y-1">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
             const linkContent = (
               <Link
-                href={settingsItem.href}
+                href={item.href}
                 onClick={onNavigate}
                 className={cn(
                   "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
@@ -115,27 +73,68 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate
                 )}
                 aria-current={isActive ? "page" : undefined}
               >
-                <settingsItem.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-                {!collapsed && <span>{settingsItem.label}</span>}
+                <item.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                {!collapsed && <span>{item.label}</span>}
               </Link>
             );
 
             if (collapsed) {
               return (
-                <Tooltip>
-                  <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
-                  <TooltipContent side="right" sideOffset={8}>
-                    {settingsItem.label}
-                  </TooltipContent>
-                </Tooltip>
+                <li key={item.href}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+                    <TooltipContent side="right" sideOffset={8}>
+                      {item.label}
+                    </TooltipContent>
+                  </Tooltip>
+                </li>
               );
             }
 
-            return linkContent;
-          })()}
-        </div>
-      </nav>
-    </TooltipProvider>
+            return <li key={item.href}>{linkContent}</li>;
+          })}
+        </ul>
+      </ScrollArea>
+
+      <Separator className="bg-sidebar-border" />
+
+      <div className="px-3 py-4">
+        {(() => {
+          const isActive = pathname === settingsItem.href || pathname.startsWith(settingsItem.href + "/");
+          const linkContent = (
+            <Link
+              href={settingsItem.href}
+              onClick={onNavigate}
+              className={cn(
+                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                collapsed && "justify-center px-2",
+                isActive
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-bold"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+              )}
+              aria-current={isActive ? "page" : undefined}
+            >
+              <settingsItem.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+              {!collapsed && <span>{settingsItem.label}</span>}
+            </Link>
+          );
+
+          if (collapsed) {
+            return (
+              <Tooltip>
+                <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+                <TooltipContent side="right" sideOffset={8}>
+                  {settingsItem.label}
+                </TooltipContent>
+              </Tooltip>
+            );
+          }
+
+          return linkContent;
+        })()}
+      </div>
+    </nav>
   );
 }
 
@@ -162,9 +161,13 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         className="hidden lg:flex lg:w-60 lg:flex-col bg-sidebar text-sidebar-foreground"
         aria-label="Barre latérale"
       >
-        <SidebarBrand />
-        <Separator className="bg-sidebar-border" />
-        <SidebarNav />
+        <TooltipProvider delayDuration={0}>
+          <SidebarBrand />
+          <Separator className="bg-sidebar-border" />
+          <EntitySwitcher />
+          <Separator className="bg-sidebar-border" />
+          <SidebarNav />
+        </TooltipProvider>
       </aside>
 
       {/* Tablet: collapsed sidebar (md) */}
@@ -172,9 +175,13 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         className="hidden md:flex md:w-16 md:flex-col lg:hidden bg-sidebar text-sidebar-foreground"
         aria-label="Barre latérale"
       >
-        <SidebarBrand collapsed />
-        <Separator className="bg-sidebar-border" />
-        <SidebarNav collapsed />
+        <TooltipProvider delayDuration={0}>
+          <SidebarBrand collapsed />
+          <Separator className="bg-sidebar-border" />
+          <EntitySwitcher collapsed />
+          <Separator className="bg-sidebar-border" />
+          <SidebarNav collapsed />
+        </TooltipProvider>
       </aside>
 
       {/* Mobile: Sheet overlay */}
@@ -183,12 +190,16 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           side="left"
           className="w-60 p-0 bg-sidebar text-sidebar-foreground"
         >
-          <SheetHeader className="sr-only">
-            <SheetTitle>Menu de navigation</SheetTitle>
-          </SheetHeader>
-          <SidebarBrand />
-          <Separator className="bg-sidebar-border" />
-          <SidebarNav onNavigate={onMobileClose} />
+          <TooltipProvider delayDuration={0}>
+            <SheetHeader className="sr-only">
+              <SheetTitle>Menu de navigation</SheetTitle>
+            </SheetHeader>
+            <SidebarBrand />
+            <Separator className="bg-sidebar-border" />
+            <EntitySwitcher onNavigate={onMobileClose} />
+            <Separator className="bg-sidebar-border" />
+            <SidebarNav onNavigate={onMobileClose} />
+          </TooltipProvider>
         </SheetContent>
       </Sheet>
     </>
