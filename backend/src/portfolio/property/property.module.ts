@@ -3,9 +3,10 @@ import { CqrxModule } from 'nestjs-cqrx';
 import { PropertyAggregate } from './property.aggregate.js';
 import { CreateAPropertyHandler } from './commands/create-a-property.handler.js';
 import { UpdateAPropertyHandler } from './commands/update-a-property.handler.js';
+import { UnitDomainModule } from './unit/unit.module.js';
 
 @Module({
-  imports: [CqrxModule.forFeature([PropertyAggregate])],
+  imports: [CqrxModule.forFeature([PropertyAggregate]), UnitDomainModule],
   providers: [CreateAPropertyHandler, UpdateAPropertyHandler],
 })
 export class PropertyDomainModule {}

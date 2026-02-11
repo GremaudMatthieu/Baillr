@@ -43,9 +43,30 @@ model Property {
   updatedAt         DateTime @updatedAt @map("updated_at")
 
   entity OwnershipEntity @relation(fields: [entityId], references: [id])
+  units  Unit[]
 
   @@map("properties")
   @@index([entityId])
+  @@index([userId])
+}
+
+model Unit {
+  id              String   @id @default(uuid())
+  propertyId      String   @map("property_id")
+  userId          String   @map("user_id")
+  identifier      String
+  type            String
+  floor           Int?
+  surfaceArea     Float    @map("surface_area")
+  billableOptions Json     @default("[]") @map("billable_options")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  property Property @relation(fields: [propertyId], references: [id])
+
+  @@map("units")
+  @@unique([propertyId, identifier])
+  @@index([propertyId])
   @@index([userId])
 }
 

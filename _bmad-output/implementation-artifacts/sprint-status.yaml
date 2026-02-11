@@ -54,7 +54,7 @@ development_status:
   2-2-associate-bank-accounts-to-an-entity: done
   2-3-implement-entity-switcher-component: done
   2-4-create-properties-under-an-entity: done
-  2-5-create-and-configure-units-within-a-property: backlog
+  2-5-create-and-configure-units-within-a-property: done
   2-6-display-unit-mosaic-on-dashboard: backlog
   epic-2-retrospective: optional
 

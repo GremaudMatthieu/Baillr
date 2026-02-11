@@ -15,6 +15,7 @@ import {
 import { useCurrentEntity } from "@/hooks/use-current-entity";
 import { useBankAccounts } from "@/hooks/use-bank-accounts";
 import { useProperties } from "@/hooks/use-properties";
+import { useUnits } from "@/hooks/use-units";
 
 const iconMap: Record<string, LucideIcon> = {
   Plus,
@@ -71,6 +72,27 @@ function useOnboardingActions(): ActionItem[] {
       description:
         "Rattachez un bien à votre entité pour commencer la gestion locative",
       href: entityId ? "/properties/new" : "/entities",
+      priority: "medium",
+    });
+  }
+
+  const firstPropertyId = properties?.[0]?.id;
+  const { data: units } = useUnits(firstPropertyId ?? "");
+
+  if (
+    entityId &&
+    properties &&
+    properties.length > 0 &&
+    firstPropertyId &&
+    (!units || units.length === 0)
+  ) {
+    actions.push({
+      id: "onboarding-add-unit",
+      icon: "ClipboardList",
+      title: "Créez les lots de ce bien",
+      description:
+        "Ajoutez les lots (appartements, parkings, commerces) pour votre bien",
+      href: `/properties/${firstPropertyId}/units/new`,
       priority: "medium",
     });
   }
