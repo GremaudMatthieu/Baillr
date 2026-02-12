@@ -23,6 +23,7 @@ model OwnershipEntity {
 
   bankAccounts BankAccount[]
   properties   Property[]
+  tenants      Tenant[]
 
   @@map("ownership_entities")
   @@index([userId])
@@ -86,4 +87,29 @@ model BankAccount {
 
   @@map("bank_accounts")
   @@index([entityId])
+}
+
+model Tenant {
+  id                String   @id @default(uuid())
+  entityId          String   @map("entity_id")
+  userId            String   @map("user_id")
+  type              String   // 'individual' | 'company'
+  firstName         String   @map("first_name")
+  lastName          String   @map("last_name")
+  companyName       String?  @map("company_name")
+  siret             String?
+  email             String
+  phoneNumber       String?  @map("phone_number")
+  addressStreet     String?  @map("address_street")
+  addressPostalCode String?  @map("address_postal_code")
+  addressCity       String?  @map("address_city")
+  addressComplement String?  @map("address_complement")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  entity OwnershipEntity @relation(fields: [entityId], references: [id])
+
+  @@map("tenants")
+  @@index([entityId])
+  @@index([userId])
 }

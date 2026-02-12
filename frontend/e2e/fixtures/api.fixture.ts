@@ -58,6 +58,24 @@ interface CreateUnitParams {
   billableOptions?: { label: string; amountCents: number }[];
 }
 
+interface RegisterTenantParams {
+  entityId: string;
+  id?: string;
+  type?: 'individual' | 'company';
+  firstName: string;
+  lastName: string;
+  companyName?: string;
+  siret?: string;
+  email: string;
+  phoneNumber?: string;
+  address?: {
+    street?: string;
+    postalCode?: string;
+    city?: string;
+    complement?: string;
+  };
+}
+
 export class ApiHelper {
   private request: APIRequestContext;
   private token: string;
@@ -272,6 +290,60 @@ export class ApiHelper {
     }
     throw new Error(
       `Timed out waiting for ${expectedCount} units (${timeoutMs}ms)`,
+    );
+  }
+
+  async registerTenant(params: RegisterTenantParams) {
+    const id = params.id ?? randomUUID();
+    const response = await this.request.post(
+      `${API_BASE}/api/entities/${params.entityId}/tenants`,
+      {
+        headers: this.headers(),
+        data: {
+          id,
+          type: params.type ?? 'individual',
+          firstName: params.firstName,
+          lastName: params.lastName,
+          companyName: params.companyName,
+          siret: params.siret,
+          email: params.email,
+          phoneNumber: params.phoneNumber,
+          address: params.address,
+        },
+      },
+    );
+    if (!response.ok()) {
+      throw new Error(
+        `Failed to register tenant: ${response.status()} ${await response.text()}`,
+      );
+    }
+    return id;
+  }
+
+  async getTenants(entityId: string) {
+    const response = await this.request.get(
+      `${API_BASE}/api/entities/${entityId}/tenants`,
+      { headers: this.headers() },
+    );
+    if (!response.ok()) {
+      throw new Error(`Failed to get tenants: ${response.status()}`);
+    }
+    return (await response.json()) as { data: Record<string, unknown>[] };
+  }
+
+  async waitForTenantCount(
+    entityId: string,
+    expectedCount: number,
+    timeoutMs = 5000,
+  ) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      const { data } = await this.getTenants(entityId);
+      if (data.length >= expectedCount) return data;
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    throw new Error(
+      `Timed out waiting for ${expectedCount} tenants (${timeoutMs}ms)`,
     );
   }
 

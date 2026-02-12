@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
-import { Building2, ClipboardList, Landmark, Plus, ArrowRight } from "lucide-react";
+import { Building2, ClipboardList, Landmark, Plus, ArrowRight, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -16,12 +16,14 @@ import { useCurrentEntity } from "@/hooks/use-current-entity";
 import { useBankAccounts } from "@/hooks/use-bank-accounts";
 import { useProperties } from "@/hooks/use-properties";
 import { useUnits } from "@/hooks/use-units";
+import { useTenants } from "@/hooks/use-tenants";
 
 const iconMap: Record<string, LucideIcon> = {
   Plus,
   Building2,
   ClipboardList,
   Landmark,
+  Users,
 };
 
 export interface ActionItem {
@@ -78,6 +80,7 @@ function useOnboardingActions(): ActionItem[] {
 
   const firstPropertyId = properties?.[0]?.id;
   const { data: units } = useUnits(firstPropertyId ?? "");
+  const { data: tenants } = useTenants(entityId ?? "");
 
   if (
     entityId &&
@@ -93,6 +96,25 @@ function useOnboardingActions(): ActionItem[] {
       description:
         "Ajoutez les lots (appartements, parkings, commerces) pour votre bien",
       href: `/properties/${firstPropertyId}/units/new`,
+      priority: "medium",
+    });
+  }
+
+  if (
+    entityId &&
+    properties &&
+    properties.length > 0 &&
+    units &&
+    units.length > 0 &&
+    (!tenants || tenants.length === 0)
+  ) {
+    actions.push({
+      id: "onboarding-register-tenant",
+      icon: "Users",
+      title: "Enregistrez vos locataires",
+      description:
+        "Ajoutez vos locataires pour pouvoir créer des baux et gérer vos locations",
+      href: "/tenants/new",
       priority: "medium",
     });
   }

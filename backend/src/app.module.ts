@@ -6,8 +6,10 @@ import { EventStoreModule } from './infrastructure/eventstore/eventstore.module'
 import { AuthModule } from './infrastructure/auth/auth.module';
 import { ClerkAuthGuard } from './infrastructure/auth/clerk-auth.guard';
 import { PortfolioModule } from './portfolio/portfolio.module';
+import { TenancyModule } from './tenancy/tenancy.module';
 import { EntityPresentationModule } from './presentation/entity/entity-presentation.module';
 import { PropertyPresentationModule } from './presentation/property/property-presentation.module';
+import { TenantPresentationModule } from './presentation/tenant/tenant-presentation.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -20,8 +22,10 @@ import { AppService } from './app.service';
     EventStoreModule,
     AuthModule,
     PortfolioModule,
+    TenancyModule,
     EntityPresentationModule,
     PropertyPresentationModule,
+    TenantPresentationModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ClerkAuthGuard }],

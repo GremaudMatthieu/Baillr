@@ -25,6 +25,10 @@ vi.mock("@/hooks/use-units", () => ({
   useUnits: () => ({ data: undefined }),
 }));
 
+vi.mock("@/hooks/use-tenants", () => ({
+  useTenants: () => ({ data: undefined }),
+}));
+
 describe("ActionFeed", () => {
   it("should display section heading", () => {
     renderWithProviders(<ActionFeed actions={[]} />);

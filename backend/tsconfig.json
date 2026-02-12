@@ -17,7 +17,8 @@
     "paths": {
       "@shared/*": ["src/shared/*"],
       "@infrastructure/*": ["src/infrastructure/*"],
-      "@portfolio/*": ["src/portfolio/*"]
+      "@portfolio/*": ["src/portfolio/*"],
+      "@tenancy/*": ["src/tenancy/*"]
     },
     "incremental": true,
     "skipLibCheck": true,
