@@ -44,6 +44,7 @@ vi.mock("@/hooks/use-leases", () => ({
             referenceQuarter: null,
             referenceYear: null,
             baseIndexValue: null,
+            endDate: null,
             createdAt: "2026-01-01T00:00:00Z",
             updatedAt: "2026-01-01T00:00:00Z",
           },
@@ -55,6 +56,10 @@ vi.mock("@/hooks/use-leases", () => ({
     isPending: false,
   }),
   useConfigureRevisionParameters: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useTerminateLease: () => ({
     mutate: vi.fn(),
     isPending: false,
   }),

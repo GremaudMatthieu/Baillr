@@ -46,12 +46,23 @@ function LeaseCard({
               <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
               Début : {formatDate(lease.startDate)}
             </p>
+            {lease.endDate && (
+              <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
+                Fin : {formatDate(lease.endDate)}
+              </p>
+            )}
             <p className="flex items-center gap-1 text-sm text-muted-foreground">
               <Euro className="h-3.5 w-3.5" aria-hidden="true" />
               {formatRent(lease.rentAmountCents)} / mois
             </p>
           </div>
-          <Badge variant="secondary">{lease.revisionIndexType}</Badge>
+          <div className="flex flex-col items-end gap-1">
+            <Badge variant="secondary">{lease.revisionIndexType}</Badge>
+            {lease.endDate && (
+              <Badge variant="destructive">Résilié</Badge>
+            )}
+          </div>
         </CardContent>
       </Card>
     </Link>

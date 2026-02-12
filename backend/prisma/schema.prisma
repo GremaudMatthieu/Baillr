@@ -138,6 +138,7 @@ model Lease {
   referenceQuarter     String?  @map("reference_quarter")
   referenceYear        Int?     @map("reference_year")
   baseIndexValue       Float?   @map("base_index_value")
+  endDate              DateTime? @map("end_date")
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")
 

@@ -307,4 +307,68 @@ describe('LeaseProjection', () => {
       },
     });
   });
+
+  it('should update endDate on LeaseTerminated event', async () => {
+    projection.onModuleInit();
+
+    dataHandler({
+      event: {
+        type: 'LeaseTerminated',
+        data: {
+          leaseId: 'lease-1',
+          endDate: '2026-06-15T00:00:00.000Z',
+        },
+      },
+    });
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(mockPrisma.lease.updateMany).toHaveBeenCalledWith({
+      where: { id: 'lease-1' },
+      data: {
+        endDate: new Date('2026-06-15T00:00:00.000Z'),
+      },
+    });
+  });
+
+  it('should be idempotent for LeaseTerminated', async () => {
+    projection.onModuleInit();
+
+    dataHandler({
+      event: {
+        type: 'LeaseTerminated',
+        data: { leaseId: 'lease-1', endDate: '2026-06-15T00:00:00.000Z' },
+      },
+    });
+    await new Promise((r) => setTimeout(r, 10));
+
+    dataHandler({
+      event: {
+        type: 'LeaseTerminated',
+        data: { leaseId: 'lease-1', endDate: '2026-06-15T00:00:00.000Z' },
+      },
+    });
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(mockPrisma.lease.updateMany).toHaveBeenCalledTimes(2);
+  });
+
+  it('should skip LeaseTerminated when lease not found', async () => {
+    mockPrisma.lease.updateMany.mockResolvedValue({ count: 0 });
+    projection.onModuleInit();
+
+    dataHandler({
+      event: {
+        type: 'LeaseTerminated',
+        data: { leaseId: 'nonexistent', endDate: '2026-06-15T00:00:00.000Z' },
+      },
+    });
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(mockPrisma.lease.updateMany).toHaveBeenCalledWith({
+      where: { id: 'nonexistent' },
+      data: { endDate: new Date('2026-06-15T00:00:00.000Z') },
+    });
+  });
 });

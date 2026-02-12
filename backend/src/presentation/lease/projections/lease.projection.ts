@@ -5,6 +5,7 @@ import { START, streamNameFilter } from '@kurrent/kurrentdb-client';
 import type { LeaseCreatedData } from '@tenancy/lease/events/lease-created.event';
 import type { LeaseBillingLinesConfiguredData } from '@tenancy/lease/events/lease-billing-lines-configured.event';
 import type { LeaseRevisionParametersConfiguredData } from '@tenancy/lease/events/lease-revision-parameters-configured.event';
+import type { LeaseTerminatedData } from '@tenancy/lease/events/lease-terminated.event';
 
 @Injectable()
 export class LeaseProjection implements OnModuleInit {
@@ -63,12 +64,15 @@ export class LeaseProjection implements OnModuleInit {
             data as unknown as LeaseRevisionParametersConfiguredData,
           );
           break;
+        case 'LeaseTerminated':
+          await this.onLeaseTerminated(data as unknown as LeaseTerminatedData);
+          break;
         default:
           break;
       }
     } catch (error) {
       this.logger.error(
-        `Failed to project ${eventType} for lease ${(data as { id: string }).id}: ${(error as Error).message}`,
+        `Failed to project ${eventType} for lease ${(data as Record<string, unknown>).leaseId ?? (data as Record<string, unknown>).id}: ${(error as Error).message}`,
         (error as Error).stack,
       );
     }
@@ -132,8 +136,20 @@ export class LeaseProjection implements OnModuleInit {
       );
       return;
     }
-    this.logger.log(
-      `Projected LeaseRevisionParametersConfigured for ${data.leaseId}`,
-    );
+    this.logger.log(`Projected LeaseRevisionParametersConfigured for ${data.leaseId}`);
+  }
+
+  private async onLeaseTerminated(data: LeaseTerminatedData): Promise<void> {
+    const updated = await this.prisma.lease.updateMany({
+      where: { id: data.leaseId },
+      data: {
+        endDate: new Date(data.endDate),
+      },
+    });
+    if (updated.count === 0) {
+      this.logger.warn(`Lease ${data.leaseId} not found for LeaseTerminated — skipping projection`);
+      return;
+    }
+    this.logger.log(`Projected LeaseTerminated for ${data.leaseId}`);
   }
 }

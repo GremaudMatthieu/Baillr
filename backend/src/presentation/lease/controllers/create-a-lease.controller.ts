@@ -35,26 +35,16 @@ export class CreateALeaseController {
     @Body() dto: CreateALeaseDto,
     @CurrentUser() userId: string,
   ): Promise<void> {
-    // 1. Verify entity ownership
-    const entity = await this.entityFinder.findByIdAndUserId(entityId, userId);
-    if (!entity) {
+    const [entity, tenant, unit, existingLease] = await Promise.all([
+      this.entityFinder.findByIdAndUserId(entityId, userId),
+      this.tenantFinder.findByIdAndUser(dto.tenantId, userId),
+      this.unitFinder.findByIdAndUser(dto.unitId, userId),
+      this.leaseFinder.findByUnitId(dto.unitId, userId),
+    ]);
+
+    if (!entity || !tenant || tenant.entityId !== entityId || !unit) {
       throw new UnauthorizedException();
     }
-
-    // 2. Verify tenant belongs to entity
-    const tenant = await this.tenantFinder.findByIdAndUser(dto.tenantId, userId);
-    if (!tenant || tenant.entityId !== entityId) {
-      throw new UnauthorizedException();
-    }
-
-    // 3. Verify unit belongs to entity (via property)
-    const unit = await this.unitFinder.findByIdAndUser(dto.unitId, userId);
-    if (!unit) {
-      throw new UnauthorizedException();
-    }
-
-    // 4. Verify unit is vacant (no active lease)
-    const existingLease = await this.leaseFinder.findByUnitId(dto.unitId, userId);
     if (existingLease) {
       throw new ConflictException('Unit already has an active lease');
     }

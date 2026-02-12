@@ -106,7 +106,7 @@ test.describe('Lease management', () => {
     await page.getByRole('option', { name: /Apt Lease/ }).click();
 
     // Fill start date
-    await page.getByLabel('Date de début').fill('2026-03-01');
+    await page.getByLabel('Date de début').fill('2025-01-01');
 
     // Fill rent
     await page.getByLabel('Loyer mensuel (€)').fill('630');
@@ -249,5 +249,54 @@ test.describe('Lease management', () => {
     await expect(
       page.getByRole('button', { name: /Modifier/i }),
     ).toBeVisible();
+  });
+
+  test('6.7 — terminate a lease from the detail page', async ({ page }) => {
+    test.skip(!entityId, 'Requires seed data');
+
+    // Navigate to leases list
+    await page.goto('/leases');
+    await expect(page.getByText('Pierre Durand')).toBeVisible({ timeout: 10_000 });
+
+    // Click on the lease to go to detail page
+    await page.getByText('Pierre Durand').first().click();
+    await page.waitForURL(/\/leases\/[\w-]+/);
+
+    // Verify the Résiliation section is present
+    await expect(page.getByText('Résiliation')).toBeVisible();
+
+    // Click "Résilier ce bail" button
+    await page.getByRole('button', { name: /Résilier ce bail/i }).click();
+
+    // Dialog should open
+    await expect(page.getByLabelText('Date de fin')).toBeVisible();
+
+    // Fill the end date
+    await page.getByLabelText('Date de fin').fill('2024-01-01');
+
+    // Click "Résilier" button in dialog
+    await page.getByRole('button', { name: 'Résilier' }).click();
+
+    // After termination, the badge "Résilié" should appear
+    await expect(page.getByText('Résilié')).toBeVisible({ timeout: 10_000 });
+
+    // The Résiliation section should disappear
+    await expect(page.getByText('Résiliation')).not.toBeVisible();
+
+    // End date should be displayed
+    await expect(page.getByText('Date de fin')).toBeVisible();
+  });
+
+  test('6.8 — verify unit becomes vacant on dashboard after termination', async ({ page }) => {
+    test.skip(!entityId, 'Requires entity from seed test');
+
+    await page.goto('/dashboard');
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Tableau de bord' }),
+    ).toBeVisible();
+
+    // The unit should now show as "vacant" since the lease was terminated
+    const tile = page.getByRole('gridcell', { name: /Apt Lease.*vacant/ });
+    await expect(tile).toBeVisible({ timeout: 10_000 });
   });
 });

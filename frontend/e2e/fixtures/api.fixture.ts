@@ -471,6 +471,21 @@ export class ApiHelper {
     );
   }
 
+  async terminateLease(leaseId: string, endDate: string) {
+    const response = await this.request.put(
+      `${API_BASE}/api/leases/${leaseId}/terminate`,
+      {
+        headers: this.headers(),
+        data: { endDate },
+      },
+    );
+    if (!response.ok()) {
+      throw new Error(
+        `Failed to terminate lease: ${response.status()} ${await response.text()}`,
+      );
+    }
+  }
+
   getCreatedEntityIds() {
     return [...this.createdEntityIds];
   }

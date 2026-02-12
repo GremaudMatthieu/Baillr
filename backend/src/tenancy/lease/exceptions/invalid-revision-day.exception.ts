@@ -6,21 +6,14 @@ export class InvalidRevisionDayException extends DomainException {
   }
 
   static invalidDay(value: number): InvalidRevisionDayException {
-    return new InvalidRevisionDayException(
-      `Revision day must be between 1 and 31, got: ${value}`,
-    );
+    return new InvalidRevisionDayException(`Revision day must be between 1 and 31, got: ${value}`);
   }
 
   static notInteger(): InvalidRevisionDayException {
     return new InvalidRevisionDayException('Revision day must be an integer');
   }
 
-  static invalidDayForMonth(
-    day: number,
-    month: number,
-  ): InvalidRevisionDayException {
-    return new InvalidRevisionDayException(
-      `Day ${day} is not valid for month ${month}`,
-    );
+  static invalidDayForMonth(day: number, month: number): InvalidRevisionDayException {
+    return new InvalidRevisionDayException(`Day ${day} is not valid for month ${month}`);
   }
 }

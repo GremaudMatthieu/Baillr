@@ -47,7 +47,8 @@ describe('ConfigureLeaseRevisionParametersController', () => {
     expect(result).toBeUndefined();
     expect(leaseFinder.findByIdAndUser).toHaveBeenCalledWith(leaseId, userId);
 
-    const command = commandBus.execute.mock.calls[0]?.[0] as ConfigureLeaseRevisionParametersCommand;
+    const command = commandBus.execute.mock
+      .calls[0]?.[0] as ConfigureLeaseRevisionParametersCommand;
     expect(command).toBeInstanceOf(ConfigureLeaseRevisionParametersCommand);
     expect(command.leaseId).toBe(leaseId);
     expect(command.revisionDay).toBe(15);
@@ -77,7 +78,8 @@ describe('ConfigureLeaseRevisionParametersController', () => {
 
     await controller.handle(leaseId, dtoWithNull, userId);
 
-    const command = commandBus.execute.mock.calls[0]?.[0] as ConfigureLeaseRevisionParametersCommand;
+    const command = commandBus.execute.mock
+      .calls[0]?.[0] as ConfigureLeaseRevisionParametersCommand;
     expect(command.baseIndexValue).toBeNull();
   });
 
@@ -92,7 +94,8 @@ describe('ConfigureLeaseRevisionParametersController', () => {
 
     await controller.handle(leaseId, dtoWithExplicitNull, userId);
 
-    const command = commandBus.execute.mock.calls[0]?.[0] as ConfigureLeaseRevisionParametersCommand;
+    const command = commandBus.execute.mock
+      .calls[0]?.[0] as ConfigureLeaseRevisionParametersCommand;
     expect(command.baseIndexValue).toBeNull();
   });
 
@@ -101,7 +104,8 @@ describe('ConfigureLeaseRevisionParametersController', () => {
       commandBus.execute.mockClear();
       await controller.handle(leaseId, { ...validDto, referenceQuarter: quarter }, userId);
 
-      const command = commandBus.execute.mock.calls[0]?.[0] as ConfigureLeaseRevisionParametersCommand;
+      const command = commandBus.execute.mock
+        .calls[0]?.[0] as ConfigureLeaseRevisionParametersCommand;
       expect(command.referenceQuarter).toBe(quarter);
     }
   });

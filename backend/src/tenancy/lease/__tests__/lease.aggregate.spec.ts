@@ -5,6 +5,7 @@ import { LeaseAggregate } from '../lease.aggregate';
 import { LeaseCreated } from '../events/lease-created.event';
 import { LeaseBillingLinesConfigured } from '../events/lease-billing-lines-configured.event';
 import { LeaseRevisionParametersConfigured } from '../events/lease-revision-parameters-configured.event';
+import { LeaseTerminated } from '../events/lease-terminated.event';
 import { DomainException } from '@shared/exceptions/domain.exception';
 
 function createAggregate(id = 'lease-123'): LeaseAggregate {
@@ -334,9 +335,9 @@ describe('LeaseAggregate', () => {
 
     it('should reject configuring before lease creation', () => {
       const aggregate = createAggregate();
-      expect(() =>
-        aggregate.configureRevisionParameters(15, 3, 'Q2', 2025, 142.06),
-      ).toThrow(DomainException);
+      expect(() => aggregate.configureRevisionParameters(15, 3, 'Q2', 2025, 142.06)).toThrow(
+        DomainException,
+      );
     });
 
     it('should skip event when parameters unchanged (no-op)', () => {
@@ -370,30 +371,30 @@ describe('LeaseAggregate', () => {
 
     it('should reject invalid revision day', () => {
       const aggregate = createExistingLease();
-      expect(() =>
-        aggregate.configureRevisionParameters(0, 3, 'Q2', 2025, 142.06),
-      ).toThrow(DomainException);
+      expect(() => aggregate.configureRevisionParameters(0, 3, 'Q2', 2025, 142.06)).toThrow(
+        DomainException,
+      );
     });
 
     it('should reject invalid reference quarter', () => {
       const aggregate = createExistingLease();
-      expect(() =>
-        aggregate.configureRevisionParameters(15, 3, 'Q5', 2025, 142.06),
-      ).toThrow(DomainException);
+      expect(() => aggregate.configureRevisionParameters(15, 3, 'Q5', 2025, 142.06)).toThrow(
+        DomainException,
+      );
     });
 
     it('should reject day 31 for month with only 30 days (April)', () => {
       const aggregate = createExistingLease();
-      expect(() =>
-        aggregate.configureRevisionParameters(31, 4, 'Q2', 2025, null),
-      ).toThrow('Day 31 is not valid for month 4');
+      expect(() => aggregate.configureRevisionParameters(31, 4, 'Q2', 2025, null)).toThrow(
+        'Day 31 is not valid for month 4',
+      );
     });
 
     it('should reject day 30 for February', () => {
       const aggregate = createExistingLease();
-      expect(() =>
-        aggregate.configureRevisionParameters(30, 2, 'Q1', 2025, null),
-      ).toThrow('Day 30 is not valid for month 2');
+      expect(() => aggregate.configureRevisionParameters(30, 2, 'Q1', 2025, null)).toThrow(
+        'Day 30 is not valid for month 2',
+      );
     });
 
     it('should accept day 28 for February', () => {
@@ -410,6 +411,73 @@ describe('LeaseAggregate', () => {
 
       const events = aggregate.getUncommittedEvents();
       expect(events).toHaveLength(1);
+    });
+  });
+
+  describe('terminate', () => {
+    function createExistingLease(id = 'lease-123'): LeaseAggregate {
+      const aggregate = createAggregate(id);
+      aggregate.create(
+        validParams.userId,
+        validParams.entityId,
+        validParams.tenantId,
+        validParams.unitId,
+        validParams.startDate,
+        validParams.rentAmountCents,
+        validParams.securityDepositCents,
+        validParams.monthlyDueDate,
+        validParams.revisionIndexType,
+      );
+      aggregate.commit();
+      return aggregate;
+    }
+
+    it('should terminate a lease with valid end date', () => {
+      const aggregate = createExistingLease();
+      aggregate.terminate('2026-06-15T00:00:00.000Z');
+
+      const events = aggregate.getUncommittedEvents();
+      expect(events).toHaveLength(1);
+      expect(events[0]).toBeInstanceOf(LeaseTerminated);
+
+      const event = events[0] as LeaseTerminated;
+      expect(event.data.leaseId).toBe('lease-123');
+      expect(event.data.endDate).toBe('2026-06-15T00:00:00.000Z');
+    });
+
+    it('should accept end date equal to start date', () => {
+      const aggregate = createExistingLease();
+      aggregate.terminate(validParams.startDate);
+
+      const events = aggregate.getUncommittedEvents();
+      expect(events).toHaveLength(1);
+    });
+
+    it('should reject termination before lease creation', () => {
+      const aggregate = createAggregate();
+      expect(() => aggregate.terminate('2026-06-15T00:00:00.000Z')).toThrow(DomainException);
+      expect(() => aggregate.terminate('2026-06-15T00:00:00.000Z')).toThrow(
+        'Lease has not been created yet',
+      );
+    });
+
+    it('should reject termination when already terminated', () => {
+      const aggregate = createExistingLease();
+      aggregate.terminate('2026-06-15T00:00:00.000Z');
+      aggregate.commit();
+
+      expect(() => aggregate.terminate('2026-07-01T00:00:00.000Z')).toThrow(DomainException);
+      expect(() => aggregate.terminate('2026-07-01T00:00:00.000Z')).toThrow(
+        'Ce bail est déjà résilié',
+      );
+    });
+
+    it('should reject end date before start date', () => {
+      const aggregate = createExistingLease();
+      expect(() => aggregate.terminate('2026-01-01T00:00:00.000Z')).toThrow(DomainException);
+      expect(() => aggregate.terminate('2026-01-01T00:00:00.000Z')).toThrow(
+        'La date de fin ne peut pas être antérieure à la date de début',
+      );
     });
   });
 

@@ -36,6 +36,7 @@ const baseLease: LeaseData = {
   referenceQuarter: null,
   referenceYear: null,
   baseIndexValue: null,
+  endDate: null,
   createdAt: "2026-01-01T00:00:00Z",
   updatedAt: "2026-01-01T00:00:00Z",
 };
@@ -54,6 +55,7 @@ let mockLeaseLoading = false;
 let mockLeaseError = false;
 const mockConfigureMutate = vi.fn();
 const mockConfigureBillingMutate = vi.fn();
+const mockTerminateMutate = vi.fn();
 
 vi.mock("@/hooks/use-leases", () => ({
   useLease: () => ({
@@ -68,6 +70,11 @@ vi.mock("@/hooks/use-leases", () => ({
   useConfigureRevisionParameters: () => ({
     mutate: mockConfigureMutate,
     isPending: false,
+  }),
+  useTerminateLease: () => ({
+    mutate: mockTerminateMutate,
+    isPending: false,
+    error: null,
   }),
 }));
 
@@ -189,5 +196,63 @@ describe("LeaseDetailContent — Revision Parameters", () => {
         screen.getByText("Configurer les paramètres de révision"),
       ).toBeInTheDocument();
     });
+  });
+});
+
+describe("LeaseDetailContent — Termination", () => {
+  beforeEach(() => {
+    mockLeaseData = undefined;
+    mockLeaseLoading = false;
+    mockLeaseError = false;
+    mockTerminateMutate.mockReset();
+  });
+
+  it("should show Résiliation section when lease is active", () => {
+    mockLeaseData = baseLease;
+    renderWithProviders(<LeaseDetailContent leaseId="lease-1" />);
+
+    expect(screen.getByText("Résiliation")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Résilier ce bail/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("should show end date in Résiliation section when lease is terminated", () => {
+    mockLeaseData = { ...baseLease, endDate: "2026-06-15T00:00:00.000Z" };
+    renderWithProviders(<LeaseDetailContent leaseId="lease-1" />);
+
+    expect(screen.getByText("Résiliation")).toBeInTheDocument();
+    expect(screen.getByText("Date de fin")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Résilier ce bail/i })).not.toBeInTheDocument();
+  });
+
+  it("should show Résilié badge when lease is terminated", () => {
+    mockLeaseData = { ...baseLease, endDate: "2026-06-15T00:00:00.000Z" };
+    renderWithProviders(<LeaseDetailContent leaseId="lease-1" />);
+
+    const badges = screen.getAllByText("Résilié");
+    expect(badges).toHaveLength(2); // header badge + Résiliation section badge
+  });
+
+  it("should show end date when lease is terminated", () => {
+    mockLeaseData = { ...baseLease, endDate: "2026-06-15T00:00:00.000Z" };
+    renderWithProviders(<LeaseDetailContent leaseId="lease-1" />);
+
+    expect(screen.getByText("Date de fin")).toBeInTheDocument();
+  });
+
+  it("should open terminate dialog when button is clicked", async () => {
+    const user = userEvent.setup();
+    mockLeaseData = baseLease;
+    renderWithProviders(<LeaseDetailContent leaseId="lease-1" />);
+
+    await user.click(
+      screen.getByRole("button", { name: /Résilier ce bail/i }),
+    );
+
+    expect(screen.getByLabelText("Date de fin")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Résilier" }),
+    ).toBeInTheDocument();
   });
 });

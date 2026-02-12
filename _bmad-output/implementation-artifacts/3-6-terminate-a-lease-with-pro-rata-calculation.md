@@ -1,6 +1,6 @@
 # Story 3.6: Terminate a Lease with Pro-Rata Calculation
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -24,54 +24,54 @@ So that final billing is accurate when a tenant leaves (FR16, FR17).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create LeaseEndDate VO and termination domain infrastructure (AC: 1, 7, 8)
-  - [ ] 1.1: Create `LeaseEndDate` VO — `lease-end-date.ts` with validation: ISO date string, `static fromString()`, `static empty()`, `get isEmpty(): boolean`, `toISOString()`, `get value(): Date`
-  - [ ] 1.2: Create `InvalidLeaseEndDateException` — `.required()`, `.invalid()`, `.beforeStartDate()`
-  - [ ] 1.3: Create `LeaseAlreadyTerminatedException` — `.create()` with DomainException base
-  - [ ] 1.4: Create `LeaseTerminated` event with fields: `{ leaseId, endDate }`
-  - [ ] 1.5: Create `TerminateALeaseCommand` with payload: `{ leaseId, endDate }`
-  - [ ] 1.6: Create `TerminateALeaseHandler` — load aggregate, call `terminate()`, save. ZERO business logic in handler.
-  - [ ] 1.7: Extend `LeaseAggregate` — add `endDate: LeaseEndDate | null = null` + `terminated = false` state fields, add `terminate(endDate: string)` method with guards (not created → LeaseNotCreatedException, already terminated → LeaseAlreadyTerminatedException, endDate < startDate → InvalidLeaseEndDateException.beforeStartDate), handle `LeaseTerminated` event replay
-  - [ ] 1.8: Write aggregate + handler + VO unit tests
+- [x] Task 1: Create LeaseEndDate VO and termination domain infrastructure (AC: 1, 7, 8)
+  - [x]1.1: Create `LeaseEndDate` VO — `lease-end-date.ts` with validation: ISO date string, `static fromString()`, `static empty()`, `get isEmpty(): boolean`, `toISOString()`, `get value(): Date`
+  - [x]1.2: Create `InvalidLeaseEndDateException` — `.required()`, `.invalid()`, `.beforeStartDate()`
+  - [x]1.3: Create `LeaseAlreadyTerminatedException` — `.create()` with DomainException base
+  - [x]1.4: Create `LeaseTerminated` event with fields: `{ leaseId, endDate }`
+  - [x]1.5: Create `TerminateALeaseCommand` with payload: `{ leaseId, endDate }`
+  - [x]1.6: Create `TerminateALeaseHandler` — load aggregate, call `terminate()`, save. ZERO business logic in handler.
+  - [x]1.7: Extend `LeaseAggregate` — add `endDate: LeaseEndDate | null = null` + `terminated = false` state fields, add `terminate(endDate: string)` method with guards (not created → LeaseNotCreatedException, already terminated → LeaseAlreadyTerminatedException, endDate < startDate → InvalidLeaseEndDateException.beforeStartDate), handle `LeaseTerminated` event replay
+  - [x]1.8: Write aggregate + handler + VO unit tests
 
-- [ ] Task 2: Create pro-rata calculation utility (AC: 3, 4)
-  - [ ] 2.1: Create `pro-rata.ts` utility at `backend/src/tenancy/lease/pro-rata.ts` with function `calculateProRataAmountCents(amountCents: number, daysInPeriod: number, totalDaysInMonth: number): number` — uses `Math.floor((daysInPeriod * amountCents) / totalDaysInMonth)`
-  - [ ] 2.2: Create helper `daysInMonth(year: number, month: number): number` — `new Date(year, month, 0).getDate()`
-  - [ ] 2.3: Create helper `calculateOccupiedDays(startDate: Date, endDate: Date | null, year: number, month: number): number` — compute days of lease overlap within given month
-  - [ ] 2.4: Write comprehensive pro-rata unit tests (full month, start mid-month, end mid-month, start+end same month, February leap year, 0 days edge case)
+- [x] Task 2: Create pro-rata calculation utility (AC: 3, 4)
+  - [x]2.1: Create `pro-rata.ts` utility at `backend/src/tenancy/lease/pro-rata.ts` with function `calculateProRataAmountCents(amountCents: number, daysInPeriod: number, totalDaysInMonth: number): number` — uses `Math.floor((daysInPeriod * amountCents) / totalDaysInMonth)`
+  - [x]2.2: Create helper `daysInMonth(year: number, month: number): number` — `new Date(year, month, 0).getDate()`
+  - [x]2.3: Create helper `calculateOccupiedDays(startDate: Date, endDate: Date | null, year: number, month: number): number` — compute days of lease overlap within given month
+  - [x]2.4: Write comprehensive pro-rata unit tests (full month, start mid-month, end mid-month, start+end same month, February leap year, 0 days edge case)
 
-- [ ] Task 3: Create Prisma migration and projection update (AC: 1, 5)
-  - [ ] 3.1: Add `endDate DateTime? @map("end_date")` column to Prisma Lease model
-  - [ ] 3.2: Run migration
-  - [ ] 3.3: Update `lease.projection.ts` — handle `LeaseTerminated` event (update `endDate` column in Prisma)
-  - [ ] 3.4: Write projection tests for `LeaseTerminated` event
+- [x] Task 3: Create Prisma migration and projection update (AC: 1, 5)
+  - [x]3.1: Add `endDate DateTime? @map("end_date")` column to Prisma Lease model
+  - [x]3.2: Run migration
+  - [x]3.3: Update `lease.projection.ts` — handle `LeaseTerminated` event (update `endDate` column in Prisma)
+  - [x]3.4: Write projection tests for `LeaseTerminated` event
 
-- [ ] Task 4: Create presentation layer (AC: 1, 7, 8)
-  - [ ] 4.1: Create `TerminateALeaseDto` with class-validator decorators: `@IsString() @IsNotEmpty() @IsDateString() endDate`
-  - [ ] 4.2: Create `TerminateALeaseController` — `PUT /api/leases/:id/terminate` (202 Accepted), with LeaseFinder authorization check
-  - [ ] 4.3: Write controller unit tests (success 202, unauthorized, validation errors, already terminated)
+- [x] Task 4: Create presentation layer (AC: 1, 7, 8)
+  - [x]4.1: Create `TerminateALeaseDto` with class-validator decorators: `@IsString() @IsNotEmpty() @IsDateString() endDate`
+  - [x]4.2: Create `TerminateALeaseController` — `PUT /api/leases/:id/terminate` (202 Accepted), with LeaseFinder authorization check
+  - [x]4.3: Write controller unit tests (success 202, unauthorized, validation errors, already terminated)
 
-- [ ] Task 5: Create frontend API client, hooks, and termination form (AC: 5, 6, 9)
-  - [ ] 5.1: Update `LeaseData` interface in `leases-api.ts` — add `endDate: string | null`
-  - [ ] 5.2: Add `terminateLease(leaseId, payload)` to API client — `PUT /leases/:id/terminate`
-  - [ ] 5.3: Create `useTerminateLease(leaseId, entityId)` mutation hook with optimistic update + delayed invalidation of `["leases", leaseId]`, `["entities", entityId, "leases"]`, `["entities", entityId, "units"]`, `["entities"]`
-  - [ ] 5.4: Create `terminate-lease-schema.ts` — Zod schema: `endDate` (ISO date string, required)
-  - [ ] 5.5: Create `terminate-lease-dialog.tsx` — AlertDialog with date input for end date, confirmation text "Voulez-vous résilier ce bail ?", cancel/confirm buttons, pro-rata preview display
-  - [ ] 5.6: Write terminate-lease-dialog frontend tests
+- [x] Task 5: Create frontend API client, hooks, and termination form (AC: 5, 6, 9)
+  - [x]5.1: Update `LeaseData` interface in `leases-api.ts` — add `endDate: string | null`
+  - [x]5.2: Add `terminateLease(leaseId, payload)` to API client — `PUT /leases/:id/terminate`
+  - [x]5.3: Create `useTerminateLease(leaseId, entityId)` mutation hook with optimistic update + delayed invalidation of `["leases", leaseId]`, `["entities", entityId, "leases"]`, `["entities", entityId, "units"]`, `["entities"]`
+  - [x]5.4: Create `terminate-lease-schema.ts` — Zod schema: `endDate` (ISO date string, required)
+  - [x]5.5: Create `terminate-lease-dialog.tsx` — AlertDialog with date input for end date, confirmation text "Voulez-vous résilier ce bail ?", cancel/confirm buttons, pro-rata preview display
+  - [x]5.6: Write terminate-lease-dialog frontend tests
 
-- [ ] Task 6: Update lease detail page and list (AC: 2, 5, 6, 9)
-  - [ ] 6.1: Add "Résiliation" Card section to `LeaseDetailContent` — 2-state: not terminated (show "Résilier ce bail" button) / terminated (show end date display)
-  - [ ] 6.2: "Résilier ce bail" button opens `TerminateLeaseDialog` (AlertDialog pattern)
-  - [ ] 6.3: When terminated, display end date formatted as French date, with Badge "Résilié"
-  - [ ] 6.4: Update lease list to show "Résilié" Badge next to terminated leases (where `endDate !== null`)
-  - [ ] 6.5: Update UnitMosaic occupancy logic: filter out terminated leases (where `endDate !== null && new Date(endDate) <= new Date()`) from `occupiedUnitIds` Set
-  - [ ] 6.6: Write lease detail page frontend tests for termination section
-  - [ ] 6.7: Write unit mosaic test for terminated lease vacancy
+- [x] Task 6: Update lease detail page and list (AC: 2, 5, 6, 9)
+  - [x]6.1: Add "Résiliation" Card section to `LeaseDetailContent` — 2-state: not terminated (show "Résilier ce bail" button) / terminated (show end date display)
+  - [x]6.2: "Résilier ce bail" button opens `TerminateLeaseDialog` (AlertDialog pattern)
+  - [x]6.3: When terminated, display end date formatted as French date, with Badge "Résilié"
+  - [x]6.4: Update lease list to show "Résilié" Badge next to terminated leases (where `endDate !== null`)
+  - [x]6.5: Update UnitMosaic occupancy logic: filter out terminated leases (where `endDate !== null && new Date(endDate) <= new Date()`) from `occupiedUnitIds` Set
+  - [x]6.6: Write lease detail page frontend tests for termination section
+  - [x]6.7: Write unit mosaic test for terminated lease vacancy
 
-- [ ] Task 7: E2E tests (AC: 1, 2, 5, 9)
-  - [ ] 7.1: Add `terminateLease(leaseId, payload)` API fixture method
-  - [ ] 7.2: E2E: Terminate lease via UI → verify "Résilié" badge on detail page
-  - [ ] 7.3: E2E: Verify terminated lease unit returns to vacant (gray) on dashboard UnitMosaic
+- [x] Task 7: E2E tests (AC: 1, 2, 5, 9)
+  - [x]7.1: Add `terminateLease(leaseId, payload)` API fixture method
+  - [x]7.2: E2E: Terminate lease via UI → verify "Résilié" badge on detail page
+  - [x]7.3: E2E: Verify terminated lease unit returns to vacant (gray) on dashboard UnitMosaic
 
 ## Dev Notes
 
@@ -422,10 +422,79 @@ _bmad-output/implementation-artifacts/sprint-status.yaml
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+- Handler spec `nestjs-cqrx` ESM mock: added `jest.mock('nestjs-cqrx', ...)` line to `terminate-a-lease.handler.spec.ts`
+- Jest `--testPathPattern` deprecated in Jest 30 → used `--testPathPatterns`
+- Prisma generate required after schema change (endDate column)
+- Prettier lint --fix applied to `lease.module.ts` and `tenant.aggregate.spec.ts`
+- AlertDialog title collision in test: "Résilier le bail" appeared both as button text and dialog title → used button role assertion instead of text assertion
+
 ### Completion Notes List
 
+- All 7 tasks completed with 566 backend tests (78 suites) + 317 frontend tests (39 suites)
+- Pro-rata utility is a pure function utility for Story 4.1 consumption — NOT stored in lease
+- UnitMosaic and lease-form now filter terminated leases from occupied units
+- Lease list shows "Résilié" badge with end date
+- Lease detail shows termination Card section (active: button, terminated: date + badge)
+- E2E tests added: terminate via UI + verify dashboard vacancy
+
+### Change Log
+
+- Backend: LeaseEndDate VO, LeaseTerminated event, TerminateALeaseCommand/Handler, pro-rata utility, Prisma migration, projection update, controller + DTO
+- Frontend: useTerminateLease hook, TerminateLeaseDialog, terminate-lease-schema, lease-detail termination section, lease-list Résilié badge, UnitMosaic terminated lease filtering, lease-form vacant unit filtering
+- E2E: terminateLease API fixture, 2 new E2E tests (terminate + vacancy verification)
+
 ### File List
+
+**New files (17):**
+```
+backend/src/tenancy/lease/lease-end-date.ts
+backend/src/tenancy/lease/pro-rata.ts
+backend/src/tenancy/lease/events/lease-terminated.event.ts
+backend/src/tenancy/lease/exceptions/invalid-lease-end-date.exception.ts
+backend/src/tenancy/lease/exceptions/lease-already-terminated.exception.ts
+backend/src/tenancy/lease/commands/terminate-a-lease.command.ts
+backend/src/tenancy/lease/commands/terminate-a-lease.handler.ts
+backend/src/tenancy/lease/__tests__/lease-end-date.spec.ts
+backend/src/tenancy/lease/__tests__/pro-rata.spec.ts
+backend/src/tenancy/lease/__tests__/terminate-a-lease.handler.spec.ts
+backend/src/presentation/lease/controllers/terminate-a-lease.controller.ts
+backend/src/presentation/lease/dto/terminate-a-lease.dto.ts
+backend/src/presentation/lease/__tests__/terminate-a-lease.controller.spec.ts
+backend/prisma/migrations/20260212212143_add_end_date_to_lease/migration.sql
+frontend/src/components/features/leases/terminate-lease-dialog.tsx
+frontend/src/components/features/leases/terminate-lease-schema.ts
+frontend/src/components/features/leases/__tests__/terminate-lease-dialog.test.tsx
+```
+
+**Modified files (25):**
+```
+backend/prisma/schema.prisma
+backend/src/tenancy/lease/lease.aggregate.ts
+backend/src/tenancy/lease/lease.module.ts
+backend/src/tenancy/lease/__tests__/lease.aggregate.spec.ts
+backend/src/tenancy/lease/exceptions/lease-not-created.exception.ts
+backend/src/tenancy/lease/exceptions/invalid-base-index-value.exception.ts           (prettier)
+backend/src/tenancy/lease/exceptions/invalid-revision-day.exception.ts               (prettier)
+backend/src/tenancy/lease/__tests__/configure-lease-revision-parameters.handler.spec.ts (prettier)
+backend/src/tenancy/tenant/__tests__/tenant.aggregate.spec.ts                        (prettier)
+backend/src/presentation/lease/lease-presentation.module.ts
+backend/src/presentation/lease/projections/lease.projection.ts
+backend/src/presentation/lease/__tests__/lease.projection.spec.ts
+backend/src/presentation/lease/__tests__/configure-lease-revision-parameters.controller.spec.ts (prettier)
+frontend/src/lib/api/leases-api.ts
+frontend/src/hooks/use-leases.ts
+frontend/src/components/features/leases/lease-detail-content.tsx
+frontend/src/components/features/leases/__tests__/lease-detail-content.test.tsx
+frontend/src/components/features/leases/lease-form.tsx
+frontend/src/components/features/dashboard/unit-mosaic.tsx
+frontend/src/components/features/dashboard/__tests__/unit-mosaic-lease.test.tsx
+frontend/src/app/(auth)/leases/page.tsx
+frontend/src/app/(auth)/leases/[id]/__tests__/lease-detail-page.test.tsx
+frontend/src/app/(auth)/leases/__tests__/leases-page.test.tsx
+frontend/e2e/fixtures/api.fixture.ts
+frontend/e2e/leases.spec.ts
+```

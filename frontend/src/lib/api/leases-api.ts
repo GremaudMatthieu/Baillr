@@ -24,6 +24,7 @@ export interface LeaseData {
   referenceQuarter: string | null;
   referenceYear: number | null;
   baseIndexValue: number | null;
+  endDate: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -37,6 +38,18 @@ export interface CreateLeasePayload {
   securityDepositCents: number;
   monthlyDueDate: number;
   revisionIndexType: string;
+}
+
+export interface TerminateLeasePayload {
+  endDate: string;
+}
+
+export interface ConfigureRevisionParametersPayload {
+  revisionDay: number;
+  revisionMonth: number;
+  referenceQuarter: "Q1" | "Q2" | "Q3" | "Q4";
+  referenceYear: number;
+  baseIndexValue?: number | null;
 }
 
 export function useLeasesApi() {
@@ -78,6 +91,16 @@ export function useLeasesApi() {
       });
     },
 
+    async terminateLease(
+      leaseId: string,
+      payload: TerminateLeasePayload,
+    ): Promise<void> {
+      await fetchWithAuth(`/leases/${leaseId}/terminate`, getToken, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      });
+    },
+
     async configureRevisionParameters(
       leaseId: string,
       payload: ConfigureRevisionParametersPayload,
@@ -92,12 +115,4 @@ export function useLeasesApi() {
       );
     },
   };
-}
-
-export interface ConfigureRevisionParametersPayload {
-  revisionDay: number;
-  revisionMonth: number;
-  referenceQuarter: "Q1" | "Q2" | "Q3" | "Q4";
-  referenceYear: number;
-  baseIndexValue?: number | null;
 }

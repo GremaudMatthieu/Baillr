@@ -9,6 +9,7 @@ import {
   Hash,
   Settings,
   ClipboardEdit,
+  XCircle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ import {
   useLease,
   useConfigureBillingLines,
   useConfigureRevisionParameters,
+  useTerminateLease,
 } from "@/hooks/use-leases";
 import { useUnit } from "@/hooks/use-units";
 import { useTenant } from "@/hooks/use-tenants";
@@ -31,6 +33,7 @@ import { REVISION_INDEX_TYPE_LABELS } from "@/lib/constants/revision-index-types
 import { BILLING_LINE_TYPE_LABELS } from "@/lib/constants/billing-line-types";
 import { BillingLinesForm } from "./billing-lines-form";
 import { RevisionParametersForm } from "./revision-parameters-form";
+import { TerminateLeaseDialog } from "./terminate-lease-dialog";
 import type { RevisionParametersFormData } from "./revision-parameters-schema";
 import { REFERENCE_QUARTER_LABELS } from "@/lib/constants/reference-quarters";
 import { MONTH_LABELS } from "@/lib/constants/months";
@@ -61,6 +64,7 @@ export function LeaseDetailContent({ leaseId }: { leaseId: string }) {
   const [isEditingBillingLines, setIsEditingBillingLines] = useState(false);
   const [isEditingRevisionParameters, setIsEditingRevisionParameters] =
     useState(false);
+  const [isTerminateOpen, setIsTerminateOpen] = useState(false);
 
   const configureBillingLines = useConfigureBillingLines(
     leaseId,
@@ -71,6 +75,8 @@ export function LeaseDetailContent({ leaseId }: { leaseId: string }) {
     leaseId,
     lease?.entityId ?? "",
   );
+
+  const terminateLease = useTerminateLease(leaseId, lease?.entityId ?? "");
 
   if (isLoading) {
     return (
@@ -136,6 +142,15 @@ export function LeaseDetailContent({ leaseId }: { leaseId: string }) {
     });
   }
 
+  function handleTerminateConfirm(endDate: string) {
+    terminateLease.mutate(
+      { endDate },
+      { onSuccess: () => setIsTerminateOpen(false) },
+    );
+  }
+
+  const isTerminated = !!lease.endDate;
+
   return (
     <div>
       <div className="mb-6 flex items-center gap-3">
@@ -151,6 +166,9 @@ export function LeaseDetailContent({ leaseId }: { leaseId: string }) {
           Bail — {tenantName}
         </h1>
         <Badge variant="secondary">{lease.revisionIndexType}</Badge>
+        {isTerminated && (
+          <Badge variant="destructive">Résilié</Badge>
+        )}
       </div>
 
       <div className="max-w-2xl space-y-6">
@@ -212,6 +230,7 @@ export function LeaseDetailContent({ leaseId }: { leaseId: string }) {
                   lease.revisionIndexType}
               </p>
             </div>
+
           </CardContent>
         </Card>
 
@@ -438,7 +457,51 @@ export function LeaseDetailContent({ leaseId }: { leaseId: string }) {
             )}
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Résiliation</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isTerminated ? (
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Date de fin
+                  </p>
+                  <p className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                    {formatDate(lease.endDate!)}
+                  </p>
+                </div>
+                <Badge variant="destructive">Résilié</Badge>
+              </div>
+            ) : (
+              <div className="flex flex-col items-start gap-3">
+                <p className="text-sm text-muted-foreground">
+                  Mettre fin au bail et libérer le logement.
+                </p>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setIsTerminateOpen(true)}
+                >
+                  <XCircle className="mr-1 h-3 w-3" aria-hidden="true" />
+                  Résilier ce bail
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
+
+      <TerminateLeaseDialog
+        open={isTerminateOpen}
+        onOpenChange={setIsTerminateOpen}
+        onConfirm={handleTerminateConfirm}
+        isPending={terminateLease.isPending}
+        submitError={terminateLease.error?.message ?? null}
+      />
     </div>
   );
 }

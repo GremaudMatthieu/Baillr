@@ -34,6 +34,7 @@ const mockLeases: LeaseData[] = [
     referenceQuarter: null,
     referenceYear: null,
     baseIndexValue: null,
+    endDate: null,
     billingLines: [],
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-01-01T00:00:00Z",
@@ -54,6 +55,7 @@ const mockLeases: LeaseData[] = [
     referenceQuarter: null,
     referenceYear: null,
     baseIndexValue: null,
+    endDate: null,
     billingLines: [],
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-01-01T00:00:00Z",
@@ -213,5 +215,17 @@ describe("LeasesPage", () => {
 
     const unknownTenants = screen.getAllByText("Locataire inconnu");
     expect(unknownTenants).toHaveLength(2);
+  });
+
+  it("should show Résilié badge for terminated leases", () => {
+    mockLeasesData = [
+      { ...mockLeases[0], endDate: "2026-06-15T00:00:00.000Z" },
+      mockLeases[1],
+    ];
+    mockTenantsData = mockTenants;
+    renderWithProviders(<LeasesPage />);
+
+    expect(screen.getByText("Résilié")).toBeInTheDocument();
+    expect(screen.getByText(/Fin :/)).toBeInTheDocument();
   });
 });

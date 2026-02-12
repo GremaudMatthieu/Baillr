@@ -114,7 +114,12 @@ export function UnitMosaic({ entityId }: UnitMosaicProps) {
 
   const occupiedUnitIds = React.useMemo(() => {
     if (!leases) return new Set<string>();
-    return new Set(leases.map((l) => l.unitId));
+    const now = new Date();
+    return new Set(
+      leases
+        .filter((l) => !l.endDate || new Date(l.endDate) > now)
+        .map((l) => l.unitId),
+    );
   }, [leases]);
 
   if (isLoading) {

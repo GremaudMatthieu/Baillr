@@ -40,7 +40,12 @@ export function LeaseForm() {
 
   const vacantUnits = React.useMemo(() => {
     if (!units || !leases) return units ?? [];
-    const occupiedUnitIds = new Set(leases.map((l) => l.unitId));
+    const now = new Date();
+    const occupiedUnitIds = new Set(
+      leases
+        .filter((l) => !l.endDate || new Date(l.endDate) > now)
+        .map((l) => l.unitId),
+    );
     return units.filter((u) => !occupiedUnitIds.has(u.id));
   }, [units, leases]);
 

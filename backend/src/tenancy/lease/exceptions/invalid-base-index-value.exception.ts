@@ -10,6 +10,8 @@ export class InvalidBaseIndexValueException extends DomainException {
   }
 
   static tooManyDecimals(): InvalidBaseIndexValueException {
-    return new InvalidBaseIndexValueException('Base index value must have at most 3 decimal places');
+    return new InvalidBaseIndexValueException(
+      'Base index value must have at most 3 decimal places',
+    );
   }
 }

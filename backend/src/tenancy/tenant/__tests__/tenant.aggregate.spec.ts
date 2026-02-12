@@ -356,9 +356,9 @@ describe('TenantAggregate', () => {
       });
       companyAggregate.commit();
 
-      expect(() =>
-        companyAggregate.update('user_clerk_123', { companyName: null }),
-      ).toThrow('Company name is required for company tenants');
+      expect(() => companyAggregate.update('user_clerk_123', { companyName: null })).toThrow(
+        'Company name is required for company tenants',
+      );
     });
 
     it('should allow clearing companyName on an individual tenant', () => {

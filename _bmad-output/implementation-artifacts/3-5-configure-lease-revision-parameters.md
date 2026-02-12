@@ -1,6 +1,6 @@
 # Story 3.5: Configure Lease Revision Parameters
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

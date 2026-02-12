@@ -66,14 +66,14 @@ development_status:
   consolidation-retrospective: done
 
   # Epic 3: Tenant & Lease Management (6 stories)
-  epic-3: in-progress
+  epic-3: done
   3-1-register-tenants-with-contact-information: done
   3-2-track-tenant-insurance-with-expiry-alerts: done
   3-3-create-a-lease-linking-tenant-to-unit: done
-  3-4-configure-billing-lines-per-lease: review
+  3-4-configure-billing-lines-per-lease: done
   3-5-configure-lease-revision-parameters: done
-  3-6-terminate-a-lease-with-pro-rata-calculation: in-progress
-  epic-3-retrospective: optional
+  3-6-terminate-a-lease-with-pro-rata-calculation: done
+  epic-3-retrospective: done
 
   # Epic 4: Rent Call Generation & Email Sending (3 stories)
   epic-4: backlog

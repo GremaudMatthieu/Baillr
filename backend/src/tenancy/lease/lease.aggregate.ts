@@ -14,9 +14,13 @@ import { BaseIndexValue } from './base-index-value.js';
 import { LeaseCreated } from './events/lease-created.event.js';
 import { LeaseBillingLinesConfigured } from './events/lease-billing-lines-configured.event.js';
 import { LeaseRevisionParametersConfigured } from './events/lease-revision-parameters-configured.event.js';
+import { LeaseTerminated } from './events/lease-terminated.event.js';
 import { LeaseAlreadyCreatedException } from './exceptions/lease-already-created.exception.js';
 import { LeaseNotCreatedException } from './exceptions/lease-not-created.exception.js';
+import { LeaseAlreadyTerminatedException } from './exceptions/lease-already-terminated.exception.js';
+import { InvalidLeaseEndDateException } from './exceptions/invalid-lease-end-date.exception.js';
 import { InvalidRevisionDayException } from './exceptions/invalid-revision-day.exception.js';
+import { LeaseEndDate } from './lease-end-date.js';
 
 export interface BillingLineState {
   label: string;
@@ -40,7 +44,9 @@ export class LeaseAggregate extends AggregateRoot {
   private referenceQuarter: ReferenceQuarter | null = null;
   private referenceYear: ReferenceYear | null = null;
   private baseIndexValue: BaseIndexValue = BaseIndexValue.empty();
+  private endDate: LeaseEndDate | null = null;
   private created = false;
+  private terminated = false;
 
   static readonly streamName = 'lease';
 
@@ -122,18 +128,13 @@ export class LeaseAggregate extends AggregateRoot {
     // Validate day is possible for the given month (use a non-leap year as reference)
     const maxDaysInMonth = new Date(2001, revisionMonth, 0).getDate();
     if (revisionDay > maxDaysInMonth) {
-      throw InvalidRevisionDayException.invalidDayForMonth(
-        revisionDay,
-        revisionMonth,
-      );
+      throw InvalidRevisionDayException.invalidDayForMonth(revisionDay, revisionMonth);
     }
 
     const voQuarter = ReferenceQuarter.fromString(referenceQuarter);
     const voYear = ReferenceYear.fromNumber(referenceYear);
     const voBaseIndex =
-      baseIndexValue !== null
-        ? BaseIndexValue.create(baseIndexValue)
-        : BaseIndexValue.empty();
+      baseIndexValue !== null ? BaseIndexValue.create(baseIndexValue) : BaseIndexValue.empty();
 
     if (
       voDay.value === (this.revisionDay?.value ?? null) &&
@@ -153,6 +154,28 @@ export class LeaseAggregate extends AggregateRoot {
         referenceQuarter: voQuarter.value,
         referenceYear: voYear.value,
         baseIndexValue: voBaseIndex.value,
+      }),
+    );
+  }
+
+  terminate(endDate: string): void {
+    if (!this.created) {
+      throw LeaseNotCreatedException.create();
+    }
+    if (this.terminated) {
+      throw LeaseAlreadyTerminatedException.create();
+    }
+
+    const voEndDate = LeaseEndDate.fromString(endDate);
+
+    if (voEndDate.value.getTime() < this.startDate.value.getTime()) {
+      throw InvalidLeaseEndDateException.beforeStartDate();
+    }
+
+    this.apply(
+      new LeaseTerminated({
+        leaseId: this.id,
+        endDate: voEndDate.toISOString(),
       }),
     );
   }
@@ -185,18 +208,20 @@ export class LeaseAggregate extends AggregateRoot {
   }
 
   @EventHandler(LeaseRevisionParametersConfigured)
-  onLeaseRevisionParametersConfigured(
-    event: LeaseRevisionParametersConfigured,
-  ): void {
+  onLeaseRevisionParametersConfigured(event: LeaseRevisionParametersConfigured): void {
     this.revisionDay = RevisionDay.fromNumber(event.data.revisionDay);
     this.revisionMonth = RevisionMonth.fromNumber(event.data.revisionMonth);
-    this.referenceQuarter = ReferenceQuarter.fromString(
-      event.data.referenceQuarter,
-    );
+    this.referenceQuarter = ReferenceQuarter.fromString(event.data.referenceQuarter);
     this.referenceYear = ReferenceYear.fromNumber(event.data.referenceYear);
     this.baseIndexValue =
       event.data.baseIndexValue !== null
         ? BaseIndexValue.create(event.data.baseIndexValue)
         : BaseIndexValue.empty();
+  }
+
+  @EventHandler(LeaseTerminated)
+  onLeaseTerminated(event: LeaseTerminated): void {
+    this.endDate = LeaseEndDate.fromString(event.data.endDate);
+    this.terminated = true;
   }
 }

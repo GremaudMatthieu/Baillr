@@ -6,6 +6,7 @@ import {
   type CreateLeasePayload,
   type BillingLineData,
   type ConfigureRevisionParametersPayload,
+  type TerminateLeasePayload,
   type LeaseData,
 } from "@/lib/api/leases-api";
 
@@ -58,6 +59,7 @@ export function useCreateLease(entityId: string) {
         referenceQuarter: null,
         referenceYear: null,
         baseIndexValue: null,
+        endDate: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -170,6 +172,52 @@ export function useConfigureRevisionParameters(
         });
         void queryClient.invalidateQueries({
           queryKey: ["entities", entityId, "leases"],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["entities"],
+        });
+      }, 1500);
+    },
+  });
+}
+
+export function useTerminateLease(leaseId: string, entityId: string) {
+  const api = useLeasesApi();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: TerminateLeasePayload) =>
+      api.terminateLease(leaseId, payload),
+    onMutate: async (payload) => {
+      const detailKey = ["leases", leaseId];
+      const listKey = ["entities", entityId, "leases"];
+      await queryClient.cancelQueries({ queryKey: detailKey });
+      await queryClient.cancelQueries({ queryKey: listKey });
+      const previous = queryClient.getQueryData<LeaseData>(detailKey);
+
+      if (previous) {
+        queryClient.setQueryData<LeaseData>(detailKey, {
+          ...previous,
+          endDate: payload.endDate,
+        });
+      }
+
+      return { previous };
+    },
+    onError: (_err, _payload, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["leases", leaseId], context.previous);
+      }
+    },
+    onSettled: () => {
+      setTimeout(() => {
+        void queryClient.invalidateQueries({
+          queryKey: ["leases", leaseId],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["entities", entityId, "leases"],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["entities", entityId, "units"],
         });
         void queryClient.invalidateQueries({
           queryKey: ["entities"],
