@@ -5,6 +5,7 @@ describe('LeaseProjection', () => {
   let mockPrisma: {
     lease: {
       upsert: jest.Mock;
+      updateMany: jest.Mock;
     };
   };
   let mockKurrentDb: {
@@ -18,6 +19,7 @@ describe('LeaseProjection', () => {
     mockPrisma = {
       lease: {
         upsert: jest.fn().mockResolvedValue({}),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
     };
 
@@ -136,5 +138,173 @@ describe('LeaseProjection', () => {
     await new Promise((r) => setTimeout(r, 10));
 
     expect(mockPrisma.lease.upsert).not.toHaveBeenCalled();
+  });
+
+  it('should update billing lines on LeaseBillingLinesConfigured event', async () => {
+    projection.onModuleInit();
+
+    dataHandler({
+      event: {
+        type: 'LeaseBillingLinesConfigured',
+        data: {
+          leaseId: 'lease-1',
+          billingLines: [
+            { label: 'Provisions sur charges', amountCents: 5000, type: 'provision' },
+            { label: 'Parking', amountCents: 3000, type: 'option' },
+          ],
+        },
+      },
+    });
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(mockPrisma.lease.updateMany).toHaveBeenCalledWith({
+      where: { id: 'lease-1' },
+      data: {
+        billingLines: [
+          { label: 'Provisions sur charges', amountCents: 5000, type: 'provision' },
+          { label: 'Parking', amountCents: 3000, type: 'option' },
+        ],
+      },
+    });
+  });
+
+  it('should skip LeaseBillingLinesConfigured when lease not found', async () => {
+    mockPrisma.lease.updateMany.mockResolvedValue({ count: 0 });
+    projection.onModuleInit();
+
+    dataHandler({
+      event: {
+        type: 'LeaseBillingLinesConfigured',
+        data: {
+          leaseId: 'nonexistent',
+          billingLines: [{ label: 'Test', amountCents: 1000, type: 'provision' }],
+        },
+      },
+    });
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(mockPrisma.lease.updateMany).toHaveBeenCalledWith({
+      where: { id: 'nonexistent' },
+      data: {
+        billingLines: [{ label: 'Test', amountCents: 1000, type: 'provision' }],
+      },
+    });
+  });
+
+  it('should handle empty billing lines in LeaseBillingLinesConfigured', async () => {
+    projection.onModuleInit();
+
+    dataHandler({
+      event: {
+        type: 'LeaseBillingLinesConfigured',
+        data: {
+          leaseId: 'lease-1',
+          billingLines: [],
+        },
+      },
+    });
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(mockPrisma.lease.updateMany).toHaveBeenCalledWith({
+      where: { id: 'lease-1' },
+      data: { billingLines: [] },
+    });
+  });
+
+  it('should update revision parameters on LeaseRevisionParametersConfigured event', async () => {
+    projection.onModuleInit();
+
+    dataHandler({
+      event: {
+        type: 'LeaseRevisionParametersConfigured',
+        data: {
+          leaseId: 'lease-1',
+          revisionDay: 15,
+          revisionMonth: 3,
+          referenceQuarter: 'Q2',
+          referenceYear: 2025,
+          baseIndexValue: 142.06,
+        },
+      },
+    });
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(mockPrisma.lease.updateMany).toHaveBeenCalledWith({
+      where: { id: 'lease-1' },
+      data: {
+        revisionDay: 15,
+        revisionMonth: 3,
+        referenceQuarter: 'Q2',
+        referenceYear: 2025,
+        baseIndexValue: 142.06,
+      },
+    });
+  });
+
+  it('should handle null base index value in LeaseRevisionParametersConfigured', async () => {
+    projection.onModuleInit();
+
+    dataHandler({
+      event: {
+        type: 'LeaseRevisionParametersConfigured',
+        data: {
+          leaseId: 'lease-1',
+          revisionDay: 1,
+          revisionMonth: 1,
+          referenceQuarter: 'Q1',
+          referenceYear: 2026,
+          baseIndexValue: null,
+        },
+      },
+    });
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(mockPrisma.lease.updateMany).toHaveBeenCalledWith({
+      where: { id: 'lease-1' },
+      data: {
+        revisionDay: 1,
+        revisionMonth: 1,
+        referenceQuarter: 'Q1',
+        referenceYear: 2026,
+        baseIndexValue: null,
+      },
+    });
+  });
+
+  it('should skip LeaseRevisionParametersConfigured when lease not found', async () => {
+    mockPrisma.lease.updateMany.mockResolvedValue({ count: 0 });
+    projection.onModuleInit();
+
+    dataHandler({
+      event: {
+        type: 'LeaseRevisionParametersConfigured',
+        data: {
+          leaseId: 'nonexistent',
+          revisionDay: 15,
+          revisionMonth: 3,
+          referenceQuarter: 'Q2',
+          referenceYear: 2025,
+          baseIndexValue: 142.06,
+        },
+      },
+    });
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(mockPrisma.lease.updateMany).toHaveBeenCalledWith({
+      where: { id: 'nonexistent' },
+      data: {
+        revisionDay: 15,
+        revisionMonth: 3,
+        referenceQuarter: 'Q2',
+        referenceYear: 2025,
+        baseIndexValue: 142.06,
+      },
+    });
   });
 });

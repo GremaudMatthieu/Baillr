@@ -131,6 +131,13 @@ model Lease {
   securityDepositCents Int      @map("security_deposit_cents")
   monthlyDueDate       Int      @map("monthly_due_date")
   revisionIndexType    String   @map("revision_index_type")
+  /// JSON array of { label: string, amountCents: int, type: "provision"|"option" }
+  billingLines         Json     @default("[]") @map("billing_lines")
+  revisionDay          Int?     @map("revision_day")
+  revisionMonth        Int?     @map("revision_month")
+  referenceQuarter     String?  @map("reference_quarter")
+  referenceYear        Int?     @map("reference_year")
+  baseIndexValue       Float?   @map("base_index_value")
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")
 

@@ -155,4 +155,99 @@ test.describe('Lease management', () => {
     // since we have created a lease
     await expect(page.getByText('Créez vos baux')).not.toBeVisible();
   });
+
+  test('6.5 — configure billing lines on lease detail page', async ({ page }) => {
+    test.skip(!entityId, 'Requires seed data');
+
+    // Navigate to leases list
+    await page.goto('/leases');
+    await expect(page.getByText('Pierre Durand')).toBeVisible({ timeout: 10_000 });
+
+    // Click on the lease to go to detail page
+    await page.getByText('Pierre Durand').first().click();
+    await page.waitForURL(/\/leases\/[\w-]+/);
+
+    // Verify billing lines section exists with default rent line
+    await expect(page.getByText('Lignes de facturation')).toBeVisible();
+    await expect(page.getByText('Total mensuel')).toBeVisible();
+
+    // Click "Configurer les lignes" to open the form
+    await page.getByRole('button', { name: /Configurer les lignes/i }).click();
+
+    // The form should appear with "Ajouter une provision" button
+    await expect(page.getByText('Ajouter une provision')).toBeVisible();
+
+    // Add a provision line
+    await page.getByRole('button', { name: /Ajouter une provision/i }).click();
+
+    // Fill in the provision — target the newly added row's inputs
+    const billingRows = page.locator('fieldset .grid');
+    const lastRow = billingRows.last();
+    await lastRow.getByRole('textbox', { name: /Libellé/i }).fill('Charges locatives');
+    await lastRow.getByRole('spinbutton', { name: /Montant/i }).fill('50');
+
+    // Submit the form
+    await page.getByRole('button', { name: 'Enregistrer' }).click();
+
+    // After save, the form should close and show the table view
+    await expect(page.getByText('Charges locatives')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Total mensuel')).toBeVisible();
+  });
+
+  test('6.6 — configure revision parameters on lease detail page', async ({ page }) => {
+    test.skip(!entityId, 'Requires seed data');
+
+    // Navigate to leases list
+    await page.goto('/leases');
+    await expect(page.getByText('Pierre Durand')).toBeVisible({ timeout: 10_000 });
+
+    // Click on the lease to go to detail page
+    await page.getByText('Pierre Durand').first().click();
+    await page.waitForURL(/\/leases\/[\w-]+/);
+
+    // Verify revision parameters section exists with configure prompt
+    await expect(page.getByText('Paramètres de révision')).toBeVisible();
+    await expect(
+      page.getByText('Configurer les paramètres de révision'),
+    ).toBeVisible();
+
+    // Click "Configurer" to open the form
+    await page.getByRole('button', { name: 'Configurer' }).click();
+
+    // Fill revision day — Select (1-31), pick day 15
+    await page.getByRole('combobox', { name: /Jour de révision/i }).click();
+    await page.getByRole('option', { name: '15', exact: true }).click();
+
+    // Fill revision month — Select, pick Mars (March = 3)
+    await page.getByRole('combobox', { name: /Mois de révision/i }).click();
+    await page.getByRole('option', { name: 'Mars' }).click();
+
+    // Fill reference quarter — Select, pick Q2
+    await page.getByRole('combobox', { name: /Trimestre de référence/i }).click();
+    await page.getByRole('option', { name: /T2/ }).click();
+
+    // Fill reference year
+    await page.getByLabel('Année de référence').fill('2025');
+
+    // Fill base index value
+    await page.getByLabel(/Indice de base/).fill('142.06');
+
+    // Submit
+    await page.getByRole('button', { name: 'Enregistrer' }).click();
+
+    // After save, form should close and display the configured values
+    await expect(page.getByText('Date de révision annuelle')).toBeVisible({
+      timeout: 10_000,
+    });
+    await expect(page.getByText(/15/)).toBeVisible();
+    await expect(page.getByText(/Mars/)).toBeVisible();
+    await expect(page.getByText(/T2 \(Avril-Juin\)/)).toBeVisible();
+    await expect(page.getByText(/2025/)).toBeVisible();
+    await expect(page.getByText('142.06')).toBeVisible();
+
+    // Modifier button should now be visible
+    await expect(
+      page.getByRole('button', { name: /Modifier/i }),
+    ).toBeVisible();
+  });
 });

@@ -3,6 +3,8 @@ import { KurrentDbService } from '@infrastructure/eventstore/kurrentdb.service';
 import { PrismaService } from '@infrastructure/database/prisma.service';
 import { START, streamNameFilter } from '@kurrent/kurrentdb-client';
 import type { LeaseCreatedData } from '@tenancy/lease/events/lease-created.event';
+import type { LeaseBillingLinesConfiguredData } from '@tenancy/lease/events/lease-billing-lines-configured.event';
+import type { LeaseRevisionParametersConfiguredData } from '@tenancy/lease/events/lease-revision-parameters-configured.event';
 
 @Injectable()
 export class LeaseProjection implements OnModuleInit {
@@ -51,6 +53,16 @@ export class LeaseProjection implements OnModuleInit {
         case 'LeaseCreated':
           await this.onLeaseCreated(data as unknown as LeaseCreatedData);
           break;
+        case 'LeaseBillingLinesConfigured':
+          await this.onLeaseBillingLinesConfigured(
+            data as unknown as LeaseBillingLinesConfiguredData,
+          );
+          break;
+        case 'LeaseRevisionParametersConfigured':
+          await this.onLeaseRevisionParametersConfigured(
+            data as unknown as LeaseRevisionParametersConfiguredData,
+          );
+          break;
         default:
           break;
       }
@@ -80,5 +92,48 @@ export class LeaseProjection implements OnModuleInit {
       update: {},
     });
     this.logger.log(`Projected LeaseCreated for ${data.id}`);
+  }
+
+  private async onLeaseBillingLinesConfigured(
+    data: LeaseBillingLinesConfiguredData,
+  ): Promise<void> {
+    const updated = await this.prisma.lease.updateMany({
+      where: { id: data.leaseId },
+      data: {
+        billingLines:
+          data.billingLines as unknown as import('@prisma/client').Prisma.InputJsonValue,
+      },
+    });
+    if (updated.count === 0) {
+      this.logger.warn(
+        `Lease ${data.leaseId} not found for LeaseBillingLinesConfigured — skipping projection`,
+      );
+      return;
+    }
+    this.logger.log(`Projected LeaseBillingLinesConfigured for ${data.leaseId}`);
+  }
+
+  private async onLeaseRevisionParametersConfigured(
+    data: LeaseRevisionParametersConfiguredData,
+  ): Promise<void> {
+    const updated = await this.prisma.lease.updateMany({
+      where: { id: data.leaseId },
+      data: {
+        revisionDay: data.revisionDay,
+        revisionMonth: data.revisionMonth,
+        referenceQuarter: data.referenceQuarter,
+        referenceYear: data.referenceYear,
+        baseIndexValue: data.baseIndexValue,
+      },
+    });
+    if (updated.count === 0) {
+      this.logger.warn(
+        `Lease ${data.leaseId} not found for LeaseRevisionParametersConfigured — skipping projection`,
+      );
+      return;
+    }
+    this.logger.log(
+      `Projected LeaseRevisionParametersConfigured for ${data.leaseId}`,
+    );
   }
 }

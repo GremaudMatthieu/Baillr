@@ -385,6 +385,65 @@ export class ApiHelper {
     return id;
   }
 
+  async configureBillingLines(
+    leaseId: string,
+    billingLines: { label: string; amountCents: number; type: string }[],
+  ) {
+    const response = await this.request.put(
+      `${API_BASE}/api/leases/${leaseId}/billing-lines`,
+      {
+        headers: this.headers(),
+        data: { billingLines },
+      },
+    );
+    if (!response.ok()) {
+      throw new Error(
+        `Failed to configure billing lines: ${response.status()} ${await response.text()}`,
+      );
+    }
+  }
+
+  async configureRevisionParameters(
+    leaseId: string,
+    params: {
+      revisionDay: number;
+      revisionMonth: number;
+      referenceQuarter: string;
+      referenceYear: number;
+      baseIndexValue?: number | null;
+    },
+  ) {
+    const response = await this.request.put(
+      `${API_BASE}/api/leases/${leaseId}/revision-parameters`,
+      {
+        headers: this.headers(),
+        data: {
+          revisionDay: params.revisionDay,
+          revisionMonth: params.revisionMonth,
+          referenceQuarter: params.referenceQuarter,
+          referenceYear: params.referenceYear,
+          baseIndexValue: params.baseIndexValue ?? null,
+        },
+      },
+    );
+    if (!response.ok()) {
+      throw new Error(
+        `Failed to configure revision parameters: ${response.status()} ${await response.text()}`,
+      );
+    }
+  }
+
+  async getLease(leaseId: string) {
+    const response = await this.request.get(
+      `${API_BASE}/api/leases/${leaseId}`,
+      { headers: this.headers() },
+    );
+    if (!response.ok()) {
+      throw new Error(`Failed to get lease: ${response.status()}`);
+    }
+    return (await response.json()) as Record<string, unknown>;
+  }
+
   async getLeases(entityId: string) {
     const response = await this.request.get(
       `${API_BASE}/api/entities/${entityId}/leases`,

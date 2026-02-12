@@ -4,6 +4,8 @@ import { EntityPresentationModule } from '../entity/entity-presentation.module.j
 import { TenantPresentationModule } from '../tenant/tenant-presentation.module.js';
 import { PropertyPresentationModule } from '../property/property-presentation.module.js';
 import { CreateALeaseController } from './controllers/create-a-lease.controller.js';
+import { ConfigureLeaseBillingLinesController } from './controllers/configure-lease-billing-lines.controller.js';
+import { ConfigureLeaseRevisionParametersController } from './controllers/configure-lease-revision-parameters.controller.js';
 import { GetLeasesController } from './controllers/get-leases.controller.js';
 import { GetALeaseController } from './controllers/get-a-lease.controller.js';
 import { GetLeasesHandler } from './queries/get-leases.handler.js';
@@ -18,7 +20,13 @@ import { LeaseFinder } from './finders/lease.finder.js';
     TenantPresentationModule,
     PropertyPresentationModule,
   ],
-  controllers: [CreateALeaseController, GetLeasesController, GetALeaseController],
+  controllers: [
+    CreateALeaseController,
+    ConfigureLeaseBillingLinesController,
+    ConfigureLeaseRevisionParametersController,
+    GetLeasesController,
+    GetALeaseController,
+  ],
   providers: [GetLeasesHandler, GetALeaseHandler, LeaseProjection, LeaseFinder],
   exports: [LeaseFinder],
 })
