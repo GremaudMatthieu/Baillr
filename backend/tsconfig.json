@@ -18,7 +18,8 @@
       "@shared/*": ["src/shared/*"],
       "@infrastructure/*": ["src/infrastructure/*"],
       "@portfolio/*": ["src/portfolio/*"],
-      "@tenancy/*": ["src/tenancy/*"]
+      "@tenancy/*": ["src/tenancy/*"],
+      "@billing/*": ["src/billing/*"]
     },
     "incremental": true,
     "skipLibCheck": true,

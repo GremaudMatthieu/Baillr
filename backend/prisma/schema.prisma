@@ -25,6 +25,7 @@ model OwnershipEntity {
   properties   Property[]
   tenants      Tenant[]
   leases       Lease[]
+  rentCalls    RentCall[]
 
   @@map("ownership_entities")
   @@index([userId])
@@ -64,8 +65,9 @@ model Unit {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
-  property Property @relation(fields: [propertyId], references: [id])
-  leases   Lease[]
+  property  Property @relation(fields: [propertyId], references: [id])
+  leases    Lease[]
+  rentCalls RentCall[]
 
   @@map("units")
   @@unique([propertyId, identifier])
@@ -112,8 +114,9 @@ model Tenant {
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
-  entity OwnershipEntity @relation(fields: [entityId], references: [id])
-  leases Lease[]
+  entity    OwnershipEntity @relation(fields: [entityId], references: [id])
+  leases    Lease[]
+  rentCalls RentCall[]
 
   @@map("tenants")
   @@index([entityId])
@@ -142,13 +145,43 @@ model Lease {
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")
 
-  entity OwnershipEntity @relation(fields: [entityId], references: [id])
-  tenant Tenant          @relation(fields: [tenantId], references: [id])
-  unit   Unit            @relation(fields: [unitId], references: [id])
+  entity    OwnershipEntity @relation(fields: [entityId], references: [id])
+  tenant    Tenant          @relation(fields: [tenantId], references: [id])
+  unit      Unit            @relation(fields: [unitId], references: [id])
+  rentCalls RentCall[]
 
   @@map("leases")
   @@index([entityId])
   @@index([tenantId])
   @@index([unitId])
+  @@index([userId])
+}
+
+model RentCall {
+  id               String   @id @default(uuid())
+  entityId         String   @map("entity_id")
+  userId           String   @map("user_id")
+  leaseId          String   @map("lease_id")
+  tenantId         String   @map("tenant_id")
+  unitId           String   @map("unit_id")
+  month            String
+  rentAmountCents  Int      @map("rent_amount_cents")
+  billingLines     Json     @default("[]") @map("billing_lines")
+  totalAmountCents Int      @map("total_amount_cents")
+  isProRata        Boolean  @default(false) @map("is_pro_rata")
+  occupiedDays     Int?     @map("occupied_days")
+  totalDaysInMonth Int?     @map("total_days_in_month")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  entity OwnershipEntity @relation(fields: [entityId], references: [id])
+  lease  Lease           @relation(fields: [leaseId], references: [id])
+  tenant Tenant          @relation(fields: [tenantId], references: [id])
+  unit   Unit            @relation(fields: [unitId], references: [id])
+
+  @@unique([leaseId, month])
+  @@map("rent_calls")
+  @@index([entityId])
+  @@index([entityId, month])
   @@index([userId])
 }

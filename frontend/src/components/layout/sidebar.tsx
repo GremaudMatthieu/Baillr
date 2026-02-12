@@ -8,6 +8,7 @@ import {
   Building2,
   Users,
   FileText,
+  Receipt,
   BookOpen,
   FolderOpen,
   Settings,
@@ -35,6 +36,7 @@ const navItems = [
   { label: "Biens", icon: Building2, href: "/properties" },
   { label: "Locataires", icon: Users, href: "/tenants" },
   { label: "Baux", icon: FileText, href: "/leases" },
+  { label: "Appels de loyer", icon: Receipt, href: "/rent-calls" },
   { label: "Comptabilité", icon: BookOpen, href: "/accounting" },
   { label: "Documents", icon: FolderOpen, href: "/documents" },
 ] as const;

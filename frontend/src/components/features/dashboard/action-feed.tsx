@@ -9,6 +9,7 @@ import {
   Landmark,
   Plus,
   ArrowRight,
+  Receipt,
   Users,
   ShieldAlert,
   ShieldX,
@@ -28,6 +29,7 @@ import { useProperties } from "@/hooks/use-properties";
 import { useUnits } from "@/hooks/use-units";
 import { useTenants } from "@/hooks/use-tenants";
 import { useLeases } from "@/hooks/use-leases";
+import { useRentCalls } from "@/hooks/use-rent-calls";
 
 const iconMap: Record<string, LucideIcon> = {
   Plus,
@@ -35,6 +37,7 @@ const iconMap: Record<string, LucideIcon> = {
   ClipboardList,
   FileText,
   Landmark,
+  Receipt,
   Users,
   ShieldAlert,
   ShieldX,
@@ -97,6 +100,13 @@ function useOnboardingActions(): ActionItem[] {
   const { data: tenants } = useTenants(entityId ?? "");
   const { data: leases } = useLeases(entityId ?? "");
 
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const { data: rentCallsForCurrentMonth } = useRentCalls(
+    entityId ?? "",
+    currentMonth,
+  );
+
   if (
     entityId &&
     properties &&
@@ -150,6 +160,27 @@ function useOnboardingActions(): ActionItem[] {
         "Associez un locataire à un lot en créant un bail pour démarrer la gestion locative",
       href: "/leases/new",
       priority: "medium",
+    });
+  }
+
+  const hasActiveLeases =
+    leases &&
+    leases.length > 0 &&
+    leases.some((l) => !l.endDate || new Date(l.endDate) > now);
+
+  if (
+    entityId &&
+    hasActiveLeases &&
+    (!rentCallsForCurrentMonth || rentCallsForCurrentMonth.length === 0)
+  ) {
+    actions.push({
+      id: "onboarding-generate-rent-calls",
+      icon: "Receipt",
+      title: "Générez vos appels de loyer",
+      description:
+        "Créez les appels de loyer pour tous vos baux actifs",
+      href: "/rent-calls",
+      priority: "high",
     });
   }
 

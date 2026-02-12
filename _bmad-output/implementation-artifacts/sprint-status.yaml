@@ -76,8 +76,8 @@ development_status:
   epic-3-retrospective: done
 
   # Epic 4: Rent Call Generation & Email Sending (3 stories)
-  epic-4: backlog
-  4-1-generate-rent-calls-for-all-active-leases-in-batch: backlog
+  epic-4: in-progress
+  4-1-generate-rent-calls-for-all-active-leases-in-batch: done # reviewed 2026-02-13, 20 findings + 2 arch fixes
   4-2-generate-rent-call-pdf-documents: backlog
   4-3-send-rent-calls-by-email-in-batch-with-pdf-attachments: backlog
   epic-4-retrospective: optional

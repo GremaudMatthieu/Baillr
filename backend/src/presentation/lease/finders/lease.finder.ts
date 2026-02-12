@@ -24,4 +24,22 @@ export class LeaseFinder {
       where: { unitId, userId },
     });
   }
+
+  async findAllActiveByEntityAndUser(
+    entityId: string,
+    userId: string,
+    monthStart: Date,
+  ): Promise<Lease[]> {
+    return this.prisma.lease.findMany({
+      where: {
+        entityId,
+        userId,
+        OR: [
+          { endDate: null },
+          { endDate: { gte: monthStart } },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 }

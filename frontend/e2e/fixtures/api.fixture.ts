@@ -471,6 +471,56 @@ export class ApiHelper {
     );
   }
 
+  async generateRentCalls(entityId: string, month: string) {
+    const response = await this.request.post(
+      `${API_BASE}/api/entities/${entityId}/rent-calls/generate`,
+      {
+        headers: this.headers(),
+        data: { month },
+      },
+    );
+    if (!response.ok()) {
+      throw new Error(
+        `Failed to generate rent calls: ${response.status()} ${await response.text()}`,
+      );
+    }
+    return (await response.json()) as {
+      generated: number;
+      totalAmountCents: number;
+      exceptions: string[];
+    };
+  }
+
+  async getRentCalls(entityId: string, month?: string) {
+    const url = month
+      ? `${API_BASE}/api/entities/${entityId}/rent-calls?month=${month}`
+      : `${API_BASE}/api/entities/${entityId}/rent-calls`;
+    const response = await this.request.get(url, {
+      headers: this.headers(),
+    });
+    if (!response.ok()) {
+      throw new Error(`Failed to get rent calls: ${response.status()}`);
+    }
+    return (await response.json()) as { data: Record<string, unknown>[] };
+  }
+
+  async waitForRentCallCount(
+    entityId: string,
+    month: string,
+    expectedCount: number,
+    timeoutMs = 5000,
+  ) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      const { data } = await this.getRentCalls(entityId, month);
+      if (data.length >= expectedCount) return data;
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    throw new Error(
+      `Timed out waiting for ${expectedCount} rent calls (${timeoutMs}ms)`,
+    );
+  }
+
   async terminateLease(leaseId: string, endDate: string) {
     const response = await this.request.put(
       `${API_BASE}/api/leases/${leaseId}/terminate`,
