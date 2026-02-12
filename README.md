@@ -47,12 +47,20 @@ npm run start:dev
 
 API available at http://localhost:3001/api
 
+## Developer Documentation
+
+- [**Project Context**](./docs/project-context.md) — Architectural decisions, established patterns, and conventions
+- [**Anti-Patterns**](./docs/anti-patterns.md) — Centralized catalog of mistakes to avoid (with correct patterns)
+- [**DTO Checklist**](./docs/dto-checklist.md) — Defense-in-depth validation checklist for DTOs
+
 ## Project Structure
 
 ```
 Baillr/
 ├── frontend/          # Next.js 16 App Router
 ├── backend/           # NestJS 11 CQRS/ES
+├── docs/              # Developer documentation
+├── scripts/           # CI/quality scripts
 ├── docker-compose.yml # KurrentDB + PostgreSQL
 └── .github/workflows/ # CI pipeline
 ```

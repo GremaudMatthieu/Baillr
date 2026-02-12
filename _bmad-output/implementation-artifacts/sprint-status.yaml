@@ -59,10 +59,10 @@ development_status:
   epic-2-retrospective: done
 
   # Consolidation Sprint — Testing & Anti-Patterns (3 stories, blocking Epic 3)
-  consolidation: in-progress
+  consolidation: done
   c-1-setup-vitest-and-retrotest-epic2-frontend: done
   c-2-setup-playwright-e2e-onboarding-scenarios: done
-  c-3-centralize-antipatterns-and-dto-checklist: backlog
+  c-3-centralize-antipatterns-and-dto-checklist: done
 
   # Epic 3: Tenant & Lease Management (6 stories)
   epic-3: backlog
