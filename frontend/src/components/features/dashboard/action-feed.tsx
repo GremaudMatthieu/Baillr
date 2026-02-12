@@ -2,7 +2,17 @@
 
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
-import { Building2, ClipboardList, Landmark, Plus, ArrowRight, Users } from "lucide-react";
+import {
+  Building2,
+  ClipboardList,
+  FileText,
+  Landmark,
+  Plus,
+  ArrowRight,
+  Users,
+  ShieldAlert,
+  ShieldX,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,13 +27,17 @@ import { useBankAccounts } from "@/hooks/use-bank-accounts";
 import { useProperties } from "@/hooks/use-properties";
 import { useUnits } from "@/hooks/use-units";
 import { useTenants } from "@/hooks/use-tenants";
+import { useLeases } from "@/hooks/use-leases";
 
 const iconMap: Record<string, LucideIcon> = {
   Plus,
   Building2,
   ClipboardList,
+  FileText,
   Landmark,
   Users,
+  ShieldAlert,
+  ShieldX,
 };
 
 export interface ActionItem {
@@ -81,6 +95,7 @@ function useOnboardingActions(): ActionItem[] {
   const firstPropertyId = properties?.[0]?.id;
   const { data: units } = useUnits(firstPropertyId ?? "");
   const { data: tenants } = useTenants(entityId ?? "");
+  const { data: leases } = useLeases(entityId ?? "");
 
   if (
     entityId &&
@@ -117,6 +132,66 @@ function useOnboardingActions(): ActionItem[] {
       href: "/tenants/new",
       priority: "medium",
     });
+  }
+
+  if (
+    entityId &&
+    tenants &&
+    tenants.length > 0 &&
+    units &&
+    units.length > 0 &&
+    (!leases || leases.length === 0)
+  ) {
+    actions.push({
+      id: "onboarding-create-lease",
+      icon: "FileText",
+      title: "Créez vos baux",
+      description:
+        "Associez un locataire à un lot en créant un bail pour démarrer la gestion locative",
+      href: "/leases/new",
+      priority: "medium",
+    });
+  }
+
+  return actions;
+}
+
+function useInsuranceAlerts(): ActionItem[] {
+  const { entityId } = useCurrentEntity();
+  const { data: tenants } = useTenants(entityId ?? "");
+  const actions: ActionItem[] = [];
+
+  if (!tenants) return actions;
+
+  const now = new Date();
+
+  for (const tenant of tenants) {
+    if (!tenant.renewalDate) continue;
+
+    const renewal = new Date(tenant.renewalDate);
+    const diffMs = renewal.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const fullName = `${tenant.firstName} ${tenant.lastName}`;
+
+    if (diffDays < 0) {
+      actions.push({
+        id: `insurance-expired-${tenant.id}`,
+        icon: "ShieldX",
+        title: `Assurance de ${fullName} expirée depuis le ${renewal.toLocaleDateString("fr-FR")}`,
+        description: `Contactez le locataire pour obtenir une attestation d\u2019assurance à jour.`,
+        href: `/tenants/${tenant.id}`,
+        priority: "high",
+      });
+    } else if (diffDays <= 30) {
+      actions.push({
+        id: `insurance-expiring-${tenant.id}`,
+        icon: "ShieldAlert",
+        title: `Assurance de ${fullName} expire le ${renewal.toLocaleDateString("fr-FR")}`,
+        description: `L\u2019assurance expire dans ${diffDays} jour${diffDays > 1 ? "s" : ""}. Pensez à demander le renouvellement.`,
+        href: `/tenants/${tenant.id}`,
+        priority: "medium",
+      });
+    }
   }
 
   return actions;
@@ -190,7 +265,8 @@ interface ActionFeedProps {
 
 export function ActionFeed({ actions }: ActionFeedProps) {
   const onboardingActions = useOnboardingActions();
-  const displayActions = actions ?? onboardingActions;
+  const insuranceAlerts = useInsuranceAlerts();
+  const displayActions = actions ?? [...insuranceAlerts, ...onboardingActions];
   const hasActions = displayActions.length > 0;
 
   return (

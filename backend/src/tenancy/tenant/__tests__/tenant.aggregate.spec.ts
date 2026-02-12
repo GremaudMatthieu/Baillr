@@ -21,6 +21,9 @@ interface CreateParams {
     city: string | null;
     complement: string | null;
   };
+  insuranceProvider: string | null;
+  policyNumber: string | null;
+  renewalDate: string | null;
 }
 
 function validCreateParams(): CreateParams {
@@ -40,6 +43,9 @@ function validCreateParams(): CreateParams {
       city: 'Paris',
       complement: null,
     },
+    insuranceProvider: null,
+    policyNumber: null,
+    renewalDate: null,
   };
 }
 
@@ -56,6 +62,9 @@ function callCreate(aggregate: TenantAggregate, overrides: Partial<CreateParams>
     d.email,
     d.phoneNumber,
     d.address,
+    d.insuranceProvider,
+    d.policyNumber,
+    d.renewalDate,
   );
 }
 
@@ -83,6 +92,9 @@ describe('TenantAggregate', () => {
         siret: null,
         email: 'jean.dupont@example.com',
         phoneNumber: '0612345678',
+        insuranceProvider: null,
+        policyNumber: null,
+        renewalDate: null,
       });
     });
 
@@ -170,15 +182,15 @@ describe('TenantAggregate', () => {
     });
 
     it('should throw when company type has no companyName', () => {
-      expect(() =>
-        callCreate(aggregate, { type: 'company', companyName: null }),
-      ).toThrow('Company name is required for company tenants');
+      expect(() => callCreate(aggregate, { type: 'company', companyName: null })).toThrow(
+        'Company name is required for company tenants',
+      );
     });
 
     it('should throw when company type has empty companyName', () => {
-      expect(() =>
-        callCreate(aggregate, { type: 'company', companyName: '  ' }),
-      ).toThrow('Company name is required for company tenants');
+      expect(() => callCreate(aggregate, { type: 'company', companyName: '  ' })).toThrow(
+        'Company name is required for company tenants',
+      );
     });
   });
 
@@ -215,9 +227,7 @@ describe('TenantAggregate', () => {
     });
 
     it('should throw when email format is invalid', () => {
-      expect(() => callCreate(aggregate, { email: 'invalid' })).toThrow(
-        'Email format is invalid',
-      );
+      expect(() => callCreate(aggregate, { email: 'invalid' })).toThrow('Email format is invalid');
     });
 
     it('should throw when phone number format is invalid', () => {
@@ -336,6 +346,140 @@ describe('TenantAggregate', () => {
       expect(() => aggregate.update('user_clerk_123', { email: 'bad' })).toThrow(
         'Email format is invalid',
       );
+    });
+
+    it('should throw when clearing companyName on a company tenant', () => {
+      const companyAggregate = new TenantAggregate('550e8400-e29b-41d4-a716-446655440099');
+      callCreate(companyAggregate, {
+        type: 'company',
+        companyName: 'SCI Les Oliviers',
+      });
+      companyAggregate.commit();
+
+      expect(() =>
+        companyAggregate.update('user_clerk_123', { companyName: null }),
+      ).toThrow('Company name is required for company tenants');
+    });
+
+    it('should allow clearing companyName on an individual tenant', () => {
+      aggregate.update('user_clerk_123', { companyName: null });
+
+      const events = aggregate.getUncommittedEvents();
+      expect(events).toHaveLength(1);
+      expect((events[0] as TenantUpdated).data.companyName).toBeNull();
+    });
+  });
+
+  describe('create — with insurance', () => {
+    it('should create tenant with insurance fields', () => {
+      callCreate(aggregate, {
+        insuranceProvider: 'MAIF',
+        policyNumber: 'POL-2026-001',
+        renewalDate: '2026-12-31T00:00:00.000Z',
+      });
+
+      const events = aggregate.getUncommittedEvents();
+      const data = (events[0] as TenantRegistered).data;
+      expect(data.insuranceProvider).toBe('MAIF');
+      expect(data.policyNumber).toBe('POL-2026-001');
+      expect(data.renewalDate).toBe('2026-12-31T00:00:00.000Z');
+    });
+
+    it('should create tenant without insurance (null fields)', () => {
+      callCreate(aggregate);
+
+      const events = aggregate.getUncommittedEvents();
+      const data = (events[0] as TenantRegistered).data;
+      expect(data.insuranceProvider).toBeNull();
+      expect(data.policyNumber).toBeNull();
+      expect(data.renewalDate).toBeNull();
+    });
+
+    it('should trim insurance provider name', () => {
+      callCreate(aggregate, { insuranceProvider: '  MAIF  ' });
+
+      const events = aggregate.getUncommittedEvents();
+      expect((events[0] as TenantRegistered).data.insuranceProvider).toBe('MAIF');
+    });
+
+    it('should throw when insurance provider exceeds 255 characters', () => {
+      expect(() => callCreate(aggregate, { insuranceProvider: 'A'.repeat(256) })).toThrow(
+        'Insurance provider name exceeds 255 characters',
+      );
+    });
+
+    it('should throw when policy number exceeds 100 characters', () => {
+      expect(() => callCreate(aggregate, { policyNumber: 'A'.repeat(101) })).toThrow(
+        'Policy number exceeds 100 characters',
+      );
+    });
+
+    it('should throw when renewal date is invalid', () => {
+      expect(() => callCreate(aggregate, { renewalDate: 'not-a-date' })).toThrow(
+        'Insurance renewal date is not a valid date',
+      );
+    });
+
+    it('should treat whitespace-only insurance provider as null', () => {
+      callCreate(aggregate, { insuranceProvider: '   ' });
+
+      const events = aggregate.getUncommittedEvents();
+      expect((events[0] as TenantRegistered).data.insuranceProvider).toBeNull();
+    });
+
+    it('should treat whitespace-only policy number as null', () => {
+      callCreate(aggregate, { policyNumber: '   ' });
+
+      const events = aggregate.getUncommittedEvents();
+      expect((events[0] as TenantRegistered).data.policyNumber).toBeNull();
+    });
+  });
+
+  describe('update — insurance fields', () => {
+    beforeEach(() => {
+      callCreate(aggregate);
+      aggregate.commit();
+    });
+
+    it('should update insurance provider', () => {
+      aggregate.update('user_clerk_123', { insuranceProvider: 'AXA' });
+
+      const events = aggregate.getUncommittedEvents();
+      expect(events).toHaveLength(1);
+      expect((events[0] as TenantUpdated).data.insuranceProvider).toBe('AXA');
+    });
+
+    it('should update policy number', () => {
+      aggregate.update('user_clerk_123', { policyNumber: 'NEW-POL-123' });
+
+      const events = aggregate.getUncommittedEvents();
+      expect((events[0] as TenantUpdated).data.policyNumber).toBe('NEW-POL-123');
+    });
+
+    it('should update renewal date', () => {
+      aggregate.update('user_clerk_123', { renewalDate: '2027-06-15T00:00:00.000Z' });
+
+      const events = aggregate.getUncommittedEvents();
+      expect((events[0] as TenantUpdated).data.renewalDate).toBe('2027-06-15T00:00:00.000Z');
+    });
+
+    it('should clear insurance provider when set to null', () => {
+      // First set it
+      aggregate.update('user_clerk_123', { insuranceProvider: 'MAIF' });
+      aggregate.commit();
+
+      // Then clear it
+      aggregate.update('user_clerk_123', { insuranceProvider: null });
+
+      const events = aggregate.getUncommittedEvents();
+      expect((events[0] as TenantUpdated).data.insuranceProvider).toBeNull();
+    });
+
+    it('should clear renewal date when set to null', () => {
+      aggregate.update('user_clerk_123', { renewalDate: null });
+
+      const events = aggregate.getUncommittedEvents();
+      expect((events[0] as TenantUpdated).data.renewalDate).toBeNull();
     });
   });
 

@@ -8,6 +8,9 @@ import { TenantSiret } from './tenant-siret.js';
 import { TenantEmail } from './tenant-email.js';
 import { PhoneNumber } from './phone-number.js';
 import { PostalAddress, type PostalAddressPrimitives } from './postal-address.js';
+import { InsuranceProvider } from './insurance-provider.js';
+import { PolicyNumber } from './policy-number.js';
+import { InsuranceRenewalDate } from './insurance-renewal-date.js';
 import { TenantRegistered } from './events/tenant-registered.event.js';
 import { TenantUpdated, type TenantUpdatedData } from './events/tenant-updated.event.js';
 import { TenantAlreadyExistsException } from './exceptions/tenant-already-exists.exception.js';
@@ -23,6 +26,9 @@ export interface UpdateTenantFields {
   email?: string;
   phoneNumber?: string | null;
   address?: PostalAddressPrimitives;
+  insuranceProvider?: string | null;
+  policyNumber?: string | null;
+  renewalDate?: string | null;
 }
 
 export class TenantAggregate extends AggregateRoot {
@@ -36,6 +42,9 @@ export class TenantAggregate extends AggregateRoot {
   private email!: TenantEmail;
   private phoneNumber!: PhoneNumber;
   private address!: PostalAddress;
+  private insuranceProvider!: InsuranceProvider;
+  private policyNumber!: PolicyNumber;
+  private renewalDate!: InsuranceRenewalDate;
   private created = false;
 
   static readonly streamName = 'tenant';
@@ -51,6 +60,9 @@ export class TenantAggregate extends AggregateRoot {
     email: string,
     phoneNumber: string | null,
     address: PostalAddressPrimitives,
+    insuranceProvider: string | null,
+    policyNumber: string | null,
+    renewalDate: string | null,
   ): void {
     if (this.created) {
       throw TenantAlreadyExistsException.create();
@@ -64,7 +76,9 @@ export class TenantAggregate extends AggregateRoot {
 
     // Normalize whitespace-only companyName to null
     const trimmedCompanyName = companyName?.trim() || null;
-    const voCompanyName = trimmedCompanyName ? CompanyName.fromString(trimmedCompanyName) : CompanyName.empty();
+    const voCompanyName = trimmedCompanyName
+      ? CompanyName.fromString(trimmedCompanyName)
+      : CompanyName.empty();
     if (voType.isCompany && voCompanyName.isEmpty) {
       throw CompanyNameRequiredException.create();
     }
@@ -72,6 +86,15 @@ export class TenantAggregate extends AggregateRoot {
     const voSiret = siret ? TenantSiret.fromString(siret) : TenantSiret.empty();
     const voPhoneNumber = phoneNumber ? PhoneNumber.fromString(phoneNumber) : PhoneNumber.empty();
     const voAddress = PostalAddress.fromPrimitives(address);
+    const trimmedInsuranceProvider = insuranceProvider?.trim() || null;
+    const voInsuranceProvider = trimmedInsuranceProvider
+      ? InsuranceProvider.fromString(trimmedInsuranceProvider)
+      : InsuranceProvider.empty();
+    const trimmedPolicyNumber = policyNumber?.trim() || null;
+    const voPolicyNumber = trimmedPolicyNumber
+      ? PolicyNumber.fromString(trimmedPolicyNumber)
+      : PolicyNumber.empty();
+    const voRenewalDate = InsuranceRenewalDate.create(renewalDate);
 
     this.apply(
       new TenantRegistered({
@@ -86,6 +109,9 @@ export class TenantAggregate extends AggregateRoot {
         email: voEmail.value,
         phoneNumber: voPhoneNumber.isEmpty ? null : voPhoneNumber.value,
         address: voAddress.toPrimitives(),
+        insuranceProvider: voInsuranceProvider.isEmpty ? null : voInsuranceProvider.value,
+        policyNumber: voPolicyNumber.isEmpty ? null : voPolicyNumber.value,
+        renewalDate: voRenewalDate.toPrimitive(),
       }),
     );
   }
@@ -107,12 +133,19 @@ export class TenantAggregate extends AggregateRoot {
       eventData.lastName = LastName.fromString(fields.lastName).value;
     }
     if (fields.companyName !== undefined) {
-      const trimmedCompanyName = fields.companyName !== null ? (fields.companyName.trim() || null) : null;
-      const voCompanyName = trimmedCompanyName ? CompanyName.fromString(trimmedCompanyName) : CompanyName.empty();
+      const trimmedCompanyName =
+        fields.companyName !== null ? fields.companyName.trim() || null : null;
+      const voCompanyName = trimmedCompanyName
+        ? CompanyName.fromString(trimmedCompanyName)
+        : CompanyName.empty();
+      if (this.type.isCompany && voCompanyName.isEmpty) {
+        throw CompanyNameRequiredException.create();
+      }
       eventData.companyName = voCompanyName.isEmpty ? null : voCompanyName.value;
     }
     if (fields.siret !== undefined) {
-      const voSiret = fields.siret !== null ? TenantSiret.fromString(fields.siret) : TenantSiret.empty();
+      const voSiret =
+        fields.siret !== null ? TenantSiret.fromString(fields.siret) : TenantSiret.empty();
       eventData.siret = voSiret.isEmpty ? null : voSiret.value;
     }
     if (fields.email !== undefined) {
@@ -120,11 +153,31 @@ export class TenantAggregate extends AggregateRoot {
     }
     if (fields.phoneNumber !== undefined) {
       const voPhone =
-        fields.phoneNumber !== null ? PhoneNumber.fromString(fields.phoneNumber) : PhoneNumber.empty();
+        fields.phoneNumber !== null
+          ? PhoneNumber.fromString(fields.phoneNumber)
+          : PhoneNumber.empty();
       eventData.phoneNumber = voPhone.isEmpty ? null : voPhone.value;
     }
     if (fields.address !== undefined) {
       eventData.address = PostalAddress.fromPrimitives(fields.address).toPrimitives();
+    }
+    if (fields.insuranceProvider !== undefined) {
+      const trimmedProvider =
+        fields.insuranceProvider !== null ? fields.insuranceProvider.trim() || null : null;
+      const voIns = trimmedProvider
+        ? InsuranceProvider.fromString(trimmedProvider)
+        : InsuranceProvider.empty();
+      eventData.insuranceProvider = voIns.isEmpty ? null : voIns.value;
+    }
+    if (fields.policyNumber !== undefined) {
+      const trimmedPolicy =
+        fields.policyNumber !== null ? fields.policyNumber.trim() || null : null;
+      const voPol = trimmedPolicy ? PolicyNumber.fromString(trimmedPolicy) : PolicyNumber.empty();
+      eventData.policyNumber = voPol.isEmpty ? null : voPol.value;
+    }
+    if (fields.renewalDate !== undefined) {
+      const voDate = InsuranceRenewalDate.create(fields.renewalDate);
+      eventData.renewalDate = voDate.toPrimitive();
     }
 
     // Guard: do not emit no-op events when no fields are being changed
@@ -150,6 +203,13 @@ export class TenantAggregate extends AggregateRoot {
       ? PhoneNumber.fromString(event.data.phoneNumber)
       : PhoneNumber.empty();
     this.address = PostalAddress.fromPrimitives(event.data.address);
+    this.insuranceProvider = event.data.insuranceProvider
+      ? InsuranceProvider.fromString(event.data.insuranceProvider)
+      : InsuranceProvider.empty();
+    this.policyNumber = event.data.policyNumber
+      ? PolicyNumber.fromString(event.data.policyNumber)
+      : PolicyNumber.empty();
+    this.renewalDate = InsuranceRenewalDate.create(event.data.renewalDate ?? null);
     this.created = true;
   }
 
@@ -176,5 +236,18 @@ export class TenantAggregate extends AggregateRoot {
     }
     if (event.data.address !== undefined)
       this.address = PostalAddress.fromPrimitives(event.data.address);
+    if (event.data.insuranceProvider !== undefined) {
+      this.insuranceProvider = event.data.insuranceProvider
+        ? InsuranceProvider.fromString(event.data.insuranceProvider)
+        : InsuranceProvider.empty();
+    }
+    if (event.data.policyNumber !== undefined) {
+      this.policyNumber = event.data.policyNumber
+        ? PolicyNumber.fromString(event.data.policyNumber)
+        : PolicyNumber.empty();
+    }
+    if (event.data.renewalDate !== undefined) {
+      this.renewalDate = InsuranceRenewalDate.create(event.data.renewalDate ?? null);
+    }
   }
 }

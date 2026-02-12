@@ -18,12 +18,7 @@ import { TenantFinder } from './finders/tenant.finder.js';
     GetTenantsController,
     GetATenantController,
   ],
-  providers: [
-    GetTenantsHandler,
-    GetATenantHandler,
-    TenantProjection,
-    TenantFinder,
-  ],
+  providers: [GetTenantsHandler, GetATenantHandler, TenantProjection, TenantFinder],
   exports: [TenantFinder],
 })
 export class TenantPresentationModule {}

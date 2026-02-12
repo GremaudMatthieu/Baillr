@@ -71,6 +71,9 @@ describe('TenantProjection', () => {
             city: 'Paris',
             complement: null,
           },
+          insuranceProvider: 'MAIF',
+          policyNumber: 'POL-2026-001',
+          renewalDate: '2026-12-31T00:00:00.000Z',
         },
       },
     });
@@ -94,6 +97,9 @@ describe('TenantProjection', () => {
         addressPostalCode: '75001',
         addressCity: 'Paris',
         addressComplement: null,
+        insuranceProvider: 'MAIF',
+        policyNumber: 'POL-2026-001',
+        renewalDate: new Date('2026-12-31T00:00:00.000Z'),
       },
       update: {},
     });
@@ -154,6 +160,62 @@ describe('TenantProjection', () => {
         addressPostalCode: '31000',
         addressCity: 'Toulouse',
         addressComplement: 'Bâtiment B',
+      },
+    });
+  });
+
+  it('should update insurance fields on TenantUpdated event', async () => {
+    mockPrisma.tenant.findUnique.mockResolvedValue({ id: 'tenant-1' });
+    projection.onModuleInit();
+
+    dataHandler({
+      event: {
+        type: 'TenantUpdated',
+        data: {
+          id: 'tenant-1',
+          insuranceProvider: 'AXA',
+          policyNumber: 'AXA-123',
+          renewalDate: '2027-06-15T00:00:00.000Z',
+        },
+      },
+    });
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(mockPrisma.tenant.update).toHaveBeenCalledWith({
+      where: { id: 'tenant-1' },
+      data: {
+        insuranceProvider: 'AXA',
+        policyNumber: 'AXA-123',
+        renewalDate: new Date('2027-06-15T00:00:00.000Z'),
+      },
+    });
+  });
+
+  it('should clear insurance fields when set to null on TenantUpdated', async () => {
+    mockPrisma.tenant.findUnique.mockResolvedValue({ id: 'tenant-1' });
+    projection.onModuleInit();
+
+    dataHandler({
+      event: {
+        type: 'TenantUpdated',
+        data: {
+          id: 'tenant-1',
+          insuranceProvider: null,
+          policyNumber: null,
+          renewalDate: null,
+        },
+      },
+    });
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(mockPrisma.tenant.update).toHaveBeenCalledWith({
+      where: { id: 'tenant-1' },
+      data: {
+        insuranceProvider: null,
+        policyNumber: null,
+        renewalDate: null,
       },
     });
   });

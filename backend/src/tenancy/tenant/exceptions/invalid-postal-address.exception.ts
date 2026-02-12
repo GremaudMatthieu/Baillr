@@ -7,7 +7,7 @@ export class InvalidPostalAddressException extends DomainException {
 
   static streetTooLong(): InvalidPostalAddressException {
     return new InvalidPostalAddressException(
-      'Postal address street exceeds 255 characters',
+      'Postal address street exceeds 500 characters',
       'POSTAL_ADDRESS_STREET_TOO_LONG',
     );
   }

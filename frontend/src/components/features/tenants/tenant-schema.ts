@@ -55,6 +55,17 @@ export const tenantSchema = z.object({
       .optional()
       .or(z.literal("")),
   }),
+  insuranceProvider: z
+    .string()
+    .max(255, "Le nom de l\u2019assureur ne peut pas dépasser 255 caractères")
+    .optional()
+    .or(z.literal("")),
+  policyNumber: z
+    .string()
+    .max(100, "Le numéro de police ne peut pas dépasser 100 caractères")
+    .optional()
+    .or(z.literal("")),
+  renewalDate: z.string().optional().or(z.literal("")),
 });
 
 export type TenantFormValues = z.infer<typeof tenantSchema>;

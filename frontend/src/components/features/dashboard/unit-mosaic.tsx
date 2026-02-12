@@ -7,6 +7,7 @@ import { AlertCircle, Building2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEntityUnits } from "@/hooks/use-units";
+import { useLeases } from "@/hooks/use-leases";
 import { UNIT_TYPE_LABELS } from "@/lib/constants/unit-types";
 import type { UnitWithPropertyData } from "@/lib/api/units-api";
 
@@ -107,8 +108,14 @@ function formatFloorAndSurface(
 export function UnitMosaic({ entityId }: UnitMosaicProps) {
   const router = useRouter();
   const { data: units, isLoading, isError } = useEntityUnits(entityId);
+  const { data: leases } = useLeases(entityId);
   const tileRefs = React.useRef<(HTMLButtonElement | null)[]>([]);
   const [activeIndex, setActiveIndex] = React.useState(0);
+
+  const occupiedUnitIds = React.useMemo(() => {
+    if (!leases) return new Set<string>();
+    return new Set(leases.map((l) => l.unitId));
+  }, [leases]);
 
   if (isLoading) {
     return <UnitMosaicSkeleton />;
@@ -178,6 +185,11 @@ export function UnitMosaic({ entityId }: UnitMosaicProps) {
             >
               {propertyUnits.map((unit) => {
                 const idx = unitIndexMap.get(unit.id) ?? 0;
+                const isOccupied = occupiedUnitIds.has(unit.id);
+                const statusLabel = isOccupied ? "occupé" : "vacant";
+                const bgClass = isOccupied
+                  ? "bg-green-100 dark:bg-green-900/30"
+                  : "bg-muted";
                 return (
                   <button
                     key={unit.id}
@@ -187,14 +199,14 @@ export function UnitMosaic({ entityId }: UnitMosaicProps) {
                     type="button"
                     role="gridcell"
                     tabIndex={idx === safeIndex ? 0 : -1}
-                    className="flex min-w-[120px] cursor-pointer flex-col items-start rounded-lg bg-muted p-3 text-left transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+                    className={`flex min-w-[120px] cursor-pointer flex-col items-start rounded-lg ${bgClass} p-3 text-left transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none`}
                     onClick={() =>
                       router.push(
                         `/properties/${unit.propertyId}/units/${unit.id}`,
                       )
                     }
                     onFocus={() => setActiveIndex(idx)}
-                    aria-label={`${unit.identifier}, ${UNIT_TYPE_LABELS[unit.type] ?? unit.type}, vacant`}
+                    aria-label={`${unit.identifier}, ${UNIT_TYPE_LABELS[unit.type] ?? unit.type}, ${statusLabel}`}
                   >
                     <span className="text-sm font-medium">
                       {unit.identifier}

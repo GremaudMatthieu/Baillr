@@ -2,15 +2,62 @@
 
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Pencil } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, Calendar, Euro, FileText, Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUnit } from "@/hooks/use-units";
+import { useLeases } from "@/hooks/use-leases";
+import { useTenant } from "@/hooks/use-tenants";
+import { useCurrentEntity } from "@/hooks/use-current-entity";
 import { UnitForm } from "@/components/features/units/unit-form";
 import { UNIT_TYPE_LABELS } from "@/lib/constants/unit-types";
+import { REVISION_INDEX_TYPE_LABELS } from "@/lib/constants/revision-index-types";
+import type { LeaseData } from "@/lib/api/leases-api";
+
+function formatRent(cents: number): string {
+  return new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: "EUR",
+  }).format(cents / 100);
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("fr-FR");
+}
+
+function LeaseInfo({ lease }: { lease: LeaseData }) {
+  const { data: tenant } = useTenant(lease.tenantId);
+  const tenantName = tenant
+    ? `${tenant.firstName} ${tenant.lastName}`
+    : "Chargement…";
+
+  return (
+    <Link
+      href={`/leases/${lease.id}`}
+      className="block rounded-lg border p-3 transition-colors hover:bg-accent/50"
+    >
+      <div className="space-y-1">
+        <p className="font-medium">{tenantName}</p>
+        <p className="flex items-center gap-1 text-sm text-muted-foreground">
+          <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
+          Début : {formatDate(lease.startDate)}
+        </p>
+        <p className="flex items-center gap-1 text-sm text-muted-foreground">
+          <Euro className="h-3.5 w-3.5" aria-hidden="true" />
+          {formatRent(lease.rentAmountCents)} / mois
+        </p>
+      </div>
+      <Badge variant="secondary" className="mt-2">
+        {REVISION_INDEX_TYPE_LABELS[lease.revisionIndexType] ??
+          lease.revisionIndexType}
+      </Badge>
+    </Link>
+  );
+}
 
 export default function UnitDetailPage({
   params,
@@ -19,8 +66,12 @@ export default function UnitDetailPage({
 }) {
   const { id: propertyId, unitId } = use(params);
   const router = useRouter();
+  const { entityId } = useCurrentEntity();
   const { data: unit, isLoading, error } = useUnit(unitId);
+  const { data: leases } = useLeases(entityId ?? "");
   const [isEditing, setIsEditing] = useState(false);
+
+  const unitLeases = leases?.filter((l) => l.unitId === unitId) ?? [];
 
   if (isLoading) {
     return (
@@ -161,6 +212,28 @@ export default function UnitDetailPage({
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="text-lg">Bail</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {unitLeases.length > 0 ? (
+              <div className="space-y-3">
+                {unitLeases.map((lease) => (
+                  <LeaseInfo key={lease.id} lease={lease} />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center py-6 text-center">
+                <FileText className="h-8 w-8 text-muted-foreground/50" aria-hidden="true" />
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Aucun bail pour ce lot
+                </p>
               </div>
             )}
           </CardContent>

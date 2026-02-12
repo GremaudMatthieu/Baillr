@@ -13,6 +13,9 @@ export interface TenantRegisteredData {
   email: string;
   phoneNumber: string | null;
   address: PostalAddressPrimitives;
+  insuranceProvider?: string | null;
+  policyNumber?: string | null;
+  renewalDate?: string | null;
 }
 
 export class TenantRegistered extends Event<TenantRegisteredData> {

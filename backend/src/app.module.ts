@@ -10,6 +10,7 @@ import { TenancyModule } from './tenancy/tenancy.module';
 import { EntityPresentationModule } from './presentation/entity/entity-presentation.module';
 import { PropertyPresentationModule } from './presentation/property/property-presentation.module';
 import { TenantPresentationModule } from './presentation/tenant/tenant-presentation.module';
+import { LeasePresentationModule } from './presentation/lease/lease-presentation.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -26,6 +27,7 @@ import { AppService } from './app.service';
     EntityPresentationModule,
     PropertyPresentationModule,
     TenantPresentationModule,
+    LeasePresentationModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ClerkAuthGuard }],

@@ -55,6 +55,9 @@ export function useRegisterTenant(entityId: string) {
         addressPostalCode: payload.address?.postalCode ?? null,
         addressCity: payload.address?.city ?? null,
         addressComplement: payload.address?.complement ?? null,
+        insuranceProvider: payload.insuranceProvider ?? null,
+        policyNumber: payload.policyNumber ?? null,
+        renewalDate: payload.renewalDate ?? null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -119,6 +122,15 @@ export function useUpdateTenant(tenantId: string, entityId: string) {
           addressPostalCode: payload.address.postalCode ?? null,
           addressCity: payload.address.city ?? null,
           addressComplement: payload.address.complement ?? null,
+        }),
+        ...(payload.insuranceProvider !== undefined && {
+          insuranceProvider: payload.insuranceProvider,
+        }),
+        ...(payload.policyNumber !== undefined && {
+          policyNumber: payload.policyNumber,
+        }),
+        ...(payload.renewalDate !== undefined && {
+          renewalDate: payload.renewalDate,
         }),
         updatedAt: new Date().toISOString(),
       });

@@ -51,6 +51,9 @@ export class UpdateATenantController {
               complement: dto.address.complement ?? null,
             }
           : undefined,
+        dto.insuranceProvider,
+        dto.policyNumber,
+        dto.renewalDate,
       ),
     );
   }

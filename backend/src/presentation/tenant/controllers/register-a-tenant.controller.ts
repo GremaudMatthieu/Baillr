@@ -51,6 +51,9 @@ export class RegisterATenantController {
           city: dto.address?.city ?? null,
           complement: dto.address?.complement ?? null,
         },
+        dto.insuranceProvider ?? null,
+        dto.policyNumber ?? null,
+        dto.renewalDate ?? null,
       ),
     );
   }

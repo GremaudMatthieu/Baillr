@@ -1,0 +1,25 @@
+import { Module } from '@nestjs/common';
+import { CqrsModule } from '@nestjs/cqrs';
+import { EntityPresentationModule } from '../entity/entity-presentation.module.js';
+import { TenantPresentationModule } from '../tenant/tenant-presentation.module.js';
+import { PropertyPresentationModule } from '../property/property-presentation.module.js';
+import { CreateALeaseController } from './controllers/create-a-lease.controller.js';
+import { GetLeasesController } from './controllers/get-leases.controller.js';
+import { GetALeaseController } from './controllers/get-a-lease.controller.js';
+import { GetLeasesHandler } from './queries/get-leases.handler.js';
+import { GetALeaseHandler } from './queries/get-a-lease.handler.js';
+import { LeaseProjection } from './projections/lease.projection.js';
+import { LeaseFinder } from './finders/lease.finder.js';
+
+@Module({
+  imports: [
+    CqrsModule,
+    EntityPresentationModule,
+    TenantPresentationModule,
+    PropertyPresentationModule,
+  ],
+  controllers: [CreateALeaseController, GetLeasesController, GetALeaseController],
+  providers: [GetLeasesHandler, GetALeaseHandler, LeaseProjection, LeaseFinder],
+  exports: [LeaseFinder],
+})
+export class LeasePresentationModule {}

@@ -28,6 +28,9 @@ describe('RegisterATenantHandler', () => {
       'jean.dupont@example.com',
       '0612345678',
       { street: '15 rue de la Paix', postalCode: '75002', city: 'Paris', complement: null },
+      null,
+      null,
+      null,
     );
 
     await handler.execute(command);
@@ -52,6 +55,9 @@ describe('RegisterATenantHandler', () => {
       'contact@sci-oliviers.com',
       null,
       { street: null, postalCode: null, city: null, complement: null },
+      null,
+      null,
+      null,
     );
 
     await handler.execute(command);
@@ -85,6 +91,9 @@ describe('RegisterATenantHandler', () => {
       'jean@example.com',
       null,
       { street: null, postalCode: null, city: null, complement: null },
+      null,
+      null,
+      null,
     );
 
     await expect(handler.execute(command)).rejects.toThrow('First name is required');

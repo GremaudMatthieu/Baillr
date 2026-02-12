@@ -79,6 +79,9 @@ const editTenant: TenantData = {
   addressPostalCode: "75001",
   addressCity: "Paris",
   addressComplement: null,
+  insuranceProvider: null,
+  policyNumber: null,
+  renewalDate: null,
   createdAt: "2026-01-01T00:00:00Z",
   updatedAt: "2026-01-01T00:00:00Z",
 };

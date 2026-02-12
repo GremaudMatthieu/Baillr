@@ -97,6 +97,9 @@ describe('RegisterATenantController', () => {
       city: 'Paris',
       complement: 'Apt 3B',
     });
+    expect(command.insuranceProvider).toBeNull();
+    expect(command.policyNumber).toBeNull();
+    expect(command.renewalDate).toBeNull();
   });
 
   it('should dispatch RegisterATenantCommand for company tenant', async () => {
@@ -139,6 +142,29 @@ describe('RegisterATenantController', () => {
       city: null,
       complement: null,
     });
+    expect(command.insuranceProvider).toBeNull();
+    expect(command.policyNumber).toBeNull();
+    expect(command.renewalDate).toBeNull();
+  });
+
+  it('should dispatch RegisterATenantCommand with insurance fields', async () => {
+    const dto = {
+      id: '990e8400-e29b-41d4-a716-446655440004',
+      type: 'individual',
+      firstName: 'Claire',
+      lastName: 'Morel',
+      email: 'claire@example.com',
+      insuranceProvider: 'MAIF',
+      policyNumber: 'POL-2026-001',
+      renewalDate: '2026-12-31T00:00:00.000Z',
+    };
+
+    await controller.handle('entity-id', dto, 'user_clerk_123');
+
+    const command = commandBus.execute.mock.calls[0]?.[0] as RegisterATenantCommand;
+    expect(command.insuranceProvider).toBe('MAIF');
+    expect(command.policyNumber).toBe('POL-2026-001');
+    expect(command.renewalDate).toBe('2026-12-31T00:00:00.000Z');
   });
 
   it('should return void (202 Accepted)', async () => {

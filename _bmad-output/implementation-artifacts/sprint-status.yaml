@@ -67,9 +67,9 @@ development_status:
 
   # Epic 3: Tenant & Lease Management (6 stories)
   epic-3: in-progress
-  3-1-register-tenants-with-contact-information: review
-  3-2-track-tenant-insurance-with-expiry-alerts: backlog
-  3-3-create-a-lease-linking-tenant-to-unit: backlog
+  3-1-register-tenants-with-contact-information: done
+  3-2-track-tenant-insurance-with-expiry-alerts: done
+  3-3-create-a-lease-linking-tenant-to-unit: done
   3-4-configure-billing-lines-per-lease: backlog
   3-5-configure-lease-revision-parameters: backlog
   3-6-terminate-a-lease-with-pro-rata-calculation: backlog

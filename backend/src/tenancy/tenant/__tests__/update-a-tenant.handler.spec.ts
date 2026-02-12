@@ -17,6 +17,9 @@ function createExistingTenant(): TenantAggregate {
     'jean.dupont@example.com',
     '0612345678',
     { street: '15 rue de la Paix', postalCode: '75002', city: 'Paris', complement: null },
+    null,
+    null,
+    null,
   );
   aggregate.commit();
   return aggregate;

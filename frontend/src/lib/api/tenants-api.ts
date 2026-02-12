@@ -16,6 +16,9 @@ export interface TenantData {
   addressPostalCode: string | null;
   addressCity: string | null;
   addressComplement: string | null;
+  insuranceProvider: string | null;
+  policyNumber: string | null;
+  renewalDate: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -35,6 +38,9 @@ export interface RegisterTenantPayload {
     city?: string;
     complement?: string;
   };
+  insuranceProvider?: string;
+  policyNumber?: string;
+  renewalDate?: string;
 }
 
 export interface UpdateTenantPayload {
@@ -50,6 +56,9 @@ export interface UpdateTenantPayload {
     city?: string;
     complement?: string;
   };
+  insuranceProvider?: string | null;
+  policyNumber?: string | null;
+  renewalDate?: string | null;
 }
 
 export function useTenantsApi() {

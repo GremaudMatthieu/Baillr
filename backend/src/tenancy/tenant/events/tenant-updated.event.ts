@@ -10,6 +10,9 @@ export interface TenantUpdatedData {
   email?: string;
   phoneNumber?: string | null;
   address?: PostalAddressPrimitives;
+  insuranceProvider?: string | null;
+  policyNumber?: string | null;
+  renewalDate?: string | null;
 }
 
 export class TenantUpdated extends Event<TenantUpdatedData> {

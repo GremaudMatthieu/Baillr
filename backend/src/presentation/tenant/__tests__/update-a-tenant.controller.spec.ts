@@ -106,6 +106,32 @@ describe('UpdateATenantController', () => {
     expect(command.phoneNumber).toBeNull();
   });
 
+  it('should dispatch UpdateATenantCommand with insurance fields', async () => {
+    const dto = {
+      insuranceProvider: 'AXA',
+      policyNumber: 'AXA-2026-999',
+      renewalDate: '2027-03-15T00:00:00.000Z',
+    };
+
+    await controller.handle('tenant-id', dto, 'user_clerk_123');
+
+    const command = commandBus.execute.mock.calls[0]?.[0] as UpdateATenantCommand;
+    expect(command.insuranceProvider).toBe('AXA');
+    expect(command.policyNumber).toBe('AXA-2026-999');
+    expect(command.renewalDate).toBe('2027-03-15T00:00:00.000Z');
+  });
+
+  it('should handle insurance fields set to null', async () => {
+    const dto = { insuranceProvider: null, policyNumber: null, renewalDate: null };
+
+    await controller.handle('tenant-id', dto, 'user_clerk_123');
+
+    const command = commandBus.execute.mock.calls[0]?.[0] as UpdateATenantCommand;
+    expect(command.insuranceProvider).toBeNull();
+    expect(command.policyNumber).toBeNull();
+    expect(command.renewalDate).toBeNull();
+  });
+
   it('should return void (202 Accepted)', async () => {
     const dto = { firstName: 'Test' };
 

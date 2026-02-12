@@ -24,6 +24,7 @@ model OwnershipEntity {
   bankAccounts BankAccount[]
   properties   Property[]
   tenants      Tenant[]
+  leases       Lease[]
 
   @@map("ownership_entities")
   @@index([userId])
@@ -64,6 +65,7 @@ model Unit {
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   property Property @relation(fields: [propertyId], references: [id])
+  leases   Lease[]
 
   @@map("units")
   @@unique([propertyId, identifier])
@@ -103,13 +105,42 @@ model Tenant {
   addressStreet     String?  @map("address_street")
   addressPostalCode String?  @map("address_postal_code")
   addressCity       String?  @map("address_city")
-  addressComplement String?  @map("address_complement")
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  addressComplement String?   @map("address_complement")
+  insuranceProvider String?   @map("insurance_provider")
+  policyNumber      String?   @map("policy_number")
+  renewalDate       DateTime? @map("renewal_date")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
 
   entity OwnershipEntity @relation(fields: [entityId], references: [id])
+  leases Lease[]
 
   @@map("tenants")
   @@index([entityId])
+  @@index([userId])
+}
+
+model Lease {
+  id                   String   @id @default(uuid())
+  entityId             String   @map("entity_id")
+  userId               String   @map("user_id")
+  tenantId             String   @map("tenant_id")
+  unitId               String   @map("unit_id")
+  startDate            DateTime @map("start_date")
+  rentAmountCents      Int      @map("rent_amount_cents")
+  securityDepositCents Int      @map("security_deposit_cents")
+  monthlyDueDate       Int      @map("monthly_due_date")
+  revisionIndexType    String   @map("revision_index_type")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  entity OwnershipEntity @relation(fields: [entityId], references: [id])
+  tenant Tenant          @relation(fields: [tenantId], references: [id])
+  unit   Unit            @relation(fields: [unitId], references: [id])
+
+  @@map("leases")
+  @@index([entityId])
+  @@index([tenantId])
+  @@index([unitId])
   @@index([userId])
 }

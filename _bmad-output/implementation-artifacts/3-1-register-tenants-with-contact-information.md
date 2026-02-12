@@ -1,6 +1,6 @@
 # Story 3.1: Register Tenants with Contact Information
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

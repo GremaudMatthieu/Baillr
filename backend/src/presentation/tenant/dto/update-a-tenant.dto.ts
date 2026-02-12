@@ -4,6 +4,7 @@ import {
   Length,
   MaxLength,
   IsEmail,
+  IsDateString,
   Matches,
   ValidateIf,
   ValidateNested,
@@ -50,4 +51,21 @@ export class UpdateATenantDto {
   @ValidateNested()
   @Type(() => PostalAddressDto)
   address?: PostalAddressDto;
+
+  @ValidateIf((_o, value) => value !== null)
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  insuranceProvider?: string | null;
+
+  @ValidateIf((_o, value) => value !== null)
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  policyNumber?: string | null;
+
+  @ValidateIf((_o, value) => value !== null)
+  @IsOptional()
+  @IsDateString()
+  renewalDate?: string | null;
 }

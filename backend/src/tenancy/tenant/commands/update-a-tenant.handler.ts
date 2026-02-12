@@ -20,6 +20,9 @@ export class UpdateATenantHandler implements ICommandHandler<UpdateATenantComman
       email: command.email,
       phoneNumber: command.phoneNumber,
       address: command.address,
+      insuranceProvider: command.insuranceProvider,
+      policyNumber: command.policyNumber,
+      renewalDate: command.renewalDate,
     });
     await this.repository.save(tenant);
   }

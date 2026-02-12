@@ -13,9 +13,7 @@ export class GetTenantsController {
     @Param('entityId', ParseUUIDPipe) entityId: string,
     @CurrentUser() userId: string,
   ): Promise<{ data: Tenant[] }> {
-    const tenants: Tenant[] = await this.queryBus.execute(
-      new GetTenantsQuery(entityId, userId),
-    );
+    const tenants: Tenant[] = await this.queryBus.execute(new GetTenantsQuery(entityId, userId));
     return { data: tenants };
   }
 }

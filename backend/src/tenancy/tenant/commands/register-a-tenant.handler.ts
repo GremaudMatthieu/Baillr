@@ -23,6 +23,9 @@ export class RegisterATenantHandler implements ICommandHandler<RegisterATenantCo
       command.email,
       command.phoneNumber,
       command.address,
+      command.insuranceProvider,
+      command.policyNumber,
+      command.renewalDate,
     );
     await this.repository.save(tenant);
   }

@@ -13,5 +13,8 @@ export class RegisterATenantCommand {
     public readonly email: string,
     public readonly phoneNumber: string | null,
     public readonly address: PostalAddressPrimitives,
+    public readonly insuranceProvider: string | null,
+    public readonly policyNumber: string | null,
+    public readonly renewalDate: string | null,
   ) {}
 }

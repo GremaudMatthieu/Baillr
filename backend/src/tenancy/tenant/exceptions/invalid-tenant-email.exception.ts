@@ -14,9 +14,6 @@ export class InvalidTenantEmailException extends DomainException {
   }
 
   static tooLong(): InvalidTenantEmailException {
-    return new InvalidTenantEmailException(
-      'Email exceeds 255 characters',
-      'TENANT_EMAIL_TOO_LONG',
-    );
+    return new InvalidTenantEmailException('Email exceeds 255 characters', 'TENANT_EMAIL_TOO_LONG');
   }
 }

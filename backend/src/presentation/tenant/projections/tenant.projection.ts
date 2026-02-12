@@ -84,6 +84,9 @@ export class TenantProjection implements OnModuleInit {
         addressPostalCode: data.address.postalCode,
         addressCity: data.address.city,
         addressComplement: data.address.complement,
+        insuranceProvider: data.insuranceProvider ?? null,
+        policyNumber: data.policyNumber ?? null,
+        renewalDate: data.renewalDate ? new Date(data.renewalDate) : null,
       },
       update: {},
     });
@@ -105,6 +108,10 @@ export class TenantProjection implements OnModuleInit {
       updateData.addressCity = data.address.city;
       updateData.addressComplement = data.address.complement;
     }
+    if (data.insuranceProvider !== undefined) updateData.insuranceProvider = data.insuranceProvider;
+    if (data.policyNumber !== undefined) updateData.policyNumber = data.policyNumber;
+    if (data.renewalDate !== undefined)
+      updateData.renewalDate = data.renewalDate ? new Date(data.renewalDate) : null;
 
     const exists = await this.prisma.tenant.findUnique({
       where: { id: data.id },

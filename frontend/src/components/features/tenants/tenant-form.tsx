@@ -60,6 +60,11 @@ export function TenantForm({ tenant, onCancel }: TenantFormProps) {
             city: tenant.addressCity ?? "",
             complement: tenant.addressComplement ?? "",
           },
+          insuranceProvider: tenant.insuranceProvider ?? "",
+          policyNumber: tenant.policyNumber ?? "",
+          renewalDate: tenant.renewalDate
+            ? tenant.renewalDate.slice(0, 10)
+            : "",
         }
       : {
           type: "",
@@ -75,6 +80,9 @@ export function TenantForm({ tenant, onCancel }: TenantFormProps) {
             city: "",
             complement: "",
           },
+          insuranceProvider: "",
+          policyNumber: "",
+          renewalDate: "",
         },
   });
 
@@ -125,6 +133,12 @@ export function TenantForm({ tenant, onCancel }: TenantFormProps) {
             }
           : undefined;
 
+      const insuranceProvider = data.insuranceProvider || undefined;
+      const policyNumber = data.policyNumber || undefined;
+      const renewalDate = data.renewalDate
+        ? new Date(data.renewalDate).toISOString()
+        : undefined;
+
       if (isEditing) {
         await updateTenant.mutateAsync({
           firstName: data.firstName,
@@ -134,6 +148,9 @@ export function TenantForm({ tenant, onCancel }: TenantFormProps) {
           email: data.email,
           phoneNumber: data.phoneNumber || null,
           address,
+          insuranceProvider: insuranceProvider ?? null,
+          policyNumber: policyNumber ?? null,
+          renewalDate: renewalDate ?? null,
         });
       } else {
         const id = crypto.randomUUID();
@@ -147,6 +164,9 @@ export function TenantForm({ tenant, onCancel }: TenantFormProps) {
           email: data.email,
           phoneNumber: data.phoneNumber || undefined,
           address,
+          insuranceProvider,
+          policyNumber,
+          renewalDate,
         });
       }
       router.back();
@@ -379,6 +399,54 @@ export function TenantForm({ tenant, onCancel }: TenantFormProps) {
                 <FormLabel>Complément d&apos;adresse (optionnel)</FormLabel>
                 <FormControl>
                   <Input placeholder="Bâtiment B, 3ème étage" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </fieldset>
+
+        <fieldset className="space-y-4">
+          <legend className="text-sm font-medium">
+            Assurance habitation (optionnel)
+          </legend>
+
+          <FormField
+            control={form.control}
+            name="insuranceProvider"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Assureur</FormLabel>
+                <FormControl>
+                  <Input placeholder="MAIF, AXA, etc." {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="policyNumber"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Numéro de police</FormLabel>
+                <FormControl>
+                  <Input placeholder="POL-2026-001" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="renewalDate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Date de renouvellement</FormLabel>
+                <FormControl>
+                  <Input type="date" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

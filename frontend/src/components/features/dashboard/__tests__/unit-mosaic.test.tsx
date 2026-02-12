@@ -24,6 +24,10 @@ vi.mock("@/hooks/use-units", () => ({
   useEntityUnits: (...args: unknown[]) => mockUseEntityUnits(...args),
 }));
 
+vi.mock("@/hooks/use-leases", () => ({
+  useLeases: () => ({ data: [] }),
+}));
+
 const mockUnits: UnitWithPropertyData[] = [
   {
     id: "unit-1",

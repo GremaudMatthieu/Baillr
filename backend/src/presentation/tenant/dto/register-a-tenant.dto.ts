@@ -6,6 +6,7 @@ import {
   MaxLength,
   IsOptional,
   IsEmail,
+  IsDateString,
   Matches,
   ValidateNested,
 } from 'class-validator';
@@ -52,4 +53,18 @@ export class RegisterATenantDto {
   @ValidateNested()
   @Type(() => PostalAddressDto)
   address?: PostalAddressDto;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  insuranceProvider?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  policyNumber?: string;
+
+  @IsOptional()
+  @IsDateString()
+  renewalDate?: string;
 }

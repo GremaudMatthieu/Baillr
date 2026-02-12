@@ -58,6 +58,18 @@ interface CreateUnitParams {
   billableOptions?: { label: string; amountCents: number }[];
 }
 
+interface CreateLeaseParams {
+  entityId: string;
+  id?: string;
+  tenantId: string;
+  unitId: string;
+  startDate?: string;
+  rentAmountCents?: number;
+  securityDepositCents?: number;
+  monthlyDueDate?: number;
+  revisionIndexType?: 'IRL' | 'ILC' | 'ICC';
+}
+
 interface RegisterTenantParams {
   entityId: string;
   id?: string;
@@ -344,6 +356,59 @@ export class ApiHelper {
     }
     throw new Error(
       `Timed out waiting for ${expectedCount} tenants (${timeoutMs}ms)`,
+    );
+  }
+
+  async createLease(params: CreateLeaseParams) {
+    const id = params.id ?? randomUUID();
+    const response = await this.request.post(
+      `${API_BASE}/api/entities/${params.entityId}/leases`,
+      {
+        headers: this.headers(),
+        data: {
+          id,
+          tenantId: params.tenantId,
+          unitId: params.unitId,
+          startDate: params.startDate ?? '2026-03-01T00:00:00.000Z',
+          rentAmountCents: params.rentAmountCents ?? 63000,
+          securityDepositCents: params.securityDepositCents ?? 63000,
+          monthlyDueDate: params.monthlyDueDate ?? 5,
+          revisionIndexType: params.revisionIndexType ?? 'IRL',
+        },
+      },
+    );
+    if (!response.ok()) {
+      throw new Error(
+        `Failed to create lease: ${response.status()} ${await response.text()}`,
+      );
+    }
+    return id;
+  }
+
+  async getLeases(entityId: string) {
+    const response = await this.request.get(
+      `${API_BASE}/api/entities/${entityId}/leases`,
+      { headers: this.headers() },
+    );
+    if (!response.ok()) {
+      throw new Error(`Failed to get leases: ${response.status()}`);
+    }
+    return (await response.json()) as { data: Record<string, unknown>[] };
+  }
+
+  async waitForLeaseCount(
+    entityId: string,
+    expectedCount: number,
+    timeoutMs = 5000,
+  ) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      const { data } = await this.getLeases(entityId);
+      if (data.length >= expectedCount) return data;
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    throw new Error(
+      `Timed out waiting for ${expectedCount} leases (${timeoutMs}ms)`,
     );
   }
 

@@ -203,4 +203,76 @@ test.describe('Tenant management', () => {
       page.getByText('Enregistrez vos locataires'),
     ).not.toBeVisible();
   });
+
+  test('5.6 — edit tenant to add insurance fields', async ({ page }) => {
+    test.skip(!tenantId, 'Requires tenant from registration test');
+
+    await page.goto(`/tenants/${tenantId}`);
+    await expect(page.getByText('Jean-Pierre Dupont')).toBeVisible({
+      timeout: 10_000,
+    });
+
+    // Insurance card should show "Aucune assurance renseignée"
+    await expect(
+      page.getByText('Aucune assurance renseignée'),
+    ).toBeVisible();
+
+    // Click edit
+    await page.getByRole('button', { name: /modifier/i }).click();
+    await expect(
+      page.getByText('Assurance habitation (optionnel)'),
+    ).toBeVisible();
+
+    // Fill insurance fields
+    await page.getByLabel('Assureur').fill('MAIF');
+    await page.getByLabel('Numéro de police').fill('POL-2026-TEST');
+    await page.getByLabel('Date de renouvellement').fill('2026-12-31');
+
+    // Submit
+    await page.getByRole('button', { name: /^Enregistrer$/i }).click();
+
+    // Verify insurance shows on detail page
+    await page.goto(`/tenants/${tenantId}`);
+    await expect(page.getByText('MAIF')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('POL-2026-TEST')).toBeVisible();
+  });
+
+  test('5.7 — register tenant with insurance fields', async ({ page }) => {
+    test.skip(!entityId, 'Requires entity from seed test');
+
+    await page.goto('/tenants/new');
+
+    // Select type
+    await page.getByText('Sélectionnez un type').click();
+    await page.getByRole('option', { name: 'Particulier' }).click();
+
+    // Fill basic info
+    await page.getByLabel('Prénom').fill('Claire');
+    await page.getByLabel('Nom').fill('Morel');
+    await page
+      .getByLabel('Email')
+      .fill(`claire.morel.${timestamp}@example.com`);
+
+    // Fill insurance fields
+    await page.getByLabel('Assureur').fill('AXA');
+    await page.getByLabel('Numéro de police').fill('AXA-2026-E2E');
+    await page.getByLabel('Date de renouvellement').fill('2027-06-15');
+
+    // Submit
+    await page
+      .getByRole('button', { name: 'Enregistrer le locataire' })
+      .click();
+
+    // Should navigate back to tenants list
+    await expect(page).toHaveURL('/tenants', { timeout: 10_000 });
+    await expect(page.getByText('Claire Morel')).toBeVisible({
+      timeout: 10_000,
+    });
+
+    // Navigate to detail to verify insurance
+    await page.getByText('Claire Morel').first().click();
+    await page.waitForURL(/\/tenants\/[\w-]+/);
+    await expect(page.getByText('AXA')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('AXA-2026-E2E')).toBeVisible();
+  });
 });

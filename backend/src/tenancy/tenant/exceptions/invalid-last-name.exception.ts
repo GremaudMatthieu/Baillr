@@ -10,9 +10,6 @@ export class InvalidLastNameException extends DomainException {
   }
 
   static tooLong(): InvalidLastNameException {
-    return new InvalidLastNameException(
-      'Last name exceeds 100 characters',
-      'LAST_NAME_TOO_LONG',
-    );
+    return new InvalidLastNameException('Last name exceeds 100 characters', 'LAST_NAME_TOO_LONG');
   }
 }
