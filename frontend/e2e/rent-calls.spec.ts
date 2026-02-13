@@ -110,9 +110,50 @@ test.describe('Rent call generation', () => {
     });
   });
 
-  test('7.3 — verify ActionFeed shows rent call step before generation', async ({
+  test('7.3 — verify PDF download button visible after generation', async ({
     page,
-    request,
+  }) => {
+    test.skip(!entityId, 'Requires seed data');
+
+    await page.goto('/rent-calls');
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Appels de loyer' }),
+    ).toBeVisible();
+
+    // Wait for rent call list to appear
+    await expect(page.getByText('Marie Martin')).toBeVisible({ timeout: 10_000 });
+
+    // PDF download button should be visible
+    const downloadBtn = page.getByRole('button', { name: /Télécharger PDF/ });
+    await expect(downloadBtn).toBeVisible();
+    await expect(downloadBtn).toBeEnabled();
+  });
+
+  test('7.4 — click PDF download triggers file download', async ({
+    page,
+  }) => {
+    test.skip(!entityId, 'Requires seed data');
+
+    await page.goto('/rent-calls');
+    await expect(page.getByText('Marie Martin')).toBeVisible({ timeout: 10_000 });
+
+    const downloadBtn = page.getByRole('button', { name: /Télécharger PDF/ });
+    await expect(downloadBtn).toBeVisible();
+
+    // Wait for the download event
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      downloadBtn.click(),
+    ]);
+
+    // Verify the download has a PDF content type via filename
+    const suggestedFilename = download.suggestedFilename();
+    expect(suggestedFilename).toContain('appel-loyer');
+    expect(suggestedFilename).toContain('.pdf');
+  });
+
+  test('7.5 — verify ActionFeed shows rent call step before generation', async ({
+    page,
   }) => {
     // This test verifies that for a NEW entity with leases but no rent calls,
     // the ActionFeed shows the rent call generation step.

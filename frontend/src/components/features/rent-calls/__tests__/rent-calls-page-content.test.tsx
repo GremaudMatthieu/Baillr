@@ -9,6 +9,12 @@ vi.mock("@/hooks/use-rent-calls", () => ({
     mutate: vi.fn(),
     isPending: false,
   }),
+  useDownloadRentCallPdf: () => ({
+    downloadPdf: vi.fn(),
+    isDownloading: false,
+    downloadingId: null,
+    error: null,
+  }),
 }));
 
 vi.mock("@/hooks/use-leases", () => ({

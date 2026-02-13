@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/test/test-utils";
 import { RentCallList } from "../rent-call-list";
 import type { RentCallData } from "@/lib/api/rent-calls-api";
@@ -106,5 +107,105 @@ describe("RentCallList", () => {
 
     expect(screen.getByText("Locataire inconnu")).toBeInTheDocument();
     expect(screen.getByText("Lot inconnu")).toBeInTheDocument();
+  });
+
+  it("should render download PDF button when onDownloadPdf is provided", () => {
+    renderWithProviders(
+      <RentCallList
+        rentCalls={[baseRentCall]}
+        tenantNames={tenantNames}
+        unitIdentifiers={unitIdentifiers}
+        onDownloadPdf={() => {}}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: /Télécharger PDF/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("should not render download button when onDownloadPdf is not provided", () => {
+    renderWithProviders(
+      <RentCallList
+        rentCalls={[baseRentCall]}
+        tenantNames={tenantNames}
+        unitIdentifiers={unitIdentifiers}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: /Télécharger PDF/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("should call onDownloadPdf when download button is clicked", async () => {
+    const user = userEvent.setup();
+    const onDownloadPdf = vi.fn();
+
+    renderWithProviders(
+      <RentCallList
+        rentCalls={[baseRentCall]}
+        tenantNames={tenantNames}
+        unitIdentifiers={unitIdentifiers}
+        onDownloadPdf={onDownloadPdf}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: /Télécharger PDF/i }),
+    );
+    expect(onDownloadPdf).toHaveBeenCalledWith("rc-1");
+  });
+
+  it("should disable download button when downloading", () => {
+    renderWithProviders(
+      <RentCallList
+        rentCalls={[baseRentCall]}
+        tenantNames={tenantNames}
+        unitIdentifiers={unitIdentifiers}
+        onDownloadPdf={() => {}}
+        downloadingId="rc-1"
+      />,
+    );
+
+    const button = screen.getByRole("button", { name: /Télécharger PDF/i });
+    expect(button).toBeDisabled();
+  });
+
+  it("should disable all download buttons when any download is in progress", () => {
+    const secondRentCall: RentCallData = {
+      ...baseRentCall,
+      id: "rc-2",
+      tenantId: "tenant-1",
+    };
+
+    renderWithProviders(
+      <RentCallList
+        rentCalls={[baseRentCall, secondRentCall]}
+        tenantNames={tenantNames}
+        unitIdentifiers={unitIdentifiers}
+        onDownloadPdf={() => {}}
+        downloadingId="rc-1"
+      />,
+    );
+
+    const buttons = screen.getAllByRole("button", { name: /Télécharger PDF/i });
+    expect(buttons).toHaveLength(2);
+    expect(buttons[0]).toBeDisabled();
+    expect(buttons[1]).toBeDisabled();
+  });
+
+  it("should display download error when present", () => {
+    renderWithProviders(
+      <RentCallList
+        rentCalls={[baseRentCall]}
+        tenantNames={tenantNames}
+        unitIdentifiers={unitIdentifiers}
+        onDownloadPdf={() => {}}
+        downloadError="Erreur de téléchargement"
+      />,
+    );
+
+    expect(screen.getByText("Erreur de téléchargement")).toBeInTheDocument();
   });
 });

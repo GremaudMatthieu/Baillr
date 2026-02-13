@@ -13,6 +13,7 @@ import { PropertyPresentationModule } from './presentation/property/property-pre
 import { TenantPresentationModule } from './presentation/tenant/tenant-presentation.module';
 import { LeasePresentationModule } from './presentation/lease/lease-presentation.module';
 import { RentCallPresentationModule } from './presentation/rent-call/rent-call-presentation.module';
+import { DocumentModule } from './infrastructure/document/document.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -24,6 +25,7 @@ import { AppService } from './app.service';
     DatabaseModule,
     EventStoreModule,
     AuthModule,
+    DocumentModule,
     PortfolioModule,
     TenancyModule,
     BillingModule,

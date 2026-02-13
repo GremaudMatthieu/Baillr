@@ -12,7 +12,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useRentCalls, useGenerateRentCalls } from "@/hooks/use-rent-calls";
+import {
+  useRentCalls,
+  useGenerateRentCalls,
+  useDownloadRentCallPdf,
+} from "@/hooks/use-rent-calls";
 import { useLeases } from "@/hooks/use-leases";
 import { useTenants } from "@/hooks/use-tenants";
 import { useEntityUnits } from "@/hooks/use-units";
@@ -63,6 +67,11 @@ export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
   const { data: tenants } = useTenants(entityId);
   const { data: units } = useEntityUnits(entityId);
   const generateMutation = useGenerateRentCalls(entityId);
+  const {
+    downloadPdf,
+    downloadingId,
+    error: downloadError,
+  } = useDownloadRentCallPdf(entityId);
 
   const activeLeases = React.useMemo(() => {
     if (!leases) return [];
@@ -182,6 +191,9 @@ export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
           rentCalls={rentCalls}
           tenantNames={tenantNames}
           unitIdentifiers={unitIdentifiers}
+          onDownloadPdf={downloadPdf}
+          downloadingId={downloadingId}
+          downloadError={downloadError}
         />
       )}
 

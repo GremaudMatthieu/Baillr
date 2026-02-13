@@ -29,6 +29,45 @@ export interface GenerationResult {
   exceptions: string[];
 }
 
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
+
+export async function downloadRentCallPdf(
+  entityId: string,
+  rentCallId: string,
+  getToken: () => Promise<string | null>,
+): Promise<{ blob: Blob; filename: string }> {
+  const token = await getToken();
+  if (!token) {
+    throw new Error("Authentication required");
+  }
+  const response = await fetch(
+    `${BACKEND_URL}/api/entities/${entityId}/rent-calls/${rentCallId}/pdf`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/pdf",
+      },
+    },
+  );
+  if (!response.ok) {
+    const contentType = response.headers.get("content-type");
+    let message = `Download failed: ${response.status}`;
+    if (contentType?.includes("application/json")) {
+      const error = (await response.json()) as { message?: string };
+      if (error.message) {
+        message = error.message;
+      }
+    }
+    throw new Error(message);
+  }
+  const disposition = response.headers.get("Content-Disposition") ?? "";
+  const match = disposition.match(/filename="?([^";\n]+)"?/);
+  const filename = match?.[1] ?? `appel-loyer-${rentCallId}.pdf`;
+  const blob = await response.blob();
+  return { blob, filename };
+}
+
 export function useRentCallsApi() {
   const { getToken } = useAuth();
 
