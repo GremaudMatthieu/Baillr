@@ -6,15 +6,21 @@ import React from "react";
 // Mock the API module
 const mockGenerateRentCalls = vi.fn();
 const mockGetRentCalls = vi.fn();
+const mockSendRentCallsByEmail = vi.fn();
 
 vi.mock("@/lib/api/rent-calls-api", () => ({
   useRentCallsApi: () => ({
     generateRentCalls: mockGenerateRentCalls,
     getRentCalls: mockGetRentCalls,
+    sendRentCallsByEmail: mockSendRentCallsByEmail,
   }),
 }));
 
-import { useRentCalls, useGenerateRentCalls } from "../use-rent-calls";
+import {
+  useRentCalls,
+  useGenerateRentCalls,
+  useSendRentCallsByEmail,
+} from "../use-rent-calls";
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -90,5 +96,64 @@ describe("useGenerateRentCalls", () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error?.message).toBe("Already generated");
+  });
+});
+
+describe("useSendRentCallsByEmail", () => {
+  it("should call send API on mutate and return SendResult", async () => {
+    const mockResult = {
+      sent: 3,
+      failed: 1,
+      totalAmountCents: 255000,
+      failures: ["Jean Dupont"],
+    };
+    mockSendRentCallsByEmail.mockResolvedValue(mockResult);
+
+    const { result } = renderHook(
+      () => useSendRentCallsByEmail("entity-1"),
+      { wrapper: createWrapper() },
+    );
+
+    result.current.mutate("2026-02");
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual(mockResult);
+    expect(mockSendRentCallsByEmail).toHaveBeenCalledWith("entity-1", "2026-02");
+  });
+
+  it("should handle API error", async () => {
+    mockSendRentCallsByEmail.mockRejectedValue(new Error("SMTP error"));
+
+    const { result } = renderHook(
+      () => useSendRentCallsByEmail("entity-1"),
+      { wrapper: createWrapper() },
+    );
+
+    result.current.mutate("2026-02");
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toBe("SMTP error");
+  });
+
+  it("should return SendResult with failures", async () => {
+    const mockResult = {
+      sent: 0,
+      failed: 2,
+      totalAmountCents: 0,
+      failures: ["Tenant A", "Tenant B"],
+    };
+    mockSendRentCallsByEmail.mockResolvedValue(mockResult);
+
+    const { result } = renderHook(
+      () => useSendRentCallsByEmail("entity-1"),
+      { wrapper: createWrapper() },
+    );
+
+    result.current.mutate("2026-02");
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.failures).toEqual(["Tenant A", "Tenant B"]);
+    expect(result.current.data?.sent).toBe(0);
+    expect(result.current.data?.failed).toBe(2);
   });
 });

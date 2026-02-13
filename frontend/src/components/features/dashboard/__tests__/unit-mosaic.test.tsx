@@ -28,6 +28,10 @@ vi.mock("@/hooks/use-leases", () => ({
   useLeases: () => ({ data: [] }),
 }));
 
+vi.mock("@/hooks/use-rent-calls", () => ({
+  useRentCalls: () => ({ data: [] }),
+}));
+
 const mockUnits: UnitWithPropertyData[] = [
   {
     id: "unit-1",

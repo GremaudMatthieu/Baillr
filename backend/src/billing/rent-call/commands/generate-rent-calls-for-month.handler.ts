@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { InjectAggregateRepository, AggregateRepository } from 'nestjs-cqrx';
 import { RentCallAggregate } from '../rent-call.aggregate.js';
@@ -5,6 +6,8 @@ import {
   GenerateRentCallsForMonthCommand,
   BatchHandlerResult,
 } from './generate-rent-calls-for-month.command.js';
+import { RentCallMonth } from '../rent-call-month.js';
+import { RentCallCalculationService } from '../rent-call-calculation.service.js';
 
 @CommandHandler(GenerateRentCallsForMonthCommand)
 export class GenerateRentCallsForMonthHandler implements ICommandHandler<
@@ -12,34 +15,44 @@ export class GenerateRentCallsForMonthHandler implements ICommandHandler<
   BatchHandlerResult
 > {
   constructor(
+    private readonly calculationService: RentCallCalculationService,
     @InjectAggregateRepository(RentCallAggregate)
     private readonly repository: AggregateRepository<RentCallAggregate>,
   ) {}
 
   async execute(command: GenerateRentCallsForMonthCommand): Promise<BatchHandlerResult> {
-    if (command.rentCallData.length === 0) {
+    const { entityId, userId, month, activeLeases } = command;
+
+    if (activeLeases.length === 0) {
+      return { generated: 0, totalAmountCents: 0, exceptions: [] };
+    }
+
+    const rentCallMonth = RentCallMonth.fromString(month);
+    const calculations = this.calculationService.calculateForMonth(activeLeases, rentCallMonth);
+
+    if (calculations.length === 0) {
       return { generated: 0, totalAmountCents: 0, exceptions: [] };
     }
 
     const results = await Promise.allSettled(
-      command.rentCallData.map(async (item) => {
-        const rentCall = new RentCallAggregate(item.id);
+      calculations.map(async (calc) => {
+        const rentCall = new RentCallAggregate(randomUUID());
         rentCall.generate(
-          command.entityId,
-          command.userId,
-          item.leaseId,
-          item.tenantId,
-          item.unitId,
-          command.month,
-          item.rentAmountCents,
-          item.billingLines,
-          item.totalAmountCents,
-          item.isProRata,
-          item.occupiedDays,
-          item.totalDaysInMonth,
+          entityId,
+          userId,
+          calc.leaseId,
+          calc.tenantId,
+          calc.unitId,
+          month,
+          calc.rentAmountCents,
+          calc.billingLines,
+          calc.totalAmountCents,
+          calc.isProRata,
+          calc.occupiedDays,
+          calc.totalDaysInMonth,
         );
         await this.repository.save(rentCall);
-        return item;
+        return calc;
       }),
     );
 

@@ -3,6 +3,7 @@ import { KurrentDbService } from '@infrastructure/eventstore/kurrentdb.service';
 import { PrismaService } from '@infrastructure/database/prisma.service';
 import { START, streamNameFilter } from '@kurrent/kurrentdb-client';
 import type { RentCallGeneratedData } from '@billing/rent-call/events/rent-call-generated.event';
+import type { RentCallSentData } from '@billing/rent-call/events/rent-call-sent.event';
 
 @Injectable()
 export class RentCallProjection implements OnModuleInit {
@@ -73,6 +74,9 @@ export class RentCallProjection implements OnModuleInit {
           }
           await this.onRentCallGenerated(data as unknown as RentCallGeneratedData);
           break;
+        case 'RentCallSent':
+          await this.onRentCallSent(data as unknown as RentCallSentData);
+          break;
         default:
           break;
       }
@@ -117,5 +121,26 @@ export class RentCallProjection implements OnModuleInit {
       },
     });
     this.logger.log(`Projected RentCallGenerated for ${data.rentCallId}`);
+  }
+
+  private async onRentCallSent(data: RentCallSentData): Promise<void> {
+    const existing = await this.prisma.rentCall.findUnique({
+      where: { id: data.rentCallId },
+    });
+    if (!existing) {
+      this.logger.warn(
+        `RentCall ${data.rentCallId} not found for RentCallSent projection — skipping`,
+      );
+      return;
+    }
+
+    await this.prisma.rentCall.update({
+      where: { id: data.rentCallId },
+      data: {
+        sentAt: new Date(data.sentAt),
+        recipientEmail: data.recipientEmail,
+      },
+    });
+    this.logger.log(`Projected RentCallSent for ${data.rentCallId}`);
   }
 }

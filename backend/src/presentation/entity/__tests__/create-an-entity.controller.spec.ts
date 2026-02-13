@@ -23,6 +23,7 @@ describe('CreateAnEntityController', () => {
       id: '550e8400-e29b-41d4-a716-446655440000',
       type: 'sci' as const,
       name: 'SCI TEST',
+      email: 'test@example.com',
       siret: '12345678901234',
       address: {
         street: '1 rue Test',
@@ -53,6 +54,7 @@ describe('CreateAnEntityController', () => {
       id: '660e8400-e29b-41d4-a716-446655440001',
       type: 'nom_propre' as const,
       name: 'Jean Dupont',
+      email: 'jean@example.com',
       address: {
         street: '5 rue Foch',
         postalCode: '31000',
@@ -74,6 +76,7 @@ describe('CreateAnEntityController', () => {
       id: '770e8400-e29b-41d4-a716-446655440002',
       type: 'sci' as const,
       name: 'SCI Trois',
+      email: 'trois@example.com',
       siret: '99999999999999',
       address: {
         street: 'rue',

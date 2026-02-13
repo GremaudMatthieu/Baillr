@@ -10,6 +10,7 @@ const mockEntities: EntityData[] = [
     userId: "user_test123",
     type: "sci",
     name: "SCI Les Pins",
+    email: "test@example.com",
     siret: "12345678901234",
     addressStreet: "12 Rue des Lilas",
     addressPostalCode: "75001",
@@ -40,6 +41,7 @@ const newEntityPayload = {
   id: "entity-2",
   type: "nom_propre" as const,
   name: "Jean Dupont",
+  email: "test@example.com",
   address: {
     street: "5 Avenue Victor Hugo",
     postalCode: "69001",

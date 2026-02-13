@@ -20,6 +20,8 @@ const baseRentCall: RentCallData = {
   isProRata: false,
   occupiedDays: null,
   totalDaysInMonth: null,
+  sentAt: null,
+  recipientEmail: null,
   createdAt: "2026-03-01T00:00:00.000Z",
 };
 
@@ -193,6 +195,36 @@ describe("RentCallList", () => {
     expect(buttons).toHaveLength(2);
     expect(buttons[0]).toBeDisabled();
     expect(buttons[1]).toBeDisabled();
+  });
+
+  it("should show Envoyé badge when rent call has sentAt", () => {
+    const sentRentCall: RentCallData = {
+      ...baseRentCall,
+      sentAt: "2026-03-05T10:00:00.000Z",
+      recipientEmail: "jean@example.com",
+    };
+
+    renderWithProviders(
+      <RentCallList
+        rentCalls={[sentRentCall]}
+        tenantNames={tenantNames}
+        unitIdentifiers={unitIdentifiers}
+      />,
+    );
+
+    expect(screen.getByText(/Envoyé le/)).toBeInTheDocument();
+  });
+
+  it("should not show Envoyé badge when sentAt is null", () => {
+    renderWithProviders(
+      <RentCallList
+        rentCalls={[baseRentCall]}
+        tenantNames={tenantNames}
+        unitIdentifiers={unitIdentifiers}
+      />,
+    );
+
+    expect(screen.queryByText(/Envoyé le/)).not.toBeInTheDocument();
   });
 
   it("should display download error when present", () => {

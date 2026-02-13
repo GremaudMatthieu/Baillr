@@ -1,5 +1,6 @@
 import { AggregateRoot, EventHandler } from 'nestjs-cqrx';
 import { RentCallGenerated } from './events/rent-call-generated.event.js';
+import { RentCallSent } from './events/rent-call-sent.event.js';
 import { RentCallNotCreatedException } from './exceptions/rent-call-not-created.exception.js';
 
 export class RentCallAggregate extends AggregateRoot {
@@ -16,6 +17,8 @@ export class RentCallAggregate extends AggregateRoot {
   private occupiedDays!: number;
   private totalDaysInMonth!: number;
   private created = false;
+  private sentAt: Date | null = null;
+  private recipientEmail: string | null = null;
 
   static readonly streamName = 'rent-call';
 
@@ -71,5 +74,30 @@ export class RentCallAggregate extends AggregateRoot {
     this.occupiedDays = event.data.occupiedDays;
     this.totalDaysInMonth = event.data.totalDaysInMonth;
     this.created = true;
+  }
+
+  markAsSent(sentAt: Date, recipientEmail: string): void {
+    if (!this.created) {
+      throw RentCallNotCreatedException.create();
+    }
+    if (this.sentAt !== null) {
+      return; // no-op guard: already sent
+    }
+
+    this.apply(
+      new RentCallSent({
+        rentCallId: this.id,
+        sentAt: sentAt.toISOString(),
+        recipientEmail,
+        entityId: this.entityId,
+        tenantId: this.tenantId,
+      }),
+    );
+  }
+
+  @EventHandler(RentCallSent)
+  onRentCallSent(event: RentCallSent): void {
+    this.sentAt = new Date(event.data.sentAt);
+    this.recipientEmail = event.data.recipientEmail;
   }
 }

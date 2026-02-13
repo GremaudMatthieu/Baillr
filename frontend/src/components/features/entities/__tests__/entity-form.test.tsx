@@ -55,6 +55,7 @@ const editEntity: EntityData = {
   userId: "user_test123",
   type: "sci",
   name: "SCI Les Oliviers",
+  email: "test@example.com",
   siret: "12345678901234",
   addressStreet: "12 Rue des Lilas",
   addressPostalCode: "75001",

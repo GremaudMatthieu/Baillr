@@ -11,6 +11,7 @@ model OwnershipEntity {
   userId            String   @map("user_id")
   type              String   // 'sci' | 'nom_propre'
   name              String
+  email             String   @default("")
   siret             String?
   addressStreet     String   @map("address_street")
   addressPostalCode String   @map("address_postal_code")
@@ -168,11 +169,13 @@ model RentCall {
   rentAmountCents  Int      @map("rent_amount_cents")
   billingLines     Json     @default("[]") @map("billing_lines")
   totalAmountCents Int      @map("total_amount_cents")
-  isProRata        Boolean  @default(false) @map("is_pro_rata")
-  occupiedDays     Int?     @map("occupied_days")
-  totalDaysInMonth Int?     @map("total_days_in_month")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  isProRata        Boolean   @default(false) @map("is_pro_rata")
+  occupiedDays     Int?      @map("occupied_days")
+  totalDaysInMonth Int?      @map("total_days_in_month")
+  sentAt           DateTime? @map("sent_at")
+  recipientEmail   String?   @map("recipient_email")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
   entity OwnershipEntity @relation(fields: [entityId], references: [id])
   lease  Lease           @relation(fields: [leaseId], references: [id])

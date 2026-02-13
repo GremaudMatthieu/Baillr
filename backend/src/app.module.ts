@@ -14,6 +14,7 @@ import { TenantPresentationModule } from './presentation/tenant/tenant-presentat
 import { LeasePresentationModule } from './presentation/lease/lease-presentation.module';
 import { RentCallPresentationModule } from './presentation/rent-call/rent-call-presentation.module';
 import { DocumentModule } from './infrastructure/document/document.module';
+import { EmailModule } from './infrastructure/email/email.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -26,6 +27,7 @@ import { AppService } from './app.service';
     EventStoreModule,
     AuthModule,
     DocumentModule,
+    EmailModule,
     PortfolioModule,
     TenancyModule,
     BillingModule,

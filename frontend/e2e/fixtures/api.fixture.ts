@@ -12,6 +12,7 @@ interface CreateEntityParams {
   id?: string;
   type?: 'sci' | 'nom_propre';
   name: string;
+  email?: string;
   siret?: string;
   address?: {
     street: string;
@@ -111,6 +112,7 @@ export class ApiHelper {
         id,
         type: params.type ?? 'nom_propre',
         name: params.name,
+        email: params.email ?? `entity-${id.slice(0, 8)}@example.com`,
         siret: params.siret,
         address: params.address ?? {
           street: '1 rue de la Paix',
@@ -519,6 +521,27 @@ export class ApiHelper {
     throw new Error(
       `Timed out waiting for ${expectedCount} rent calls (${timeoutMs}ms)`,
     );
+  }
+
+  async sendRentCallsByEmail(entityId: string, month: string) {
+    const response = await this.request.post(
+      `${API_BASE}/api/entities/${entityId}/rent-calls/send`,
+      {
+        headers: this.headers(),
+        data: { month },
+      },
+    );
+    if (!response.ok()) {
+      throw new Error(
+        `Failed to send rent calls: ${response.status()} ${await response.text()}`,
+      );
+    }
+    return (await response.json()) as {
+      sent: number;
+      failed: number;
+      totalAmountCents: number;
+      failures: string[];
+    };
   }
 
   async terminateLease(leaseId: string, endDate: string) {

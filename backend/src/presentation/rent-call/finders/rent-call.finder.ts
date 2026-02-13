@@ -64,6 +64,25 @@ export class RentCallFinder {
     });
   }
 
+  async findUnsentByEntityAndMonth(
+    entityId: string,
+    userId: string,
+    month: string,
+  ): Promise<RentCallWithRelations[]> {
+    return this.prisma.rentCall.findMany({
+      where: { entityId, userId, month, sentAt: null },
+      include: {
+        tenant: true,
+        unit: true,
+        lease: true,
+        entity: {
+          include: { bankAccounts: true },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
   async existsByEntityAndMonth(
     entityId: string,
     month: string,

@@ -18,6 +18,7 @@ describe('AddABankAccountHandler', () => {
       'user_clerk_123',
       'sci',
       'SCI TEST',
+      'test@example.com',
       '12345678901234',
       {
         street: '1 rue Test',

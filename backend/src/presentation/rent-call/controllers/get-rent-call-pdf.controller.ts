@@ -11,13 +11,11 @@ import {
 import type { Response } from 'express';
 import { CurrentUser } from '@infrastructure/auth/user.decorator';
 import { PdfGeneratorService } from '@infrastructure/document/pdf-generator.service';
+import { sanitizeForFilename } from '@infrastructure/shared/sanitize-filename.util';
+import { getTenantLastName } from '@infrastructure/shared/format-tenant-name.util';
 import { EntityFinder } from '../../entity/finders/entity.finder.js';
 import { RentCallFinder } from '../finders/rent-call.finder.js';
 import { RentCallPdfAssembler } from '../services/rent-call-pdf-assembler.service.js';
-
-function sanitizeForFilename(value: string): string {
-  return value.replace(/["\\\n\r]/g, '_');
-}
 
 @Controller('entities/:entityId/rent-calls')
 export class GetRentCallPdfController {
@@ -42,11 +40,7 @@ export class GetRentCallPdfController {
       throw new UnauthorizedException();
     }
 
-    const rentCall = await this.rentCallFinder.findByIdAndEntity(
-      rentCallId,
-      entityId,
-      userId,
-    );
+    const rentCall = await this.rentCallFinder.findByIdAndEntity(rentCallId, entityId, userId);
     if (!rentCall) {
       throw new NotFoundException('Rent call not found');
     }
@@ -62,11 +56,7 @@ export class GetRentCallPdfController {
 
     const buffer = await this.pdfGenerator.generateRentCallPdf(pdfData);
 
-    const tenantLastName =
-      rentCall.tenant.type === 'company' && rentCall.tenant.companyName
-        ? rentCall.tenant.companyName
-        : rentCall.tenant.lastName;
-    const safeName = sanitizeForFilename(tenantLastName);
+    const safeName = sanitizeForFilename(getTenantLastName(rentCall.tenant));
     const filename = `appel-loyer-${safeName}-${rentCall.month}.pdf`;
 
     res.set({

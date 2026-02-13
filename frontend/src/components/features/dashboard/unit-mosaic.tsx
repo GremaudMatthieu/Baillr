@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEntityUnits } from "@/hooks/use-units";
 import { useLeases } from "@/hooks/use-leases";
+import { useRentCalls } from "@/hooks/use-rent-calls";
 import { UNIT_TYPE_LABELS } from "@/lib/constants/unit-types";
 import type { UnitWithPropertyData } from "@/lib/api/units-api";
 
@@ -112,15 +113,25 @@ export function UnitMosaic({ entityId }: UnitMosaicProps) {
   const tileRefs = React.useRef<(HTMLButtonElement | null)[]>([]);
   const [activeIndex, setActiveIndex] = React.useState(0);
 
+  const now = React.useMemo(() => new Date(), []);
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const { data: rentCalls } = useRentCalls(entityId, currentMonth);
+
   const occupiedUnitIds = React.useMemo(() => {
     if (!leases) return new Set<string>();
-    const now = new Date();
     return new Set(
       leases
         .filter((l) => !l.endDate || new Date(l.endDate) > now)
         .map((l) => l.unitId),
     );
-  }, [leases]);
+  }, [leases, now]);
+
+  const sentUnitIds = React.useMemo(() => {
+    if (!rentCalls) return new Set<string>();
+    return new Set(
+      rentCalls.filter((rc) => rc.sentAt).map((rc) => rc.unitId),
+    );
+  }, [rentCalls]);
 
   if (isLoading) {
     return <UnitMosaicSkeleton />;
@@ -191,10 +202,17 @@ export function UnitMosaic({ entityId }: UnitMosaicProps) {
               {propertyUnits.map((unit) => {
                 const idx = unitIndexMap.get(unit.id) ?? 0;
                 const isOccupied = occupiedUnitIds.has(unit.id);
-                const statusLabel = isOccupied ? "occupé" : "vacant";
-                const bgClass = isOccupied
-                  ? "bg-green-100 dark:bg-green-900/30"
-                  : "bg-muted";
+                const isSent = sentUnitIds.has(unit.id);
+                const statusLabel = isSent
+                  ? "envoyé"
+                  : isOccupied
+                    ? "occupé"
+                    : "vacant";
+                const bgClass = isSent
+                  ? "bg-amber-100 dark:bg-amber-900/30"
+                  : isOccupied
+                    ? "bg-green-100 dark:bg-green-900/30"
+                    : "bg-muted";
                 return (
                   <button
                     key={unit.id}

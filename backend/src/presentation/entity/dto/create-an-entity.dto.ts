@@ -1,4 +1,5 @@
 import {
+  IsEmail,
   IsEnum,
   IsNotEmpty,
   IsOptional,
@@ -21,6 +22,10 @@ export class CreateAnEntityDto {
   @IsString()
   @IsNotEmpty()
   name!: string;
+
+  @IsEmail()
+  @IsNotEmpty()
+  email!: string;
 
   @IsOptional()
   @IsString()

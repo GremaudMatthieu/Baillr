@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Receipt } from "lucide-react";
+import { Receipt, Mail } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -16,14 +16,17 @@ import {
   useRentCalls,
   useGenerateRentCalls,
   useDownloadRentCallPdf,
+  useSendRentCallsByEmail,
 } from "@/hooks/use-rent-calls";
 import { useLeases } from "@/hooks/use-leases";
 import { useTenants } from "@/hooks/use-tenants";
 import { useEntityUnits } from "@/hooks/use-units";
 import { RentCallList } from "./rent-call-list";
 import { BatchSummary } from "./batch-summary";
+import { SendBatchSummary } from "./send-batch-summary";
 import { GenerateRentCallsDialog } from "./generate-rent-calls-dialog";
-import type { GenerationResult } from "@/lib/api/rent-calls-api";
+import { SendRentCallsDialog } from "./send-rent-calls-dialog";
+import type { GenerationResult, SendResult } from "@/lib/api/rent-calls-api";
 
 function getCurrentMonth(): string {
   const now = new Date();
@@ -35,7 +38,7 @@ function getCurrentMonth(): string {
 function getMonthOptions(): { value: string; label: string }[] {
   const now = new Date();
   const options: { value: string; label: string }[] = [];
-  for (let offset = -2; offset <= 2; offset++) {
+  for (let offset = -3; offset <= 3; offset++) {
     const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
     const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     const label = d.toLocaleDateString("fr-FR", {
@@ -54,9 +57,12 @@ interface RentCallsPageContentProps {
 export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
   const [selectedMonth, setSelectedMonth] = React.useState(getCurrentMonth);
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [sendDialogOpen, setSendDialogOpen] = React.useState(false);
   const [batchResult, setBatchResult] =
     React.useState<GenerationResult | null>(null);
+  const [sendResult, setSendResult] = React.useState<SendResult | null>(null);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
+  const [sendError, setSendError] = React.useState<string | null>(null);
 
   const {
     data: rentCalls,
@@ -67,6 +73,7 @@ export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
   const { data: tenants } = useTenants(entityId);
   const { data: units } = useEntityUnits(entityId);
   const generateMutation = useGenerateRentCalls(entityId);
+  const sendMutation = useSendRentCallsByEmail(entityId);
   const {
     downloadPdf,
     downloadingId,
@@ -80,6 +87,24 @@ export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
   }, [leases]);
 
   const alreadyGenerated = !!rentCalls && rentCalls.length > 0;
+
+  const unsentRentCalls = React.useMemo(() => {
+    if (!rentCalls) return [];
+    return rentCalls.filter((rc) => !rc.sentAt);
+  }, [rentCalls]);
+
+  const hasUnsent = unsentRentCalls.length > 0;
+
+  const missingEmailCount = React.useMemo(() => {
+    if (!tenants || !unsentRentCalls.length) return 0;
+    const tenantEmailMap = new Map<string, string>();
+    for (const t of tenants) {
+      tenantEmailMap.set(t.id, t.email ?? "");
+    }
+    return unsentRentCalls.filter(
+      (rc) => !tenantEmailMap.get(rc.tenantId),
+    ).length;
+  }, [tenants, unsentRentCalls]);
 
   const tenantNames = React.useMemo(() => {
     const map = new Map<string, string>();
@@ -118,10 +143,27 @@ export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
     });
   }
 
+  function handleSend() {
+    setSendError(null);
+    sendMutation.mutate(selectedMonth, {
+      onSuccess: (result) => {
+        setSendResult(result);
+        setSendDialogOpen(false);
+      },
+      onError: (err) => {
+        setSendError(
+          err instanceof Error ? err.message : "Une erreur est survenue",
+        );
+      },
+    });
+  }
+
   function handleMonthChange(value: string) {
     setSelectedMonth(value);
     setBatchResult(null);
+    setSendResult(null);
     setSubmitError(null);
+    setSendError(null);
   }
 
   return (
@@ -157,6 +199,18 @@ export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
             <Receipt className="h-4 w-4" aria-hidden="true" />
             Générer les appels
           </Button>
+          {hasUnsent && (
+            <Button
+              onClick={() => {
+                setSendError(null);
+                setSendDialogOpen(true);
+              }}
+              disabled={sendMutation.isPending}
+            >
+              <Mail className="h-4 w-4" aria-hidden="true" />
+              Envoyer par email
+            </Button>
+          )}
         </div>
       </div>
 
@@ -166,6 +220,17 @@ export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
             generated={batchResult.generated}
             totalAmountCents={batchResult.totalAmountCents}
             exceptions={batchResult.exceptions}
+          />
+        </div>
+      )}
+
+      {sendResult && (
+        <div className="mb-6">
+          <SendBatchSummary
+            sent={sendResult.sent}
+            failed={sendResult.failed}
+            totalAmountCents={sendResult.totalAmountCents}
+            failures={sendResult.failures}
           />
         </div>
       )}
@@ -205,6 +270,17 @@ export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
         month={selectedMonth}
         activeLeaseCount={activeLeases.length}
         submitError={submitError}
+      />
+
+      <SendRentCallsDialog
+        open={sendDialogOpen}
+        onOpenChange={setSendDialogOpen}
+        onConfirm={handleSend}
+        isPending={sendMutation.isPending}
+        month={selectedMonth}
+        unsentCount={unsentRentCalls.length}
+        missingEmailCount={missingEmailCount}
+        submitError={sendError}
       />
     </div>
   );

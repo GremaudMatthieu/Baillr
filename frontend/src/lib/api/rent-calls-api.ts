@@ -20,6 +20,8 @@ export interface RentCallData {
   isProRata: boolean;
   occupiedDays: number | null;
   totalDaysInMonth: number | null;
+  sentAt: string | null;
+  recipientEmail: string | null;
   createdAt: string;
 }
 
@@ -27,6 +29,13 @@ export interface GenerationResult {
   generated: number;
   totalAmountCents: number;
   exceptions: string[];
+}
+
+export interface SendResult {
+  sent: number;
+  failed: number;
+  totalAmountCents: number;
+  failures: string[];
 }
 
 const BACKEND_URL =
@@ -85,6 +94,21 @@ export function useRentCallsApi() {
         },
       );
       return (await res.json()) as GenerationResult;
+    },
+
+    async sendRentCallsByEmail(
+      entityId: string,
+      month: string,
+    ): Promise<SendResult> {
+      const res = await fetchWithAuth(
+        `/entities/${entityId}/rent-calls/send`,
+        getToken,
+        {
+          method: "POST",
+          body: JSON.stringify({ month }),
+        },
+      );
+      return (await res.json()) as SendResult;
     },
 
     async getRentCalls(

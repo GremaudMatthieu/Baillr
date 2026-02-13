@@ -1,6 +1,6 @@
 "use client";
 
-import { Receipt, Download, Loader2 } from "lucide-react";
+import { Receipt, Download, Loader2, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -81,6 +81,16 @@ export function RentCallList({
               </p>
               {rc.isProRata && (
                 <Badge variant="secondary">Pro-rata</Badge>
+              )}
+              {rc.sentAt && (
+                <Badge variant="outline" className="text-green-700 border-green-300">
+                  <CheckCircle2 className="mr-1 h-3 w-3" aria-hidden="true" />
+                  Envoyé le{" "}
+                  {new Date(rc.sentAt).toLocaleDateString("fr-FR", {
+                    day: "numeric",
+                    month: "short",
+                  })}
+                </Badge>
               )}
               {onDownloadPdf && (
                 <Button

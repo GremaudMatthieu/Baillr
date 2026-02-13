@@ -9,6 +9,7 @@ const mockPrisma = {
   rentCall: {
     findUnique: jest.fn(),
     create: jest.fn(),
+    update: jest.fn(),
   },
 };
 
@@ -87,5 +88,38 @@ describe('RentCallProjection', () => {
     projection.onModuleInit();
 
     expect(mockKurrentDb.client.subscribeToAll).toHaveBeenCalled();
+  });
+
+  describe('RentCallSent projection', () => {
+    const sentEvent = {
+      rentCallId: 'rc-1',
+      sentAt: '2026-02-13T10:00:00.000Z',
+      recipientEmail: 'tenant@example.com',
+      entityId: 'entity-1',
+      tenantId: 'tenant-1',
+    };
+
+    it('should update sentAt and recipientEmail on RentCallSent', async () => {
+      mockPrisma.rentCall.findUnique.mockResolvedValue({ id: 'rc-1' });
+      mockPrisma.rentCall.update.mockResolvedValue({});
+
+      await (projection as any).onRentCallSent(sentEvent);
+
+      expect(mockPrisma.rentCall.update).toHaveBeenCalledWith({
+        where: { id: 'rc-1' },
+        data: {
+          sentAt: new Date('2026-02-13T10:00:00.000Z'),
+          recipientEmail: 'tenant@example.com',
+        },
+      });
+    });
+
+    it('should skip update for non-existent rent call', async () => {
+      mockPrisma.rentCall.findUnique.mockResolvedValue(null);
+
+      await (projection as any).onRentCallSent(sentEvent);
+
+      expect(mockPrisma.rentCall.update).not.toHaveBeenCalled();
+    });
   });
 });

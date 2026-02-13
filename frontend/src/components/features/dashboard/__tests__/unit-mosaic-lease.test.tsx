@@ -58,6 +58,10 @@ vi.mock("@/hooks/use-leases", () => ({
   useLeases: () => ({ data: mockLeasesData }),
 }));
 
+vi.mock("@/hooks/use-rent-calls", () => ({
+  useRentCalls: () => ({ data: [] }),
+}));
+
 describe("UnitMosaic — lease occupancy", () => {
   it("should show vacant status when no leases exist", () => {
     mockLeasesData = [];

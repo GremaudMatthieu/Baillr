@@ -39,6 +39,7 @@ export function useCreateEntity() {
         userId: "",
         type: payload.type,
         name: payload.name,
+        email: payload.email,
         siret: payload.siret ?? null,
         addressStreet: payload.address.street,
         addressPostalCode: payload.address.postalCode,
@@ -88,6 +89,7 @@ export function useUpdateEntity() {
       const applyUpdate = (entity: EntityData): EntityData => ({
         ...entity,
         ...(payload.name !== undefined && { name: payload.name }),
+        ...(payload.email !== undefined && { email: payload.email }),
         ...(payload.siret !== undefined && { siret: payload.siret ?? null }),
         ...(payload.address !== undefined && {
           addressStreet: payload.address.street,

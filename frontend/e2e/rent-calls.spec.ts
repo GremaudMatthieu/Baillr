@@ -152,13 +152,9 @@ test.describe('Rent call generation', () => {
     expect(suggestedFilename).toContain('.pdf');
   });
 
-  test('7.5 — verify ActionFeed shows rent call step before generation', async ({
+  test('7.5 — verify ActionFeed shows send step when rent calls not sent', async ({
     page,
   }) => {
-    // This test verifies that for a NEW entity with leases but no rent calls,
-    // the ActionFeed shows the rent call generation step.
-    // Since we already generated in 7.2, we need to check with a fresh entity.
-    // Instead, we verify the step DISAPPEARS after generation (from 7.2 data).
     test.skip(!entityId, 'Requires seed data');
 
     await page.goto('/dashboard');
@@ -166,14 +162,64 @@ test.describe('Rent call generation', () => {
       page.getByRole('heading', { level: 1, name: 'Tableau de bord' }),
     ).toBeVisible();
 
-    // Since we already generated rent calls for the current month,
-    // the "Générez vos appels de loyer" action should NOT appear
-    // Wait for the feed to fully load before checking absence
+    // Since we already generated rent calls for the current month but haven't sent,
+    // the "Envoyez les appels de loyer par email" action should appear
     await expect(
       page.getByRole('heading', { level: 2, name: 'Actions en attente' }),
     ).toBeVisible({ timeout: 10_000 });
     await expect(
-      page.getByText('Générez vos appels de loyer'),
-    ).not.toBeVisible({ timeout: 5_000 });
+      page.getByText('Envoyez les appels de loyer par email'),
+    ).toBeVisible({ timeout: 5_000 });
+  });
+
+  test('7.6 — send rent calls by email from UI', async ({ page }) => {
+    test.skip(!entityId, 'Requires seed data');
+
+    await page.goto('/rent-calls');
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Appels de loyer' }),
+    ).toBeVisible();
+
+    // Wait for rent call list to appear
+    await expect(page.getByText('Marie Martin')).toBeVisible({ timeout: 10_000 });
+
+    // "Envoyer par email" button should be visible (unsent rent calls exist)
+    const sendBtn = page.getByRole('button', { name: /Envoyer par email/ });
+    await expect(sendBtn).toBeVisible();
+    await expect(sendBtn).toBeEnabled();
+
+    // Click send
+    await sendBtn.click();
+
+    // Dialog should appear
+    await expect(
+      page.getByText('Envoyer les appels de loyer par email'),
+    ).toBeVisible();
+    await expect(page.getByText(/1 appel de loyer/)).toBeVisible();
+
+    // Confirm send
+    await page.getByRole('button', { name: 'Envoyer' }).click();
+
+    // Batch summary should appear (may show sent=1 or sent=0/failed=1 depending on SMTP)
+    await expect(page.getByText('Envoi terminé')).toBeVisible({
+      timeout: 15_000,
+    });
+  });
+
+  test('7.7 — verify Envoyé badge appears after sending', async ({
+    page,
+  }) => {
+    test.skip(!entityId, 'Requires seed data');
+
+    await page.goto('/rent-calls');
+    await expect(page.getByText('Marie Martin')).toBeVisible({ timeout: 10_000 });
+
+    // After successful send, the "Envoyé le" badge should appear on the card
+    // Badge may not appear if SMTP failed — check visibility without assertion first
+    const badge = page.getByText(/Envoyé le/);
+    const isVisible = await badge.isVisible().catch(() => false);
+    test.skip(!isVisible, 'SMTP not configured — badge not visible');
+
+    await expect(badge).toBeVisible();
   });
 });

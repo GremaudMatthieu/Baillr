@@ -3,6 +3,8 @@ jest.mock('nestjs-cqrx', () => require('./mock-cqrx').mockCqrx);
 
 import { RentCallAggregate } from '../rent-call.aggregate';
 import { RentCallGenerated } from '../events/rent-call-generated.event';
+import { RentCallSent } from '../events/rent-call-sent.event';
+import { DomainException } from '@shared/exceptions/domain.exception';
 
 describe('RentCallAggregate', () => {
   const baseArgs = {
@@ -120,5 +122,79 @@ describe('RentCallAggregate', () => {
       baseArgs.totalDaysInMonth,
     );
     expect(aggregate.getUncommittedEvents()).toHaveLength(0);
+  });
+
+  function createGeneratedAggregate(): RentCallAggregate {
+    const aggregate = new RentCallAggregate('rc-1');
+    aggregate.generate(
+      baseArgs.entityId,
+      baseArgs.userId,
+      baseArgs.leaseId,
+      baseArgs.tenantId,
+      baseArgs.unitId,
+      baseArgs.month,
+      baseArgs.rentAmountCents,
+      baseArgs.billingLines,
+      baseArgs.totalAmountCents,
+      baseArgs.isProRata,
+      baseArgs.occupiedDays,
+      baseArgs.totalDaysInMonth,
+    );
+    aggregate.commit();
+    return aggregate;
+  }
+
+  describe('markAsSent', () => {
+    it('should emit RentCallSent event on a generated rent call', () => {
+      const aggregate = createGeneratedAggregate();
+      const sentAt = new Date('2026-02-13T10:00:00Z');
+
+      aggregate.markAsSent(sentAt, 'tenant@example.com');
+
+      const events = aggregate.getUncommittedEvents();
+      expect(events).toHaveLength(1);
+      expect(events[0]).toBeInstanceOf(RentCallSent);
+      expect((events[0] as RentCallSent).data).toEqual({
+        rentCallId: 'rc-1',
+        sentAt: '2026-02-13T10:00:00.000Z',
+        recipientEmail: 'tenant@example.com',
+        entityId: baseArgs.entityId,
+        tenantId: baseArgs.tenantId,
+      });
+    });
+
+    it('should throw DomainException when rent call not yet created', () => {
+      const aggregate = new RentCallAggregate('rc-1');
+
+      expect(() =>
+        aggregate.markAsSent(new Date(), 'tenant@example.com'),
+      ).toThrow(DomainException);
+    });
+
+    it('should no-op when already sent (idempotent)', () => {
+      const aggregate = createGeneratedAggregate();
+      const sentAt = new Date('2026-02-13T10:00:00Z');
+
+      aggregate.markAsSent(sentAt, 'tenant@example.com');
+      aggregate.commit();
+
+      // Second call should be a no-op
+      aggregate.markAsSent(new Date('2026-02-14T10:00:00Z'), 'other@example.com');
+
+      const events = aggregate.getUncommittedEvents();
+      expect(events).toHaveLength(0);
+    });
+
+    it('should apply sent state from RentCallSent event', () => {
+      const aggregate = createGeneratedAggregate();
+      const sentAt = new Date('2026-02-13T10:00:00Z');
+
+      aggregate.markAsSent(sentAt, 'tenant@example.com');
+      aggregate.commit();
+
+      // Verify state is applied by checking idempotent no-op
+      aggregate.markAsSent(new Date(), 'different@example.com');
+      expect(aggregate.getUncommittedEvents()).toHaveLength(0);
+    });
   });
 });

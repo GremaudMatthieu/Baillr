@@ -5,6 +5,7 @@ export interface EntityCreatedData {
   userId: string;
   type: 'sci' | 'nom_propre';
   name: string;
+  email?: string;
   siret: string | null;
   address: {
     street: string;

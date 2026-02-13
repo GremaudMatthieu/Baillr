@@ -26,6 +26,7 @@ import { BankAccountNotFoundException } from './exceptions/bank-account-not-foun
 
 export interface UpdateEntityFields {
   name?: string;
+  email?: string;
   siret?: string | null;
   address?: AddressPrimitives;
   legalInformation?: string | null;
@@ -53,6 +54,7 @@ export class EntityAggregate extends AggregateRoot {
   private userId!: UserId;
   private type!: EntityType;
   private name!: EntityName;
+  private email!: string;
   private siret!: Siret;
   private address!: Address;
   private legalInformation!: LegalInformation;
@@ -65,6 +67,7 @@ export class EntityAggregate extends AggregateRoot {
     userId: string,
     type: string,
     name: string,
+    email: string,
     siret: string | null,
     address: AddressPrimitives,
     legalInformation: string | null,
@@ -96,6 +99,7 @@ export class EntityAggregate extends AggregateRoot {
         userId: voUserId.value,
         type: voType.value,
         name: voName.value,
+        email,
         siret: voSiret.value,
         address: voAddress.toPrimitives(),
         legalInformation: voLegalInfo.value,
@@ -116,6 +120,9 @@ export class EntityAggregate extends AggregateRoot {
 
     if (fields.name !== undefined) {
       eventData.name = EntityName.fromString(fields.name).value;
+    }
+    if (fields.email !== undefined) {
+      eventData.email = fields.email;
     }
     if (fields.siret !== undefined) {
       const newSiret = fields.siret !== null ? Siret.create(fields.siret) : Siret.empty();
@@ -305,6 +312,7 @@ export class EntityAggregate extends AggregateRoot {
     this.userId = UserId.fromString(event.data.userId);
     this.type = EntityType.fromString(event.data.type);
     this.name = EntityName.fromString(event.data.name);
+    this.email = event.data.email ?? '';
     this.siret = event.data.siret ? Siret.create(event.data.siret) : Siret.empty();
     this.address = Address.fromPrimitives(event.data.address);
     this.legalInformation = event.data.legalInformation
@@ -316,6 +324,7 @@ export class EntityAggregate extends AggregateRoot {
   @EventHandler(EntityUpdated)
   onEntityUpdated(event: EntityUpdated): void {
     if (event.data.name !== undefined) this.name = EntityName.fromString(event.data.name);
+    if (event.data.email !== undefined) this.email = event.data.email;
     if (event.data.siret !== undefined) {
       this.siret = event.data.siret ? Siret.create(event.data.siret) : Siret.empty();
     }

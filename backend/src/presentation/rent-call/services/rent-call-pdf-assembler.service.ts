@@ -1,26 +1,27 @@
 import { Injectable } from '@nestjs/common';
 import type {
-  OwnershipEntity,
-  Tenant,
-  Unit,
-  Lease,
-  BankAccount,
-  RentCall,
-} from '@prisma/client';
+  RentCallCoreData,
+  RentCallTenantData,
+  RentCallUnitData,
+  RentCallLeaseData,
+  RentCallEntityData,
+  RentCallBankAccountData,
+} from '@billing/rent-call/rent-call-data.interfaces';
 import type { RentCallPdfData } from '@infrastructure/document/rent-call-pdf-data.interface';
 import { formatMonthLabel } from '@infrastructure/document/format-euro.util';
+import { formatTenantDisplayName } from '@infrastructure/shared/format-tenant-name.util';
 
 @Injectable()
 export class RentCallPdfAssembler {
   assembleFromRentCall(
-    rentCall: RentCall,
-    tenant: Tenant,
-    unit: Unit,
-    lease: Lease,
-    entity: OwnershipEntity,
-    bankAccounts: BankAccount[],
+    rentCall: RentCallCoreData,
+    tenant: RentCallTenantData,
+    unit: RentCallUnitData,
+    lease: RentCallLeaseData,
+    entity: RentCallEntityData,
+    bankAccounts: RentCallBankAccountData[],
   ): RentCallPdfData {
-    const tenantName = this.formatTenantName(tenant);
+    const tenantName = formatTenantDisplayName(tenant);
     const tenantAddress = this.formatAddress(
       tenant.addressStreet,
       tenant.addressPostalCode,
@@ -68,13 +69,6 @@ export class RentCallPdfAssembler {
     };
   }
 
-  private formatTenantName(tenant: Tenant): string {
-    if (tenant.type === 'company' && tenant.companyName) {
-      return tenant.companyName;
-    }
-    return `${tenant.firstName} ${tenant.lastName}`;
-  }
-
   private formatAddress(
     street: string | null,
     postalCode: string | null,
@@ -91,8 +85,8 @@ export class RentCallPdfAssembler {
   }
 
   private findDefaultBankAccount(
-    bankAccounts: BankAccount[],
-  ): BankAccount | undefined {
+    bankAccounts: RentCallBankAccountData[],
+  ): RentCallBankAccountData | undefined {
     // Prefer isDefault bank_account, then any bank_account (not cash_register)
     const bankOnly = bankAccounts.filter((ba) => ba.type === 'bank_account');
     return bankOnly.find((ba) => ba.isDefault) ?? bankOnly[0];

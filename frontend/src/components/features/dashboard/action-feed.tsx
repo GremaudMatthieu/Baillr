@@ -7,6 +7,7 @@ import {
   ClipboardList,
   FileText,
   Landmark,
+  Mail,
   Plus,
   ArrowRight,
   Receipt,
@@ -37,6 +38,7 @@ const iconMap: Record<string, LucideIcon> = {
   ClipboardList,
   FileText,
   Landmark,
+  Mail,
   Receipt,
   Users,
   ShieldAlert,
@@ -179,6 +181,23 @@ function useOnboardingActions(): ActionItem[] {
       title: "Générez vos appels de loyer",
       description:
         "Créez les appels de loyer pour tous vos baux actifs",
+      href: "/rent-calls",
+      priority: "high",
+    });
+  }
+
+  const hasUnsentRentCalls =
+    rentCallsForCurrentMonth &&
+    rentCallsForCurrentMonth.length > 0 &&
+    rentCallsForCurrentMonth.some((rc) => !rc.sentAt);
+
+  if (entityId && hasUnsentRentCalls) {
+    actions.push({
+      id: "onboarding-send-rent-calls",
+      icon: "Mail",
+      title: "Envoyez les appels de loyer par email",
+      description:
+        "Envoyez les appels de loyer générés à vos locataires par email avec le PDF en pièce jointe",
       href: "/rent-calls",
       priority: "high",
     });

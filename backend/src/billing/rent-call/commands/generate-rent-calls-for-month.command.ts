@@ -1,15 +1,4 @@
-export interface RentCallItemData {
-  id: string;
-  leaseId: string;
-  tenantId: string;
-  unitId: string;
-  rentAmountCents: number;
-  billingLines: Array<{ label: string; amountCents: number; type: string }>;
-  totalAmountCents: number;
-  isProRata: boolean;
-  occupiedDays: number;
-  totalDaysInMonth: number;
-}
+import type { ActiveLeaseData } from '../rent-call-calculation.service.js';
 
 export interface BatchHandlerResult {
   generated: number;
@@ -22,6 +11,6 @@ export class GenerateRentCallsForMonthCommand {
     public readonly entityId: string,
     public readonly userId: string,
     public readonly month: string,
-    public readonly rentCallData: RentCallItemData[],
+    public readonly activeLeases: ActiveLeaseData[],
   ) {}
 }

@@ -8,9 +8,10 @@ import {
   downloadRentCallPdf,
   type RentCallData,
   type GenerationResult,
+  type SendResult,
 } from "@/lib/api/rent-calls-api";
 
-export type { RentCallData, GenerationResult };
+export type { RentCallData, GenerationResult, SendResult };
 
 export function useRentCalls(entityId: string, month?: string) {
   const api = useRentCallsApi();
@@ -60,6 +61,27 @@ export function useDownloadRentCallPdf(entityId: string) {
   );
 
   return { downloadPdf, isDownloading, downloadingId, error };
+}
+
+export function useSendRentCallsByEmail(entityId: string) {
+  const api = useRentCallsApi();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (month: string) => api.sendRentCallsByEmail(entityId, month),
+    onSettled: () => {
+      setTimeout(() => {
+        void queryClient.invalidateQueries({
+          queryKey: ["entities", entityId, "rent-calls"],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["entities", entityId, "units"],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["entities"],
+        });
+      }, 1500);
+    },
+  });
 }
 
 export function useGenerateRentCalls(entityId: string) {

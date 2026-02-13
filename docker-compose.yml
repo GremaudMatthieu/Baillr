@@ -33,6 +33,18 @@ services:
       timeout: 5s
       retries: 5
 
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: baillr-mailpit
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Admin UI: http://localhost:8025
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8025/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   kurrentdb-data:
   postgres-data:

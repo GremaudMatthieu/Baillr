@@ -21,6 +21,7 @@ describe('CreateAnEntityHandler', () => {
       'user_clerk_123',
       'sci',
       'SCI TEST',
+      'test@example.com',
       '12345678901234',
       {
         street: '1 rue Test',
@@ -47,6 +48,7 @@ describe('CreateAnEntityHandler', () => {
       'user_clerk_456',
       'nom_propre',
       'Jean Dupont',
+      'jean@example.com',
       null,
       {
         street: '5 avenue Foch',
@@ -76,6 +78,7 @@ describe('CreateAnEntityHandler', () => {
       'user_clerk_123',
       'sci',
       'SCI TEST',
+      'test@example.com',
       null, // SCI without SIRET should throw
       {
         street: '1 rue Test',

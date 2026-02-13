@@ -17,6 +17,7 @@ export class CreateAnEntityController {
         userId,
         dto.type,
         dto.name,
+        dto.email,
         dto.siret ?? null,
         { ...dto.address, complement: dto.address.complement ?? null },
         dto.legalInformation ?? null,

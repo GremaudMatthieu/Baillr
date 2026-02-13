@@ -86,6 +86,7 @@ export class EntityProjection implements OnModuleInit {
         userId: data.userId,
         type: data.type,
         name: data.name,
+        email: data.email ?? '',
         siret: data.siret,
         addressStreet: data.address.street,
         addressPostalCode: data.address.postalCode,
@@ -103,6 +104,7 @@ export class EntityProjection implements OnModuleInit {
     const updateData: Record<string, unknown> = {};
 
     if (data.name !== undefined) updateData.name = data.name;
+    if (data.email !== undefined) updateData.email = data.email;
     if (data.siret !== undefined) updateData.siret = data.siret;
     if (data.legalInformation !== undefined) updateData.legalInformation = data.legalInformation;
     if (data.address !== undefined) {

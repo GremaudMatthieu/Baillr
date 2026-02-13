@@ -9,6 +9,10 @@ vi.mock("@/hooks/use-rent-calls", () => ({
     mutate: vi.fn(),
     isPending: false,
   }),
+  useSendRentCallsByEmail: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
   useDownloadRentCallPdf: () => ({
     downloadPdf: vi.fn(),
     isDownloading: false,
@@ -75,5 +79,13 @@ describe("RentCallsPageContent", () => {
 
     const btn = screen.getByRole("button", { name: /Générer les appels/ });
     expect(btn).not.toBeDisabled();
+  });
+
+  it("should not show send button when no rent calls exist", () => {
+    renderWithProviders(<RentCallsPageContent entityId="entity-1" />);
+
+    expect(
+      screen.queryByRole("button", { name: /Envoyer par email/ }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -76,10 +76,10 @@ development_status:
   epic-3-retrospective: done
 
   # Epic 4: Rent Call Generation & Email Sending (3 stories)
-  epic-4: in-progress
+  epic-4: done
   4-1-generate-rent-calls-for-all-active-leases-in-batch: done # reviewed 2026-02-13, 20 findings + 2 arch fixes
   4-2-generate-rent-call-pdf-documents: done # reviewed 2026-02-13, 12 findings + CORS fix
-  4-3-send-rent-calls-by-email-in-batch-with-pdf-attachments: backlog
+  4-3-send-rent-calls-by-email-in-batch-with-pdf-attachments: done # reviewed 2026-02-13, 14 findings, 10 fixes — CQRS boundary (domain interfaces), RFC 5322 quoting, dead tenantName field, React key, E2E anti-pattern, contentType generic, DTO @IsNotEmpty, assembler Prisma decoupling, format-tenant-name tests, totalFormatted escape
   epic-4-retrospective: optional
 
   # Epic 5: Bank Reconciliation & Payment Management (6 stories)

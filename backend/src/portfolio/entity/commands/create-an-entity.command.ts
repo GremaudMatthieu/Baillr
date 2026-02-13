@@ -7,6 +7,7 @@ export class CreateAnEntityCommand {
     public readonly userId: string,
     public readonly type: EntityTypeValue,
     public readonly name: string,
+    public readonly email: string,
     public readonly siret: string | null,
     public readonly address: AddressPrimitives,
     public readonly legalInformation: string | null,

@@ -6,6 +6,7 @@ export interface EntityData {
   userId: string;
   type: "sci" | "nom_propre";
   name: string;
+  email: string;
   siret: string | null;
   addressStreet: string;
   addressPostalCode: string;
@@ -21,6 +22,7 @@ export interface CreateEntityPayload {
   id: string;
   type: "sci" | "nom_propre";
   name: string;
+  email: string;
   siret?: string;
   address: {
     street: string;
@@ -34,6 +36,7 @@ export interface CreateEntityPayload {
 
 export interface UpdateEntityPayload {
   name?: string;
+  email?: string;
   siret?: string | null;
   address?: {
     street: string;

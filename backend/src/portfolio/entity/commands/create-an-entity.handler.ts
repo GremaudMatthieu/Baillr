@@ -16,6 +16,7 @@ export class CreateAnEntityHandler implements ICommandHandler<CreateAnEntityComm
       command.userId,
       command.type,
       command.name,
+      command.email,
       command.siret,
       command.address,
       command.legalInformation,

@@ -11,6 +11,7 @@ function createExistingAggregate(id: string): EntityAggregate {
     'user_clerk_123',
     'sci',
     'SCI TEST',
+    'test@example.com',
     '12345678901234',
     {
       street: '1 rue Test',
@@ -44,7 +45,7 @@ describe('UpdateAnEntityHandler', () => {
     const existingAggregate = createExistingAggregate('entity-1');
     mockRepository.load.mockResolvedValue(existingAggregate);
 
-    const command = new UpdateAnEntityCommand('entity-1', 'user_clerk_123', 'Updated Name');
+    const command = new UpdateAnEntityCommand('entity-1', 'user_clerk_123', 'Updated Name', undefined);
 
     await handler.execute(command);
 
@@ -69,6 +70,7 @@ describe('UpdateAnEntityHandler', () => {
       'entity-2',
       'user_clerk_123',
       'Nouveau Nom',
+      undefined,
       '98765432109876',
       newAddress,
       'Nouvelles infos',
@@ -90,7 +92,7 @@ describe('UpdateAnEntityHandler', () => {
     const existingAggregate = createExistingAggregate('entity-3');
     mockRepository.load.mockResolvedValue(existingAggregate);
 
-    const command = new UpdateAnEntityCommand('entity-3', 'user_clerk_123', '');
+    const command = new UpdateAnEntityCommand('entity-3', 'user_clerk_123', '', undefined);
 
     await expect(handler.execute(command)).rejects.toThrow('Entity name is required');
     expect(mockRepository.save).not.toHaveBeenCalled();
@@ -99,7 +101,7 @@ describe('UpdateAnEntityHandler', () => {
   it('should propagate repository load errors', async () => {
     mockRepository.load.mockRejectedValue(new Error('Aggregate not found'));
 
-    const command = new UpdateAnEntityCommand('nonexistent', 'user_clerk_123', 'Name');
+    const command = new UpdateAnEntityCommand('nonexistent', 'user_clerk_123', 'Name', undefined);
 
     await expect(handler.execute(command)).rejects.toThrow('Aggregate not found');
     expect(mockRepository.save).not.toHaveBeenCalled();
@@ -110,7 +112,7 @@ describe('UpdateAnEntityHandler', () => {
     mockRepository.load.mockResolvedValue(existingAggregate);
 
     // entity was created with 'user_clerk_123', try to update with 'user_another'
-    const command = new UpdateAnEntityCommand('entity-4', 'user_another', 'Hacked Name');
+    const command = new UpdateAnEntityCommand('entity-4', 'user_another', 'Hacked Name', undefined);
 
     await expect(handler.execute(command)).rejects.toThrow(DomainException);
     await expect(handler.execute(command)).rejects.toThrow(

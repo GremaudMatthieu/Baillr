@@ -20,6 +20,7 @@ export class UpdateAnEntityController {
         id,
         userId,
         dto.name,
+        dto.email,
         dto.siret,
         dto.address ? { ...dto.address, complement: dto.address.complement ?? null } : undefined,
         dto.legalInformation,

@@ -1,4 +1,4 @@
-import { IsOptional, IsString, Length, Matches, MinLength, ValidateNested } from 'class-validator';
+import { IsEmail, IsOptional, IsString, Length, Matches, MinLength, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AddressDto } from './address.dto.js';
 
@@ -7,6 +7,10 @@ export class UpdateAnEntityDto {
   @IsString()
   @MinLength(1)
   name?: string;
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
 
   @IsOptional()
   @IsString()

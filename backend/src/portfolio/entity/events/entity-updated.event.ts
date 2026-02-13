@@ -3,6 +3,7 @@ import { Event } from 'nestjs-cqrx';
 export interface EntityUpdatedData {
   id: string;
   name?: string;
+  email?: string;
   siret?: string | null;
   address?: {
     street: string;

@@ -12,6 +12,7 @@ interface CreateParams {
   userId: string;
   type: string;
   name: string;
+  email: string;
   siret: string | null;
   address: {
     street: string;
@@ -28,6 +29,7 @@ function validCreateParams(): CreateParams {
     userId: 'user_clerk_123',
     type: 'sci',
     name: 'SCI SIRIUS WAT',
+    email: 'test@example.com',
     siret: '12345678901234',
     address: {
       street: '52 rue de la Résistance',
@@ -42,7 +44,7 @@ function validCreateParams(): CreateParams {
 
 function callCreate(aggregate: EntityAggregate, overrides: Partial<CreateParams> = {}) {
   const d = { ...validCreateParams(), ...overrides };
-  aggregate.create(d.userId, d.type, d.name, d.siret, d.address, d.legalInformation);
+  aggregate.create(d.userId, d.type, d.name, d.email, d.siret, d.address, d.legalInformation);
 }
 
 describe('EntityAggregate', () => {

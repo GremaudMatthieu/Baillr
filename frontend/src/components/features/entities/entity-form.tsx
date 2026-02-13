@@ -34,6 +34,7 @@ const entitySchema = z
   .object({
     type: z.enum(["sci", "nom_propre"]),
     name: z.string().min(1, "Le nom est requis"),
+    email: z.string().email("L'adresse email est invalide").min(1, "L'email est requis"),
     siret: z
       .string()
       .regex(/^\d{14}$/, "Le SIRET doit contenir 14 chiffres")
@@ -77,6 +78,7 @@ export function EntityForm({ entity }: EntityFormProps) {
       ? {
           type: entity.type as "sci" | "nom_propre",
           name: entity.name,
+          email: entity.email ?? "",
           siret: entity.siret ?? "",
           address: {
             street: entity.addressStreet,
@@ -89,6 +91,7 @@ export function EntityForm({ entity }: EntityFormProps) {
       : {
           type: "sci",
           name: "",
+          email: "",
           siret: "",
           address: {
             street: "",
@@ -143,6 +146,7 @@ export function EntityForm({ entity }: EntityFormProps) {
           id: entity.id,
           payload: {
             name: data.name,
+            email: data.email,
             siret: data.siret || null,
             address,
             legalInformation: data.legalInformation || null,
@@ -154,6 +158,7 @@ export function EntityForm({ entity }: EntityFormProps) {
           id,
           type: data.type,
           name: data.name,
+          email: data.email,
           siret: data.siret || undefined,
           address,
           legalInformation: data.legalInformation || undefined,
@@ -209,6 +214,24 @@ export function EntityForm({ entity }: EntityFormProps) {
               <FormLabel>Nom de l&apos;entité</FormLabel>
               <FormControl>
                 <Input placeholder="Ex : SCI Les Oliviers" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Adresse email</FormLabel>
+              <FormControl>
+                <Input
+                  type="email"
+                  placeholder="contact@example.com"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

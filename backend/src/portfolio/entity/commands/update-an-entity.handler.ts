@@ -14,6 +14,7 @@ export class UpdateAnEntityHandler implements ICommandHandler<UpdateAnEntityComm
     const entity = await this.repository.load(command.id);
     entity.update(command.userId, {
       name: command.name,
+      email: command.email,
       siret: command.siret,
       address: command.address,
       legalInformation: command.legalInformation,
