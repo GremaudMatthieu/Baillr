@@ -13,8 +13,10 @@ import { PropertyPresentationModule } from './presentation/property/property-pre
 import { TenantPresentationModule } from './presentation/tenant/tenant-presentation.module';
 import { LeasePresentationModule } from './presentation/lease/lease-presentation.module';
 import { RentCallPresentationModule } from './presentation/rent-call/rent-call-presentation.module';
+import { BankStatementPresentationModule } from './presentation/bank-statement/bank-statement-presentation.module';
 import { DocumentModule } from './infrastructure/document/document.module';
 import { EmailModule } from './infrastructure/email/email.module';
+import { BankImportModule } from './infrastructure/bank-import/bank-import.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -28,6 +30,7 @@ import { AppService } from './app.service';
     AuthModule,
     DocumentModule,
     EmailModule,
+    BankImportModule,
     PortfolioModule,
     TenancyModule,
     BillingModule,
@@ -36,6 +39,7 @@ import { AppService } from './app.service';
     TenantPresentationModule,
     LeasePresentationModule,
     RentCallPresentationModule,
+    BankStatementPresentationModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ClerkAuthGuard }],

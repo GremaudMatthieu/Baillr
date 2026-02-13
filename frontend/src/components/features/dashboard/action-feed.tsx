@@ -11,6 +11,7 @@ import {
   Plus,
   ArrowRight,
   Receipt,
+  Upload,
   Users,
   ShieldAlert,
   ShieldX,
@@ -31,6 +32,7 @@ import { useUnits } from "@/hooks/use-units";
 import { useTenants } from "@/hooks/use-tenants";
 import { useLeases } from "@/hooks/use-leases";
 import { useRentCalls } from "@/hooks/use-rent-calls";
+import { useBankStatements } from "@/hooks/use-bank-statements";
 
 const iconMap: Record<string, LucideIcon> = {
   Plus,
@@ -40,6 +42,7 @@ const iconMap: Record<string, LucideIcon> = {
   Landmark,
   Mail,
   Receipt,
+  Upload,
   Users,
   ShieldAlert,
   ShieldX,
@@ -199,6 +202,29 @@ function useOnboardingActions(): ActionItem[] {
       description:
         "Envoyez les appels de loyer générés à vos locataires par email avec le PDF en pièce jointe",
       href: "/rent-calls",
+      priority: "high",
+    });
+  }
+
+  const { data: bankStatements } = useBankStatements(entityId ?? "");
+
+  const hasSentRentCalls =
+    rentCallsForCurrentMonth &&
+    rentCallsForCurrentMonth.length > 0 &&
+    rentCallsForCurrentMonth.every((rc) => rc.sentAt);
+
+  if (
+    entityId &&
+    hasSentRentCalls &&
+    (!bankStatements || bankStatements.length === 0)
+  ) {
+    actions.push({
+      id: "onboarding-import-bank-statement",
+      icon: "Upload",
+      title: "Importez votre relevé bancaire",
+      description:
+        "Importez un relevé CSV ou Excel pour préparer le rapprochement bancaire",
+      href: "/payments",
       priority: "high",
     });
   }

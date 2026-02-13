@@ -10,8 +10,9 @@ export async function fetchWithAuth(
   if (!token) {
     throw new Error("Authentication required");
   }
+  const isFormData = options.body instanceof FormData;
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
     ...(options.headers as Record<string, string>),
     Authorization: `Bearer ${token}`,
   };

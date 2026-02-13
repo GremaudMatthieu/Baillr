@@ -9,6 +9,7 @@ import {
   Users,
   FileText,
   Receipt,
+  CreditCard,
   BookOpen,
   FolderOpen,
   Settings,
@@ -37,6 +38,7 @@ const navItems = [
   { label: "Locataires", icon: Users, href: "/tenants" },
   { label: "Baux", icon: FileText, href: "/leases" },
   { label: "Appels de loyer", icon: Receipt, href: "/rent-calls" },
+  { label: "Paiements", icon: CreditCard, href: "/payments" },
   { label: "Comptabilité", icon: BookOpen, href: "/accounting" },
   { label: "Documents", icon: FolderOpen, href: "/documents" },
 ] as const;

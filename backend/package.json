@@ -33,10 +33,12 @@
     "class-validator": "^0.14.3",
     "nestjs-cqrx": "^5.0.0",
     "nodemailer": "^8.0.1",
+    "papaparse": "^5.5.3",
     "pdfkit": "^0.17.2",
     "pg": "^8.18.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -46,8 +48,10 @@
     "@nestjs/testing": "^11.0.1",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
+    "@types/multer": "^2.0.0",
     "@types/node": "^22.10.7",
     "@types/nodemailer": "^7.0.9",
+    "@types/papaparse": "^5.5.2",
     "@types/pdfkit": "^0.17.5",
     "@types/pg": "^8.16.0",
     "@types/supertest": "^6.0.2",

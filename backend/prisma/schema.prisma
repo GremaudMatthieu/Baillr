@@ -22,11 +22,12 @@ model OwnershipEntity {
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
-  bankAccounts BankAccount[]
-  properties   Property[]
-  tenants      Tenant[]
-  leases       Lease[]
-  rentCalls    RentCall[]
+  bankAccounts   BankAccount[]
+  properties     Property[]
+  tenants        Tenant[]
+  leases         Lease[]
+  rentCalls      RentCall[]
+  bankStatements BankStatement[]
 
   @@map("ownership_entities")
   @@index([userId])
@@ -88,7 +89,8 @@ model BankAccount {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  entity OwnershipEntity @relation(fields: [entityId], references: [id])
+  entity         OwnershipEntity @relation(fields: [entityId], references: [id])
+  bankStatements BankStatement[]
 
   @@map("bank_accounts")
   @@index([entityId])
@@ -187,4 +189,41 @@ model RentCall {
   @@index([entityId])
   @@index([entityId, month])
   @@index([userId])
+}
+
+model BankStatement {
+  id               String   @id @default(uuid())
+  entityId         String   @map("entity_id")
+  userId           String   @map("user_id")
+  bankAccountId    String   @map("bank_account_id")
+  fileName         String   @map("file_name")
+  transactionCount Int      @map("transaction_count")
+  importedAt       DateTime @map("imported_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  entity       OwnershipEntity   @relation(fields: [entityId], references: [id])
+  bankAccount  BankAccount       @relation(fields: [bankAccountId], references: [id])
+  transactions BankTransaction[]
+
+  @@map("bank_statements")
+  @@index([entityId])
+  @@index([userId])
+}
+
+model BankTransaction {
+  id              String   @id @default(uuid())
+  bankStatementId String   @map("bank_statement_id")
+  entityId        String   @map("entity_id")
+  date            DateTime
+  amountCents     Int      @map("amount_cents")
+  payerName       String   @map("payer_name")
+  reference       String
+  isDuplicate     Boolean  @default(false) @map("is_duplicate")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  bankStatement BankStatement @relation(fields: [bankStatementId], references: [id])
+
+  @@map("bank_transactions")
+  @@index([bankStatementId])
+  @@index([entityId])
 }

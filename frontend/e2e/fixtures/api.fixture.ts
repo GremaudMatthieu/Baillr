@@ -559,6 +559,65 @@ export class ApiHelper {
     }
   }
 
+  async importBankStatement(
+    entityId: string,
+    bankAccountId: string,
+    csvContent: string,
+    fileName = 'releve.csv',
+  ) {
+    const response = await this.request.post(
+      `${API_BASE}/api/entities/${entityId}/bank-statements/import`,
+      {
+        headers: { Authorization: `Bearer ${this.token}` },
+        multipart: {
+          file: {
+            name: fileName,
+            mimeType: 'text/csv',
+            buffer: Buffer.from(csvContent),
+          },
+          bankAccountId,
+        },
+      },
+    );
+    if (!response.ok()) {
+      throw new Error(
+        `Failed to import bank statement: ${response.status()} ${await response.text()}`,
+      );
+    }
+    return (await response.json()) as {
+      bankStatementId: string;
+      transactionCount: number;
+      transactions: Record<string, unknown>[];
+    };
+  }
+
+  async getBankStatements(entityId: string) {
+    const response = await this.request.get(
+      `${API_BASE}/api/entities/${entityId}/bank-statements`,
+      { headers: this.headers() },
+    );
+    if (!response.ok()) {
+      throw new Error(`Failed to get bank statements: ${response.status()}`);
+    }
+    return (await response.json()) as { data: Record<string, unknown>[] };
+  }
+
+  async waitForBankStatementCount(
+    entityId: string,
+    expectedCount: number,
+    timeoutMs = 5000,
+  ) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      const { data } = await this.getBankStatements(entityId);
+      if (data.length >= expectedCount) return data;
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    throw new Error(
+      `Timed out waiting for ${expectedCount} bank statements (${timeoutMs}ms)`,
+    );
+  }
+
   getCreatedEntityIds() {
     return [...this.createdEntityIds];
   }
