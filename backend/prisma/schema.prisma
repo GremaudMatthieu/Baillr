@@ -187,16 +187,63 @@ model RentCall {
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
-  entity OwnershipEntity @relation(fields: [entityId], references: [id])
-  lease  Lease           @relation(fields: [leaseId], references: [id])
-  tenant Tenant          @relation(fields: [tenantId], references: [id])
-  unit   Unit            @relation(fields: [unitId], references: [id])
+  paymentStatus        String?   @map("payment_status")
+  remainingBalanceCents Int?     @map("remaining_balance_cents")
+  overpaymentCents     Int?      @map("overpayment_cents")
+
+  entity   OwnershipEntity @relation(fields: [entityId], references: [id])
+  lease    Lease           @relation(fields: [leaseId], references: [id])
+  tenant   Tenant          @relation(fields: [tenantId], references: [id])
+  unit     Unit            @relation(fields: [unitId], references: [id])
+  payments Payment[]
 
   @@unique([leaseId, month])
   @@map("rent_calls")
   @@index([entityId])
   @@index([entityId, month])
   @@index([userId])
+}
+
+model Payment {
+  id               String   @id @default(uuid())
+  rentCallId       String   @map("rent_call_id")
+  entityId         String   @map("entity_id")
+  transactionId    String   @map("transaction_id")
+  bankStatementId  String?  @map("bank_statement_id")
+  amountCents      Int      @map("amount_cents")
+  payerName        String   @map("payer_name")
+  paymentDate      DateTime @map("payment_date")
+  paymentMethod    String   @map("payment_method")
+  paymentReference String?  @map("payment_reference")
+  recordedAt       DateTime @map("recorded_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  rentCall RentCall @relation(fields: [rentCallId], references: [id])
+
+  @@map("payments")
+  @@unique([transactionId])
+  @@index([rentCallId])
+  @@index([entityId])
+}
+
+model AccountEntry {
+  id             String   @id @default(uuid())
+  entityId       String   @map("entity_id")
+  tenantId       String   @map("tenant_id")
+  type           String   // 'debit' | 'credit'
+  category       String   // 'rent_call' | 'payment' | 'overpayment_credit' | 'adjustment'
+  description    String
+  amountCents    Int      @map("amount_cents")
+  balanceCents   Int      @map("balance_cents")
+  referenceId    String   @map("reference_id")
+  referenceMonth String   @map("reference_month")
+  entryDate      DateTime @map("entry_date")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("account_entries")
+  @@unique([referenceId, category])
+  @@index([entityId, tenantId])
+  @@index([tenantId])
 }
 
 model BankStatement {

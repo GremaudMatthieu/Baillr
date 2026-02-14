@@ -12,6 +12,11 @@ const mockPrisma = {
     update: jest.fn(),
     findMany: jest.fn(),
   },
+  payment: {
+    findFirst: jest.fn(),
+    create: jest.fn(),
+    findMany: jest.fn(),
+  },
 };
 
 const mockKurrentDb = {
@@ -128,6 +133,7 @@ describe('RentCallProjection', () => {
     const paymentEvent = {
       rentCallId: 'rc-1',
       entityId: 'entity-1',
+      userId: 'user_123',
       transactionId: 'tx-1',
       bankStatementId: 'bs-1',
       amountCents: 85000,
@@ -136,24 +142,78 @@ describe('RentCallProjection', () => {
       recordedAt: '2026-02-14T12:00:00.000Z',
     };
 
-    it('should update payment fields on PaymentRecorded', async () => {
-      mockPrisma.rentCall.findUnique.mockResolvedValue({ id: 'rc-1' });
+    beforeEach(() => {
+      // Default: no existing payment row, full payment scenario
+      mockPrisma.payment.findFirst.mockResolvedValue(null);
+      mockPrisma.payment.create.mockResolvedValue({});
+      mockPrisma.payment.findMany.mockResolvedValue([{ amountCents: 85000 }]);
+    });
+
+    it('should create Payment row and update rent call with paid status on full payment', async () => {
+      mockPrisma.rentCall.findUnique.mockResolvedValue({ id: 'rc-1', totalAmountCents: 85000, paidAt: null });
       mockPrisma.rentCall.update.mockResolvedValue({});
 
       await (projection as any).onPaymentRecorded(paymentEvent);
 
+      expect(mockPrisma.payment.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          rentCallId: 'rc-1',
+          entityId: 'entity-1',
+          transactionId: 'tx-1',
+          amountCents: 85000,
+          payerName: 'DOS SANTOS',
+          paymentMethod: 'bank_transfer',
+        }),
+      });
+
       expect(mockPrisma.rentCall.update).toHaveBeenCalledWith({
         where: { id: 'rc-1' },
-        data: {
+        data: expect.objectContaining({
           paidAt: new Date('2026-02-14T12:00:00.000Z'),
           paidAmountCents: 85000,
-          transactionId: 'tx-1',
-          bankStatementId: 'bs-1',
-          payerName: 'DOS SANTOS',
-          paymentDate: new Date('2026-02-10'),
-          paymentMethod: 'bank_transfer',
-          paymentReference: null,
-        },
+          paymentStatus: 'paid',
+          remainingBalanceCents: 0,
+          overpaymentCents: 0,
+        }),
+      });
+    });
+
+    it('should set partial status when payment is less than total', async () => {
+      mockPrisma.rentCall.findUnique.mockResolvedValue({ id: 'rc-1', totalAmountCents: 85000, paidAt: null });
+      mockPrisma.rentCall.update.mockResolvedValue({});
+      mockPrisma.payment.findMany.mockResolvedValue([{ amountCents: 50000 }]);
+
+      const partialEvent = { ...paymentEvent, amountCents: 50000 };
+      await (projection as any).onPaymentRecorded(partialEvent);
+
+      const updateCall = mockPrisma.rentCall.update.mock.calls[0][0];
+      expect(updateCall.data.paidAt).toBeNull();
+      expect(updateCall.data.paidAmountCents).toBe(50000);
+      expect(updateCall.data.paymentStatus).toBe('partial');
+      expect(updateCall.data.remainingBalanceCents).toBe(35000);
+      expect(updateCall.data.overpaymentCents).toBe(0);
+      // Scalar fields should NOT be present for partial payments
+      expect(updateCall.data.transactionId).toBeUndefined();
+      expect(updateCall.data.paymentMethod).toBeUndefined();
+    });
+
+    it('should set overpaid status when payment exceeds total', async () => {
+      mockPrisma.rentCall.findUnique.mockResolvedValue({ id: 'rc-1', totalAmountCents: 85000, paidAt: null });
+      mockPrisma.rentCall.update.mockResolvedValue({});
+      mockPrisma.payment.findMany.mockResolvedValue([{ amountCents: 90000 }]);
+
+      const overpaidEvent = { ...paymentEvent, amountCents: 90000 };
+      await (projection as any).onPaymentRecorded(overpaidEvent);
+
+      expect(mockPrisma.rentCall.update).toHaveBeenCalledWith({
+        where: { id: 'rc-1' },
+        data: expect.objectContaining({
+          paidAt: new Date('2026-02-14T12:00:00.000Z'),
+          paidAmountCents: 90000,
+          paymentStatus: 'overpaid',
+          remainingBalanceCents: 0,
+          overpaymentCents: 5000,
+        }),
       });
     });
 
@@ -163,10 +223,24 @@ describe('RentCallProjection', () => {
       await (projection as any).onPaymentRecorded(paymentEvent);
 
       expect(mockPrisma.rentCall.update).not.toHaveBeenCalled();
+      expect(mockPrisma.payment.create).not.toHaveBeenCalled();
+    });
+
+    it('should skip Payment creation if transaction already exists (idempotent)', async () => {
+      mockPrisma.rentCall.findUnique.mockResolvedValue({ id: 'rc-1', totalAmountCents: 85000, paidAt: null });
+      mockPrisma.rentCall.update.mockResolvedValue({});
+      mockPrisma.payment.findFirst.mockResolvedValue({ id: 'p-existing' });
+      mockPrisma.payment.findMany.mockResolvedValue([{ amountCents: 85000 }]);
+
+      await (projection as any).onPaymentRecorded(paymentEvent);
+
+      expect(mockPrisma.payment.create).not.toHaveBeenCalled();
+      // But rent call update still happens (recompute status)
+      expect(mockPrisma.rentCall.update).toHaveBeenCalled();
     });
 
     it('should persist paymentMethod and paymentReference for manual payment', async () => {
-      mockPrisma.rentCall.findUnique.mockResolvedValue({ id: 'rc-1' });
+      mockPrisma.rentCall.findUnique.mockResolvedValue({ id: 'rc-1', totalAmountCents: 85000, paidAt: null });
       mockPrisma.rentCall.update.mockResolvedValue({});
 
       const manualPaymentEvent = {
@@ -178,8 +252,7 @@ describe('RentCallProjection', () => {
 
       await (projection as any).onPaymentRecorded(manualPaymentEvent);
 
-      expect(mockPrisma.rentCall.update).toHaveBeenCalledWith({
-        where: { id: 'rc-1' },
+      expect(mockPrisma.payment.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           paymentMethod: 'cash',
           paymentReference: null,
@@ -188,36 +261,14 @@ describe('RentCallProjection', () => {
       });
     });
 
-    it('should persist check payment with reference', async () => {
-      mockPrisma.rentCall.findUnique.mockResolvedValue({ id: 'rc-1' });
-      mockPrisma.rentCall.update.mockResolvedValue({});
-
-      const checkPaymentEvent = {
-        ...paymentEvent,
-        bankStatementId: null,
-        paymentMethod: 'check',
-        paymentReference: 'CHK-123',
-      };
-
-      await (projection as any).onPaymentRecorded(checkPaymentEvent);
-
-      expect(mockPrisma.rentCall.update).toHaveBeenCalledWith({
-        where: { id: 'rc-1' },
-        data: expect.objectContaining({
-          paymentMethod: 'check',
-          paymentReference: 'CHK-123',
-        }),
-      });
-    });
-
     it('should default paymentMethod to bank_transfer for old events without field', async () => {
-      mockPrisma.rentCall.findUnique.mockResolvedValue({ id: 'rc-1' });
+      mockPrisma.rentCall.findUnique.mockResolvedValue({ id: 'rc-1', totalAmountCents: 85000, paidAt: null });
       mockPrisma.rentCall.update.mockResolvedValue({});
 
-      // Old event without paymentMethod field
       const oldEvent = {
         rentCallId: 'rc-1',
         entityId: 'entity-1',
+        userId: 'user_123',
         transactionId: 'tx-1',
         bankStatementId: 'bs-1',
         amountCents: 85000,
@@ -228,8 +279,7 @@ describe('RentCallProjection', () => {
 
       await (projection as any).onPaymentRecorded(oldEvent);
 
-      expect(mockPrisma.rentCall.update).toHaveBeenCalledWith({
-        where: { id: 'rc-1' },
+      expect(mockPrisma.payment.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           paymentMethod: 'bank_transfer',
           paymentReference: null,

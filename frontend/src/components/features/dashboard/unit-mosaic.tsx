@@ -129,14 +129,27 @@ export function UnitMosaic({ entityId }: UnitMosaicProps) {
   const paidUnitIds = React.useMemo(() => {
     if (!rentCalls) return new Set<string>();
     return new Set(
-      rentCalls.filter((rc) => rc.paidAt).map((rc) => rc.unitId),
+      rentCalls
+        .filter((rc) => rc.paymentStatus === "paid" || rc.paymentStatus === "overpaid")
+        .map((rc) => rc.unitId),
+    );
+  }, [rentCalls]);
+
+  const partiallyPaidUnitIds = React.useMemo(() => {
+    if (!rentCalls) return new Set<string>();
+    return new Set(
+      rentCalls
+        .filter((rc) => rc.paymentStatus === "partial")
+        .map((rc) => rc.unitId),
     );
   }, [rentCalls]);
 
   const sentUnitIds = React.useMemo(() => {
     if (!rentCalls) return new Set<string>();
     return new Set(
-      rentCalls.filter((rc) => rc.sentAt && !rc.paidAt).map((rc) => rc.unitId),
+      rentCalls
+        .filter((rc) => rc.sentAt && !rc.paymentStatus)
+        .map((rc) => rc.unitId),
     );
   }, [rentCalls]);
 
@@ -210,21 +223,26 @@ export function UnitMosaic({ entityId }: UnitMosaicProps) {
                 const idx = unitIndexMap.get(unit.id) ?? 0;
                 const isOccupied = occupiedUnitIds.has(unit.id);
                 const isPaid = paidUnitIds.has(unit.id);
+                const isPartiallyPaid = partiallyPaidUnitIds.has(unit.id);
                 const isSent = sentUnitIds.has(unit.id);
                 const statusLabel = isPaid
                   ? "payé"
-                  : isSent
-                    ? "envoyé"
-                    : isOccupied
-                      ? "occupé"
-                      : "vacant";
+                  : isPartiallyPaid
+                    ? "partiellement payé"
+                    : isSent
+                      ? "envoyé"
+                      : isOccupied
+                        ? "occupé"
+                        : "vacant";
                 const bgClass = isPaid
                   ? "bg-green-100 dark:bg-green-900/30"
-                  : isSent
+                  : isPartiallyPaid
                     ? "bg-amber-100 dark:bg-amber-900/30"
-                    : isOccupied
-                      ? "bg-green-100 dark:bg-green-900/30"
-                      : "bg-muted";
+                    : isSent
+                      ? "bg-amber-100 dark:bg-amber-900/30"
+                      : isOccupied
+                        ? "bg-green-100 dark:bg-green-900/30"
+                        : "bg-muted";
                 return (
                   <button
                     key={unit.id}

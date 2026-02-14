@@ -84,7 +84,7 @@ vi.mock("@/hooks/use-rent-calls", () => ({
 describe("UnitMosaic — paid rent call status", () => {
   it("should show green tile with 'payé' label when rent call is paid", () => {
     mockRentCallsData = [
-      { id: "rc1", unitId: "u1", sentAt: "2026-02-10T10:00:00.000Z", paidAt: "2026-02-12T14:00:00.000Z" },
+      { id: "rc1", unitId: "u1", sentAt: "2026-02-10T10:00:00.000Z", paidAt: "2026-02-12T14:00:00.000Z", paymentStatus: "paid" },
     ];
 
     renderWithProviders(<UnitMosaic entityId="entity-1" />);
@@ -98,8 +98,8 @@ describe("UnitMosaic — paid rent call status", () => {
 
   it("should show amber tile for sent-but-not-paid unit", () => {
     mockRentCallsData = [
-      { id: "rc1", unitId: "u1", sentAt: "2026-02-10T10:00:00.000Z", paidAt: "2026-02-12T14:00:00.000Z" },
-      { id: "rc2", unitId: "u2", sentAt: "2026-02-10T10:00:00.000Z", paidAt: null },
+      { id: "rc1", unitId: "u1", sentAt: "2026-02-10T10:00:00.000Z", paidAt: "2026-02-12T14:00:00.000Z", paymentStatus: "paid" },
+      { id: "rc2", unitId: "u2", sentAt: "2026-02-10T10:00:00.000Z", paidAt: null, paymentStatus: null },
     ];
 
     renderWithProviders(<UnitMosaic entityId="entity-1" />);
@@ -119,7 +119,7 @@ describe("UnitMosaic — paid rent call status", () => {
 
   it("should show occupied green for unit with no rent call", () => {
     mockRentCallsData = [
-      { id: "rc1", unitId: "u1", sentAt: "2026-02-10T10:00:00.000Z", paidAt: "2026-02-12T14:00:00.000Z" },
+      { id: "rc1", unitId: "u1", sentAt: "2026-02-10T10:00:00.000Z", paidAt: "2026-02-12T14:00:00.000Z", paymentStatus: "paid" },
     ];
 
     renderWithProviders(<UnitMosaic entityId="entity-1" />);
@@ -134,7 +134,7 @@ describe("UnitMosaic — paid rent call status", () => {
   it("should prioritize paid over sent status", () => {
     // A rent call that is both sent AND paid should show "payé" not "envoyé"
     mockRentCallsData = [
-      { id: "rc1", unitId: "u1", sentAt: "2026-02-10T10:00:00.000Z", paidAt: "2026-02-12T14:00:00.000Z" },
+      { id: "rc1", unitId: "u1", sentAt: "2026-02-10T10:00:00.000Z", paidAt: "2026-02-12T14:00:00.000Z", paymentStatus: "paid" },
     ];
 
     renderWithProviders(<UnitMosaic entityId="entity-1" />);
@@ -148,5 +148,34 @@ describe("UnitMosaic — paid rent call status", () => {
     expect(
       screen.getByRole("gridcell", { name: /Apt 1.*payé/ }),
     ).toBeInTheDocument();
+  });
+
+  it("should show amber tile for partially paid rent call (NOT green)", () => {
+    mockRentCallsData = [
+      { id: "rc1", unitId: "u1", sentAt: "2026-02-10T10:00:00.000Z", paidAt: null, paymentStatus: "partial" },
+    ];
+
+    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+
+    const apt1 = screen.getByRole("gridcell", {
+      name: /Apt 1.*partiellement payé/,
+    });
+    expect(apt1).toBeInTheDocument();
+    expect(apt1.className).toContain("bg-amber-100");
+    expect(apt1.className).not.toContain("bg-green-100");
+  });
+
+  it("should show green tile for overpaid rent call", () => {
+    mockRentCallsData = [
+      { id: "rc1", unitId: "u1", sentAt: "2026-02-10T10:00:00.000Z", paidAt: "2026-02-12T14:00:00.000Z", paymentStatus: "overpaid" },
+    ];
+
+    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+
+    const apt1 = screen.getByRole("gridcell", {
+      name: /Apt 1.*payé/,
+    });
+    expect(apt1).toBeInTheDocument();
+    expect(apt1.className).toContain("bg-green-100");
   });
 });

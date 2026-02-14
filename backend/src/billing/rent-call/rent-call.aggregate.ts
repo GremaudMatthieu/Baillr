@@ -4,6 +4,17 @@ import { RentCallSent } from './events/rent-call-sent.event.js';
 import { PaymentRecorded } from './events/payment-recorded.event.js';
 import { RentCallNotCreatedException } from './exceptions/rent-call-not-created.exception.js';
 
+export interface PaymentEntry {
+  transactionId: string;
+  bankStatementId: string | null;
+  amountCents: number;
+  payerName: string;
+  paymentDate: Date;
+  recordedAt: Date;
+  paymentMethod: string;
+  paymentReference: string | null;
+}
+
 export class RentCallAggregate extends AggregateRoot {
   private rentCallId!: string;
   private entityId!: string;
@@ -21,10 +32,8 @@ export class RentCallAggregate extends AggregateRoot {
   private sentAt: Date | null = null;
   private recipientEmail: string | null = null;
   private paidAt: Date | null = null;
-  private transactionId: string | null = null;
   private paidAmountCents: number | null = null;
-  private paymentMethod: string | null = null;
-  private paymentReference: string | null = null;
+  private payments: PaymentEntry[] = [];
 
   static readonly streamName = 'rent-call';
 
@@ -107,6 +116,26 @@ export class RentCallAggregate extends AggregateRoot {
     this.recipientEmail = event.data.recipientEmail;
   }
 
+  get totalPaidCents(): number {
+    return this.payments.reduce((sum, p) => sum + p.amountCents, 0);
+  }
+
+  get isFullyPaid(): boolean {
+    return this.totalPaidCents >= this.totalAmountCents;
+  }
+
+  get isPartiallyPaid(): boolean {
+    return this.totalPaidCents > 0 && this.totalPaidCents < this.totalAmountCents;
+  }
+
+  get remainingBalanceCents(): number {
+    return Math.max(0, this.totalAmountCents - this.totalPaidCents);
+  }
+
+  get overpaymentCents(): number {
+    return Math.max(0, this.totalPaidCents - this.totalAmountCents);
+  }
+
   recordPayment(
     transactionId: string,
     bankStatementId: string | null,
@@ -121,8 +150,8 @@ export class RentCallAggregate extends AggregateRoot {
     if (!this.created) {
       throw RentCallNotCreatedException.create();
     }
-    if (this.paidAt !== null) {
-      return; // no-op guard: already paid
+    if (this.isFullyPaid) {
+      return; // no-op guard: already fully paid or overpaid
     }
 
     this.apply(
@@ -144,10 +173,20 @@ export class RentCallAggregate extends AggregateRoot {
 
   @EventHandler(PaymentRecorded)
   onPaymentRecorded(event: PaymentRecorded): void {
-    this.paidAt = new Date(event.data.recordedAt);
-    this.transactionId = event.data.transactionId;
-    this.paidAmountCents = event.data.amountCents;
-    this.paymentMethod = event.data.paymentMethod ?? 'bank_transfer';
-    this.paymentReference = event.data.paymentReference ?? null;
+    this.payments.push({
+      transactionId: event.data.transactionId,
+      bankStatementId: event.data.bankStatementId,
+      amountCents: event.data.amountCents,
+      payerName: event.data.payerName,
+      paymentDate: new Date(event.data.paymentDate),
+      recordedAt: new Date(event.data.recordedAt),
+      paymentMethod: event.data.paymentMethod ?? 'bank_transfer',
+      paymentReference: event.data.paymentReference ?? null,
+    });
+
+    this.paidAmountCents = this.totalPaidCents;
+    if (this.isFullyPaid) {
+      this.paidAt = new Date(event.data.recordedAt);
+    }
   }
 }

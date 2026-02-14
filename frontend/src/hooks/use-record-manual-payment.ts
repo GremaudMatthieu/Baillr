@@ -22,6 +22,7 @@ export function useRecordManualPayment(entityId: string) {
     async (
       rentCallId: string,
       data: RecordManualPaymentData,
+      tenantId?: string,
     ): Promise<boolean> => {
       setIsPending(true);
       setError(null);
@@ -34,6 +35,14 @@ export function useRecordManualPayment(entityId: string) {
           void queryClient.invalidateQueries({
             queryKey: ["entities"],
           });
+          void queryClient.invalidateQueries({
+            queryKey: ["entities", entityId, "rent-calls", rentCallId, "payments"],
+          });
+          if (tenantId) {
+            void queryClient.invalidateQueries({
+              queryKey: ["entities", entityId, "tenants", tenantId, "account"],
+            });
+          }
         }, 1500);
         return true;
       } catch (err) {

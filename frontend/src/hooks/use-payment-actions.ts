@@ -36,6 +36,15 @@ export function useValidateMatch(entityId: string) {
           void queryClient.invalidateQueries({
             queryKey: ["entities"],
           });
+          if (data.rentCallId) {
+            void queryClient.invalidateQueries({
+              queryKey: ["entities", entityId, "rent-calls", data.rentCallId, "payments"],
+            });
+          }
+          // Invalidate tenant account queries (balance may have changed)
+          void queryClient.invalidateQueries({
+            queryKey: ["entities", entityId, "tenants"],
+          });
         }, 1500);
         return true;
       } catch (err) {
@@ -98,6 +107,10 @@ export function useManualAssignMatch(entityId: string) {
           });
           void queryClient.invalidateQueries({
             queryKey: ["entities"],
+          });
+          // Invalidate tenant account queries (balance may have changed)
+          void queryClient.invalidateQueries({
+            queryKey: ["entities", entityId, "tenants"],
           });
         }, 1500);
         return true;

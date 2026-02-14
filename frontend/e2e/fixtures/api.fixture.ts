@@ -725,6 +725,37 @@ export class ApiHelper {
     );
   }
 
+  async waitForRentCallStatus(
+    entityId: string,
+    month: string,
+    expectedStatus: string,
+    timeoutMs = 5000,
+  ) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      const { data } = await this.getRentCalls(entityId, month);
+      if (data.length > 0 && data[0].paymentStatus === expectedStatus) return data[0];
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    throw new Error(
+      `Timed out waiting for rent call status "${expectedStatus}" (${timeoutMs}ms)`,
+    );
+  }
+
+  async getTenantAccount(entityId: string, tenantId: string) {
+    const response = await this.request.get(
+      `${API_BASE}/api/entities/${entityId}/tenants/${tenantId}/account`,
+      { headers: this.headers() },
+    );
+    if (!response.ok()) {
+      throw new Error(`Failed to get tenant account: ${response.status()}`);
+    }
+    return (await response.json()) as {
+      entries: Record<string, unknown>[];
+      balanceCents: number;
+    };
+  }
+
   getCreatedEntityIds() {
     return [...this.createdEntityIds];
   }

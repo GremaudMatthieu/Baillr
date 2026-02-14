@@ -316,7 +316,7 @@ describe('RentCallAggregate', () => {
       expect(eventData.paymentReference).toBeNull();
     });
 
-    it('should no-op when already paid (idempotent)', () => {
+    it('should no-op when already fully paid', () => {
       const aggregate = createGeneratedAggregate();
 
       aggregate.recordPayment(
@@ -330,7 +330,7 @@ describe('RentCallAggregate', () => {
       );
       aggregate.commit();
 
-      // Second call should be a no-op
+      // Second call should be a no-op (already fully paid)
       aggregate.recordPayment(
         'tx-2',
         'bs-2',

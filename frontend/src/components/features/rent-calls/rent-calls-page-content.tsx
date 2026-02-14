@@ -164,7 +164,7 @@ export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
     paymentReference?: string;
   }) {
     if (!paymentRentCallId || isRecordingPayment) return;
-    const success = await recordPayment(paymentRentCallId, data);
+    const success = await recordPayment(paymentRentCallId, data, paymentRentCall?.tenantId);
     if (success) {
       setPaymentDialogOpen(false);
       setPaymentRentCallId(null);
@@ -310,7 +310,11 @@ export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
             ? (tenantNames.get(paymentRentCall.tenantId) ?? "")
             : ""
         }
-        defaultAmountCents={paymentRentCall?.totalAmountCents ?? 0}
+        defaultAmountCents={
+          paymentRentCall?.paymentStatus === "partial"
+            ? (paymentRentCall.remainingBalanceCents ?? paymentRentCall.totalAmountCents)
+            : (paymentRentCall?.totalAmountCents ?? 0)
+        }
         error={recordPaymentError}
       />
     </div>

@@ -30,6 +30,9 @@ const baseRentCall: RentCallData = {
   paymentMethod: null,
   paymentReference: null,
   recipientEmail: null,
+  paymentStatus: null,
+  remainingBalanceCents: null,
+  overpaymentCents: null,
   createdAt: "2026-03-01T00:00:00.000Z",
 };
 
@@ -328,6 +331,156 @@ describe("RentCallList", () => {
     expect(
       screen.queryByRole("button", { name: /Enregistrer un paiement/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it("should show partial payment badge with amber styling", () => {
+    const partialRentCall: RentCallData = {
+      ...baseRentCall,
+      paymentStatus: "partial",
+      paidAmountCents: 50000,
+      remainingBalanceCents: 35000,
+      paymentMethod: "bank_transfer",
+    };
+
+    renderWithProviders(
+      <RentCallList
+        rentCalls={[partialRentCall]}
+        tenantNames={tenantNames}
+        unitIdentifiers={unitIdentifiers}
+      />,
+    );
+
+    const badge = screen.getByText(/Partiellement payé/);
+    expect(badge).toBeInTheDocument();
+    // Badge text contains paid/total amounts
+    expect(badge.textContent).toMatch(/500,00/);
+    expect(badge.textContent).toMatch(/850,00/);
+  });
+
+  it("should show record payment button for partially paid rent call", () => {
+    const partialRentCall: RentCallData = {
+      ...baseRentCall,
+      paymentStatus: "partial",
+      paidAmountCents: 50000,
+      remainingBalanceCents: 35000,
+      paymentMethod: "bank_transfer",
+    };
+
+    renderWithProviders(
+      <RentCallList
+        rentCalls={[partialRentCall]}
+        tenantNames={tenantNames}
+        unitIdentifiers={unitIdentifiers}
+        onRecordPayment={() => {}}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: /Enregistrer un paiement/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("should show overpaid badge with overpayment amount", () => {
+    const overpaidRentCall: RentCallData = {
+      ...baseRentCall,
+      paymentStatus: "overpaid",
+      paidAmountCents: 90000,
+      paidAt: "2026-03-10T12:00:00.000Z",
+      overpaymentCents: 5000,
+      paymentMethod: "cash",
+    };
+
+    renderWithProviders(
+      <RentCallList
+        rentCalls={[overpaidRentCall]}
+        tenantNames={tenantNames}
+        unitIdentifiers={unitIdentifiers}
+      />,
+    );
+
+    const badge = screen.getByText(/trop-perçu/);
+    expect(badge).toBeInTheDocument();
+    // Badge text includes overpayment amount
+    expect(badge.textContent).toMatch(/50,00/);
+  });
+
+  it("should hide record payment button for overpaid rent call", () => {
+    const overpaidRentCall: RentCallData = {
+      ...baseRentCall,
+      paymentStatus: "overpaid",
+      paidAmountCents: 90000,
+      paidAt: "2026-03-10T12:00:00.000Z",
+      overpaymentCents: 5000,
+      paymentMethod: "cash",
+    };
+
+    renderWithProviders(
+      <RentCallList
+        rentCalls={[overpaidRentCall]}
+        tenantNames={tenantNames}
+        unitIdentifiers={unitIdentifiers}
+        onRecordPayment={() => {}}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: /Enregistrer un paiement/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("should hide record payment button for rent call with paymentStatus paid", () => {
+    const paidRentCall: RentCallData = {
+      ...baseRentCall,
+      paymentStatus: "paid",
+      paidAt: "2026-03-10T12:00:00.000Z",
+      paidAmountCents: 85000,
+      paymentMethod: "bank_transfer",
+    };
+
+    renderWithProviders(
+      <RentCallList
+        rentCalls={[paidRentCall]}
+        tenantNames={tenantNames}
+        unitIdentifiers={unitIdentifiers}
+        onRecordPayment={() => {}}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: /Enregistrer un paiement/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("should show payment history toggle for paid rent call", () => {
+    const paidRentCall: RentCallData = {
+      ...baseRentCall,
+      paymentStatus: "paid",
+      paidAt: "2026-03-10T12:00:00.000Z",
+      paidAmountCents: 85000,
+      paymentMethod: "bank_transfer",
+    };
+
+    renderWithProviders(
+      <RentCallList
+        rentCalls={[paidRentCall]}
+        tenantNames={tenantNames}
+        unitIdentifiers={unitIdentifiers}
+      />,
+    );
+
+    expect(screen.getByText("Voir les paiements")).toBeInTheDocument();
+  });
+
+  it("should not show payment history toggle for unpaid rent call", () => {
+    renderWithProviders(
+      <RentCallList
+        rentCalls={[baseRentCall]}
+        tenantNames={tenantNames}
+        unitIdentifiers={unitIdentifiers}
+      />,
+    );
+
+    expect(screen.queryByText("Voir les paiements")).not.toBeInTheDocument();
   });
 
   it("should display download error when present", () => {

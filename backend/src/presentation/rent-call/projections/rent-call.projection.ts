@@ -174,19 +174,70 @@ export class RentCallProjection implements OnModuleInit {
       return;
     }
 
+    // Create Payment row (idempotent by transactionId check)
+    const existingPayment = await this.prisma.payment.findFirst({
+      where: { transactionId: data.transactionId, rentCallId: data.rentCallId },
+    });
+    if (!existingPayment) {
+      await this.prisma.payment.create({
+        data: {
+          rentCallId: data.rentCallId,
+          entityId: data.entityId,
+          transactionId: data.transactionId,
+          bankStatementId: data.bankStatementId ?? null,
+          amountCents: data.amountCents,
+          payerName: data.payerName ?? '',
+          paymentDate: data.paymentDate ? new Date(data.paymentDate) : new Date(data.recordedAt),
+          paymentMethod: data.paymentMethod ?? 'bank_transfer',
+          paymentReference: data.paymentReference ?? null,
+          recordedAt: new Date(data.recordedAt),
+        },
+      });
+    }
+
+    // Compute total paid from all Payment rows
+    const payments = await this.prisma.payment.findMany({
+      where: { rentCallId: data.rentCallId },
+    });
+    const totalPaidCents = payments.reduce((sum, p) => sum + p.amountCents, 0);
+    const totalAmountCents = existing.totalAmountCents;
+
+    let paymentStatus: string;
+    if (totalPaidCents >= totalAmountCents) {
+      paymentStatus = totalPaidCents > totalAmountCents ? 'overpaid' : 'paid';
+    } else {
+      paymentStatus = 'partial';
+    }
+
+    const remainingBalanceCents = Math.max(0, totalAmountCents - totalPaidCents);
+    const overpaymentCents = Math.max(0, totalPaidCents - totalAmountCents);
+    const isFullyPaid = paymentStatus === 'paid' || paymentStatus === 'overpaid';
+
+    // Base fields always updated
+    const updateData: Record<string, unknown> = {
+      paidAmountCents: totalPaidCents,
+      paymentStatus,
+      remainingBalanceCents,
+      overpaymentCents,
+    };
+
+    // Scalar payment fields only set on final payment (not overwritten by each partial)
+    if (isFullyPaid) {
+      updateData.paidAt = existing.paidAt ?? new Date(data.recordedAt);
+      updateData.transactionId = data.transactionId;
+      updateData.bankStatementId = data.bankStatementId ?? null;
+      updateData.payerName = data.payerName ?? null;
+      updateData.paymentDate = data.paymentDate ? new Date(data.paymentDate) : null;
+      updateData.paymentMethod = data.paymentMethod ?? 'bank_transfer';
+      updateData.paymentReference = data.paymentReference ?? null;
+    } else {
+      updateData.paidAt = null;
+    }
+
     await this.prisma.rentCall.update({
       where: { id: data.rentCallId },
-      data: {
-        paidAt: new Date(data.recordedAt),
-        paidAmountCents: data.amountCents,
-        transactionId: data.transactionId,
-        bankStatementId: data.bankStatementId ?? null,
-        payerName: data.payerName ?? null,
-        paymentDate: data.paymentDate ? new Date(data.paymentDate) : null,
-        paymentMethod: data.paymentMethod ?? 'bank_transfer',
-        paymentReference: data.paymentReference ?? null,
-      },
+      data: updateData,
     });
-    this.logger.log(`Projected PaymentRecorded for ${data.rentCallId}`);
+    this.logger.log(`Projected PaymentRecorded for ${data.rentCallId} (status: ${paymentStatus})`);
   }
 }

@@ -16,8 +16,10 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTenant } from "@/hooks/use-tenants";
 import { useLeases } from "@/hooks/use-leases";
+import { useTenantAccount } from "@/hooks/use-tenant-account";
 import { useCurrentEntity } from "@/hooks/use-current-entity";
 import { TenantForm } from "@/components/features/tenants/tenant-form";
+import { TenantCurrentAccount } from "@/components/features/tenants/tenant-current-account";
 import { TENANT_TYPE_LABELS } from "@/lib/constants/tenant-types";
 import { REVISION_INDEX_TYPE_LABELS } from "@/lib/constants/revision-index-types";
 import { InsuranceStatusBadge } from "@/components/features/tenants/insurance-status-badge";
@@ -43,6 +45,11 @@ export default function TenantDetailPage({
   const { entityId } = useCurrentEntity();
   const { data: tenant, isLoading, isError } = useTenant(id);
   const { data: leases } = useLeases(entityId ?? "");
+  const {
+    data: accountData,
+    isLoading: isLoadingAccount,
+    isError: isErrorAccount,
+  } = useTenantAccount(entityId ?? "", id);
   const [isEditing, setIsEditing] = useState(false);
 
   const tenantLeases = leases?.filter((l) => l.tenantId === id) ?? [];
@@ -292,6 +299,32 @@ export default function TenantDetailPage({
                   Aucun bail pour ce locataire
                 </p>
               </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Compte courant</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoadingAccount && (
+              <div className="space-y-2">
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+              </div>
+            )}
+            {isErrorAccount && (
+              <p className="text-sm text-destructive">
+                Erreur lors du chargement du compte courant
+              </p>
+            )}
+            {!isLoadingAccount && !isErrorAccount && accountData && (
+              <TenantCurrentAccount
+                entries={accountData.entries}
+                balanceCents={accountData.balanceCents}
+              />
             )}
           </CardContent>
         </Card>

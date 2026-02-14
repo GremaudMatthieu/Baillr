@@ -30,6 +30,9 @@ export interface RentCallData {
   paymentMethod: string | null;
   paymentReference: string | null;
   recipientEmail: string | null;
+  paymentStatus: "partial" | "paid" | "overpaid" | null;
+  remainingBalanceCents: number | null;
+  overpaymentCents: number | null;
   createdAt: string;
 }
 
