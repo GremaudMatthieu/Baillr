@@ -11,6 +11,12 @@ vi.mock("@/hooks/use-bank-statements", () => ({
     isPending: false,
     error: null,
   }),
+  useMatchPayments: () => ({
+    matchPayments: vi.fn(),
+    isPending: false,
+    error: null,
+    result: null,
+  }),
 }));
 
 vi.mock("@/hooks/use-bank-accounts", () => ({
@@ -65,6 +71,12 @@ describe("PaymentsPageContent with data", () => {
         importStatement: vi.fn(),
         isPending: false,
         error: null,
+      }),
+      useMatchPayments: () => ({
+        matchPayments: vi.fn(),
+        isPending: false,
+        error: null,
+        result: null,
       }),
     }));
   });

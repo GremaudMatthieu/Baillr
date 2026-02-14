@@ -6,8 +6,8 @@ interface TransactionItem {
   id?: string;
   date: string;
   amountCents: number;
-  payerName: string;
-  reference: string;
+  payerName: string | null;
+  reference: string | null;
   isDuplicate?: boolean;
 }
 

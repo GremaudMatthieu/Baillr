@@ -83,6 +83,25 @@ export class RentCallFinder {
     });
   }
 
+  async findAllWithRelationsByEntityAndMonth(
+    entityId: string,
+    userId: string,
+    month: string,
+  ): Promise<RentCallWithRelations[]> {
+    return this.prisma.rentCall.findMany({
+      where: { entityId, month, userId },
+      include: {
+        tenant: true,
+        unit: true,
+        lease: true,
+        entity: {
+          include: { bankAccounts: true },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
   async existsByEntityAndMonth(
     entityId: string,
     month: string,

@@ -15,6 +15,7 @@ import { ImportBankStatementDialog } from "./import-bank-statement-dialog";
 import { ImportSummary } from "./import-summary";
 import { BankStatementList } from "./bank-statement-list";
 import { TransactionList } from "./transaction-list";
+import { MatchingProposalsContent } from "./matching-proposals-content";
 
 interface PaymentsPageContentProps {
   entityId: string;
@@ -108,6 +109,10 @@ export function PaymentsPageContent({ entityId }: PaymentsPageContentProps) {
               )}
             </div>
           )}
+
+          <hr className="my-6" />
+
+          <MatchingProposalsContent entityId={entityId} />
         </div>
       )}
 

@@ -85,7 +85,7 @@ development_status:
   # Epic 5: Bank Reconciliation & Payment Management (6 stories)
   epic-5: in-progress
   5-1-import-bank-statements-from-csv-excel: review
-  5-2-auto-match-payments-to-rent-calls: backlog
+  5-2-auto-match-payments-to-rent-calls: review
   5-3-validate-reject-or-manually-assign-payment-matches: backlog
   5-4-record-manual-payments-cash-check: backlog
   5-5-handle-partial-payments-overpayments-and-tenant-current-account: backlog

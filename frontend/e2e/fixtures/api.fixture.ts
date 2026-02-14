@@ -618,6 +618,30 @@ export class ApiHelper {
     );
   }
 
+  async matchPayments(
+    entityId: string,
+    bankStatementId: string,
+    month: string,
+  ) {
+    const response = await this.request.post(
+      `${API_BASE}/api/entities/${entityId}/bank-statements/${bankStatementId}/match?month=${month}`,
+      {
+        headers: this.headers(),
+      },
+    );
+    if (!response.ok()) {
+      throw new Error(
+        `Failed to match payments: ${response.status()} ${await response.text()}`,
+      );
+    }
+    return (await response.json()) as {
+      matches: Record<string, unknown>[];
+      ambiguous: Record<string, unknown>[];
+      unmatched: Record<string, unknown>[];
+      summary: { matched: number; unmatched: number; ambiguous: number; rentCallCount: number };
+    };
+  }
+
   getCreatedEntityIds() {
     return [...this.createdEntityIds];
   }

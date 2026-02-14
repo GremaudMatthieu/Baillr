@@ -9,6 +9,12 @@ import {
   type ImportedTransaction,
   type ImportResult,
   type ColumnMapping,
+  type MatchingResult,
+  type MatchProposal,
+  type AmbiguousMatch,
+  type UnmatchedTransaction,
+  type MatchingSummary,
+  type ConfidenceLevel,
 } from "@/lib/api/bank-statements-api";
 
 export type {
@@ -17,6 +23,12 @@ export type {
   ImportedTransaction,
   ImportResult,
   ColumnMapping,
+  MatchingResult,
+  MatchProposal,
+  AmbiguousMatch,
+  UnmatchedTransaction,
+  MatchingSummary,
+  ConfidenceLevel,
 };
 
 export function useBankStatements(entityId: string) {
@@ -92,4 +104,42 @@ export function useImportBankStatement(entityId: string) {
   );
 
   return { importStatement, isPending, error };
+}
+
+export function useMatchPayments(entityId: string) {
+  const api = useBankStatementsApi();
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<MatchingResult | null>(null);
+
+  const matchPayments = useCallback(
+    async (
+      bankStatementId: string,
+      month: string,
+    ): Promise<MatchingResult | null> => {
+      setIsPending(true);
+      setError(null);
+      try {
+        const matchResult = await api.matchPayments(
+          entityId,
+          bankStatementId,
+          month,
+        );
+        setResult(matchResult);
+        return matchResult;
+      } catch (err) {
+        const message =
+          err instanceof Error
+            ? err.message
+            : "Erreur lors du rapprochement";
+        setError(message);
+        return null;
+      } finally {
+        setIsPending(false);
+      }
+    },
+    [entityId, api],
+  );
+
+  return { matchPayments, isPending, error, result };
 }
