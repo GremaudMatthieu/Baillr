@@ -15,6 +15,7 @@ import {
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -30,6 +31,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { EntitySwitcher } from "@/components/layout/entity-switcher";
+import { useCurrentEntity } from "@/hooks/use-current-entity";
+import { useUnpaidRentCalls } from "@/hooks/use-unpaid-rent-calls";
 
 const navItems = [
   { label: "Tableau de bord", icon: LayoutDashboard, href: "/dashboard" },
@@ -56,6 +59,9 @@ interface SidebarProps {
 
 function SidebarNav({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
   const pathname = usePathname();
+  const { entityId } = useCurrentEntity();
+  const { data: unpaidRentCalls } = useUnpaidRentCalls(entityId);
+  const unpaidCount = unpaidRentCalls?.length ?? 0;
 
   return (
     <nav aria-label="Navigation principale" className="flex flex-1 flex-col">
@@ -63,6 +69,7 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate
         <ul role="list" className="space-y-1">
           {navItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+            const showBadge = item.href === "/rent-calls" && unpaidCount > 0;
             const linkContent = (
               <Link
                 href={item.href}
@@ -78,7 +85,16 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate
                 aria-current={isActive ? "page" : undefined}
               >
                 <item.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-                {!collapsed && <span>{item.label}</span>}
+                {!collapsed && (
+                  <>
+                    <span className="flex-1">{item.label}</span>
+                    {showBadge && (
+                      <Badge variant="destructive" className="ml-auto text-xs">
+                        {unpaidCount}
+                      </Badge>
+                    )}
+                  </>
+                )}
               </Link>
             );
 

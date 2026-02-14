@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import {
+  AlertTriangle,
   Building2,
   ClipboardList,
   FileText,
@@ -34,8 +35,10 @@ import { useTenants } from "@/hooks/use-tenants";
 import { useLeases } from "@/hooks/use-leases";
 import { useRentCalls } from "@/hooks/use-rent-calls";
 import { useBankStatements } from "@/hooks/use-bank-statements";
+import { useUnpaidRentCalls } from "@/hooks/use-unpaid-rent-calls";
 
 const iconMap: Record<string, LucideIcon> = {
+  AlertTriangle,
   Plus,
   Building2,
   ClipboardList,
@@ -56,7 +59,7 @@ export interface ActionItem {
   title: string;
   description: string;
   href?: string;
-  priority: "high" | "medium" | "low";
+  priority: "critical" | "high" | "medium" | "low";
 }
 
 function useOnboardingActions(): ActionItem[] {
@@ -296,7 +299,42 @@ function useInsuranceAlerts(): ActionItem[] {
   return actions;
 }
 
+function formatAmount(cents: number): string {
+  return new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: "EUR",
+  }).format(cents / 100);
+}
+
+function useUnpaidAlerts(): ActionItem[] {
+  const { entityId } = useCurrentEntity();
+  const { data: unpaidRentCalls } = useUnpaidRentCalls(entityId);
+  const actions: ActionItem[] = [];
+
+  if (!unpaidRentCalls) return actions;
+
+  for (const rc of unpaidRentCalls) {
+    const tenantName =
+      rc.tenantType === "company" && rc.tenantCompanyName
+        ? rc.tenantCompanyName
+        : `${rc.tenantFirstName} ${rc.tenantLastName}`;
+    const amount = formatAmount(rc.remainingBalanceCents ?? rc.totalAmountCents);
+
+    actions.push({
+      id: `unpaid-${rc.id}`,
+      icon: "AlertTriangle",
+      title: `Loyer impayé — ${tenantName} — ${amount} — ${rc.daysLate} jour${rc.daysLate > 1 ? "s" : ""} de retard`,
+      description: `Lot ${rc.unitIdentifier} — Période ${rc.month}`,
+      href: "/rent-calls?filter=unpaid",
+      priority: "critical",
+    });
+  }
+
+  return actions;
+}
+
 const priorityLabels: Record<ActionItem["priority"], string> = {
+  critical: "Urgent",
   high: "Recommandé",
   medium: "Suggéré",
   low: "Optionnel",
@@ -365,7 +403,8 @@ interface ActionFeedProps {
 export function ActionFeed({ actions }: ActionFeedProps) {
   const onboardingActions = useOnboardingActions();
   const insuranceAlerts = useInsuranceAlerts();
-  const displayActions = actions ?? [...insuranceAlerts, ...onboardingActions];
+  const unpaidAlerts = useUnpaidAlerts();
+  const displayActions = actions ?? [...unpaidAlerts, ...insuranceAlerts, ...onboardingActions];
   const hasActions = displayActions.length > 0;
 
   return (

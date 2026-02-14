@@ -23,6 +23,10 @@ import { CashRegisterCannotBeDefaultException } from './exceptions/cash-register
 import { InvalidBankAccountTypeException } from './exceptions/invalid-bank-account-type.exception.js';
 import { CashRegisterAlreadyExistsException } from './exceptions/cash-register-already-exists.exception.js';
 import { BankAccountNotFoundException } from './exceptions/bank-account-not-found.exception.js';
+import { LatePaymentDelayDays } from './late-payment-delay-days.js';
+import {
+  EntityLatePaymentDelayConfigured,
+} from './events/entity-late-payment-delay-configured.event.js';
 
 export interface UpdateEntityFields {
   name?: string;
@@ -58,6 +62,7 @@ export class EntityAggregate extends AggregateRoot {
   private siret!: Siret;
   private address!: Address;
   private legalInformation!: LegalInformation;
+  private latePaymentDelayDays!: LatePaymentDelayDays;
   private created = false;
   private bankAccounts: Map<string, BankAccountState> = new Map();
 
@@ -307,6 +312,29 @@ export class EntityAggregate extends AggregateRoot {
     );
   }
 
+  configureLatePaymentDelay(userId: string, days: number): void {
+    if (!this.created) {
+      throw EntityNotFoundException.create();
+    }
+    if (this.userId.value !== userId) {
+      throw UnauthorizedEntityAccessException.create();
+    }
+
+    const voDelayDays = LatePaymentDelayDays.create(days);
+
+    // No-op guard: skip if value is unchanged
+    if (this.latePaymentDelayDays && this.latePaymentDelayDays.equals(voDelayDays)) {
+      return;
+    }
+
+    this.apply(
+      new EntityLatePaymentDelayConfigured({
+        id: this.id,
+        latePaymentDelayDays: voDelayDays.value,
+      }),
+    );
+  }
+
   @EventHandler(EntityCreated)
   onEntityCreated(event: EntityCreated): void {
     this.userId = UserId.fromString(event.data.userId);
@@ -318,7 +346,13 @@ export class EntityAggregate extends AggregateRoot {
     this.legalInformation = event.data.legalInformation
       ? LegalInformation.create(event.data.legalInformation)
       : LegalInformation.empty();
+    this.latePaymentDelayDays = LatePaymentDelayDays.default();
     this.created = true;
+  }
+
+  @EventHandler(EntityLatePaymentDelayConfigured)
+  onEntityLatePaymentDelayConfigured(event: EntityLatePaymentDelayConfigured): void {
+    this.latePaymentDelayDays = LatePaymentDelayDays.create(event.data.latePaymentDelayDays);
   }
 
   @EventHandler(EntityUpdated)

@@ -7,6 +7,7 @@ import type { EntityUpdatedData } from '@portfolio/entity/events/entity-updated.
 import type { BankAccountAddedData } from '@portfolio/entity/events/bank-account-added.event';
 import type { BankAccountUpdatedData } from '@portfolio/entity/events/bank-account-updated.event';
 import type { BankAccountRemovedData } from '@portfolio/entity/events/bank-account-removed.event';
+import type { EntityLatePaymentDelayConfiguredData } from '@portfolio/entity/events/entity-late-payment-delay-configured.event';
 
 @Injectable()
 export class EntityProjection implements OnModuleInit {
@@ -66,6 +67,11 @@ export class EntityProjection implements OnModuleInit {
           break;
         case 'BankAccountRemoved':
           await this.onBankAccountRemoved(data as unknown as BankAccountRemovedData);
+          break;
+        case 'EntityLatePaymentDelayConfigured':
+          await this.onEntityLatePaymentDelayConfigured(
+            data as unknown as EntityLatePaymentDelayConfiguredData,
+          );
           break;
         default:
           break;
@@ -192,5 +198,25 @@ export class EntityProjection implements OnModuleInit {
       where: { id: data.accountId },
     });
     this.logger.log(`Projected BankAccountRemoved ${data.accountId} for entity ${data.entityId}`);
+  }
+
+  private async onEntityLatePaymentDelayConfigured(
+    data: EntityLatePaymentDelayConfiguredData,
+  ): Promise<void> {
+    const exists = await this.prisma.ownershipEntity.findUnique({
+      where: { id: data.id },
+      select: { id: true },
+    });
+    if (!exists) {
+      this.logger.warn(
+        `EntityLatePaymentDelayConfigured received for ${data.id} but no read model exists`,
+      );
+      return;
+    }
+    await this.prisma.ownershipEntity.update({
+      where: { id: data.id },
+      data: { latePaymentDelayDays: data.latePaymentDelayDays },
+    });
+    this.logger.log(`Projected EntityLatePaymentDelayConfigured for ${data.id}`);
   }
 }

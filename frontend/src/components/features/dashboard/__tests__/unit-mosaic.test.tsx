@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/test/test-utils";
@@ -30,6 +30,12 @@ vi.mock("@/hooks/use-leases", () => ({
 
 vi.mock("@/hooks/use-rent-calls", () => ({
   useRentCalls: () => ({ data: [] }),
+}));
+
+const mockUseUnpaidRentCalls = vi.fn();
+
+vi.mock("@/hooks/use-unpaid-rent-calls", () => ({
+  useUnpaidRentCalls: (...args: unknown[]) => mockUseUnpaidRentCalls(...args),
 }));
 
 const mockUnits: UnitWithPropertyData[] = [
@@ -75,6 +81,10 @@ const mockUnits: UnitWithPropertyData[] = [
 ];
 
 describe("UnitMosaic", () => {
+  beforeEach(() => {
+    mockUseUnpaidRentCalls.mockReturnValue({ data: [] });
+  });
+
   it("should display skeleton during loading", () => {
     mockUseEntityUnits.mockReturnValue({
       data: undefined,
@@ -210,6 +220,43 @@ describe("UnitMosaic", () => {
     expect(
       screen.getByRole("gridcell", { name: /Apt 101.*Appartement/i }),
     ).toBeInTheDocument();
+  });
+
+  it("should display red tile for unpaid unit", () => {
+    mockUseEntityUnits.mockReturnValue({
+      data: mockUnits,
+      isLoading: false,
+      isError: false,
+    });
+    mockUseUnpaidRentCalls.mockReturnValue({
+      data: [
+        { id: "rc-1", unitId: "unit-1", daysLate: 10, tenantLastName: "Dupont" },
+      ],
+    });
+
+    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    const unpaidTile = screen.getByRole("gridcell", { name: /Apt 101.*impayé/i });
+    expect(unpaidTile).toBeInTheDocument();
+    expect(unpaidTile.className).toContain("bg-red-100");
+  });
+
+  it("should prioritize red over green for unpaid unit", () => {
+    mockUseEntityUnits.mockReturnValue({
+      data: mockUnits,
+      isLoading: false,
+      isError: false,
+    });
+    // unit-1 is both occupied (via lease) and unpaid — red should win
+    mockUseUnpaidRentCalls.mockReturnValue({
+      data: [
+        { id: "rc-1", unitId: "unit-1", daysLate: 5, tenantLastName: "Dupont" },
+      ],
+    });
+
+    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    const tile = screen.getByRole("gridcell", { name: /Apt 101.*impayé/i });
+    expect(tile.className).toContain("bg-red-100");
+    expect(tile.className).not.toContain("bg-green-100");
   });
 
   it("should support keyboard navigation", async () => {

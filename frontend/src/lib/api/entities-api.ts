@@ -14,6 +14,7 @@ export interface EntityData {
   addressCountry: string;
   addressComplement: string | null;
   legalInformation: string | null;
+  latePaymentDelayDays: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -79,6 +80,20 @@ export function useEntitiesApi() {
         method: "PUT",
         body: JSON.stringify(payload),
       });
+    },
+
+    async configureLatePaymentDelay(
+      entityId: string,
+      days: number,
+    ): Promise<void> {
+      await fetchWithAuth(
+        `/entities/${entityId}/late-payment-delay`,
+        getToken,
+        {
+          method: "PUT",
+          body: JSON.stringify({ days }),
+        },
+      );
     },
   };
 }

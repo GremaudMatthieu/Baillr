@@ -93,8 +93,8 @@ development_status:
   epic-5-retrospective: done
 
   # Epic 6: Unpaid Rent Management & Reminders (5 stories)
-  epic-6: backlog
-  6-1-detect-late-payments-and-display-unpaid-status: backlog
+  epic-6: in-progress
+  6-1-detect-late-payments-and-display-unpaid-status: done # reviewed 2026-02-14, 10 findings (2H/5M/3L), 7 fixes — DTO @IsNotEmpty/@Type, unpaid cache invalidation, E2E assertion robustness, E2E selector alignment, UnitMosaic sent color regression, timezone normalization
   6-2-propose-3-tier-escalation-actions: backlog
   6-3-send-email-reminders-tier-1: backlog
   6-4-generate-formal-notices-mise-en-demeure-tier-2: backlog

@@ -7,6 +7,7 @@ import { Landmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEntity } from "@/hooks/use-entities";
 import { EntityForm } from "@/components/features/entities/entity-form";
+import { LatePaymentDelaySettings } from "@/components/features/entities/late-payment-delay-settings";
 
 export default function EditEntityPage({
   params,
@@ -39,6 +40,14 @@ export default function EditEntityPage({
       </h1>
       <div className="max-w-2xl">
         <EntityForm entity={entity} />
+
+        <div className="mt-8 border-t pt-6">
+          <h2 className="mb-4 text-lg font-semibold">Paramètres</h2>
+          <LatePaymentDelaySettings
+            entityId={id}
+            currentDelay={entity.latePaymentDelayDays}
+          />
+        </div>
 
         <div className="mt-8 border-t pt-6">
           <Button variant="outline" asChild>

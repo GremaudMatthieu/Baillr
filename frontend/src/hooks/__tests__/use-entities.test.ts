@@ -18,6 +18,7 @@ const mockEntities: EntityData[] = [
     addressCountry: "France",
     addressComplement: null,
     legalInformation: null,
+    latePaymentDelayDays: 5,
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-01-01T00:00:00Z",
   },
@@ -27,6 +28,7 @@ const mockGetEntities = vi.fn().mockResolvedValue(mockEntities);
 const mockCreateEntity = vi.fn().mockResolvedValue(undefined);
 const mockUpdateEntity = vi.fn().mockResolvedValue(undefined);
 const mockGetEntity = vi.fn();
+const mockConfigureLatePaymentDelay = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("@/lib/api/entities-api", () => ({
   useEntitiesApi: () => ({
@@ -34,6 +36,7 @@ vi.mock("@/lib/api/entities-api", () => ({
     getEntity: mockGetEntity,
     createEntity: mockCreateEntity,
     updateEntity: mockUpdateEntity,
+    configureLatePaymentDelay: mockConfigureLatePaymentDelay,
   }),
 }));
 

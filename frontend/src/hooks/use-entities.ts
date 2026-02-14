@@ -48,6 +48,7 @@ export function useCreateEntity() {
         addressComplement: payload.address.complement ?? null,
         legalInformation: payload.legalInformation ?? null,
         createdAt: new Date().toISOString(),
+        latePaymentDelayDays: 5,
         updatedAt: new Date().toISOString(),
       };
 

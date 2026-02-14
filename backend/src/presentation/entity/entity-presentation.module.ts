@@ -8,6 +8,7 @@ import { AddABankAccountController } from './controllers/add-a-bank-account.cont
 import { UpdateABankAccountController } from './controllers/update-a-bank-account.controller.js';
 import { RemoveABankAccountController } from './controllers/remove-a-bank-account.controller.js';
 import { GetBankAccountsController } from './controllers/get-bank-accounts.controller.js';
+import { ConfigureLatePaymentDelayController } from './controllers/configure-late-payment-delay.controller.js';
 import { GetEntitiesHandler } from './queries/get-entities.handler.js';
 import { GetAnEntityHandler } from './queries/get-an-entity.handler.js';
 import { GetBankAccountsHandler } from './queries/get-bank-accounts.handler.js';
@@ -25,6 +26,7 @@ import { EntityFinder } from './finders/entity.finder.js';
     UpdateABankAccountController,
     RemoveABankAccountController,
     GetBankAccountsController,
+    ConfigureLatePaymentDelayController,
   ],
   providers: [
     GetEntitiesHandler,

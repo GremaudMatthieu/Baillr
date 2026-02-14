@@ -106,6 +106,27 @@ export function downloadReceiptPdf(
   return downloadPdfFromEndpoint(entityId, rentCallId, "receipt", `quittance-${rentCallId}.pdf`, getToken);
 }
 
+export interface UnpaidRentCallData {
+  id: string;
+  entityId: string;
+  leaseId: string;
+  tenantId: string;
+  unitId: string;
+  month: string;
+  totalAmountCents: number;
+  paidAmountCents: number | null;
+  remainingBalanceCents: number | null;
+  paymentStatus: string | null;
+  sentAt: string;
+  tenantFirstName: string;
+  tenantLastName: string;
+  tenantCompanyName: string | null;
+  tenantType: string;
+  unitIdentifier: string;
+  dueDate: string;
+  daysLate: number;
+}
+
 export function useRentCallsApi() {
   const { getToken } = useAuth();
 
@@ -159,6 +180,17 @@ export function useRentCallsApi() {
           body: JSON.stringify(data),
         },
       );
+    },
+
+    async getUnpaidRentCalls(
+      entityId: string,
+    ): Promise<UnpaidRentCallData[]> {
+      const res = await fetchWithAuth(
+        `/entities/${entityId}/rent-calls/unpaid`,
+        getToken,
+      );
+      const body = (await res.json()) as { data: UnpaidRentCallData[] };
+      return body.data;
     },
 
     async getRentCalls(

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Receipt, Mail } from "lucide-react";
+import { Receipt, Mail, AlertTriangle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +29,9 @@ import { SendRentCallsDialog } from "./send-rent-calls-dialog";
 import { RecordManualPaymentDialog } from "./record-manual-payment-dialog";
 import { useRecordManualPayment } from "@/hooks/use-record-manual-payment";
 import { useDownloadReceipt } from "@/hooks/use-download-receipt";
+import { useUnpaidRentCalls } from "@/hooks/use-unpaid-rent-calls";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import type { GenerationResult, SendResult } from "@/lib/api/rent-calls-api";
 import { getCurrentMonth, getMonthOptions } from "@/lib/month-options";
 
@@ -36,7 +39,21 @@ interface RentCallsPageContentProps {
   entityId: string;
 }
 
+function formatAmount(cents: number): string {
+  return new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: "EUR",
+  }).format(cents / 100);
+}
+
 export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
+  const [filter, setFilter] = React.useState<"all" | "unpaid">(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("filter") === "unpaid" ? "unpaid" : "all";
+    }
+    return "all";
+  });
   const [selectedMonth, setSelectedMonth] = React.useState(getCurrentMonth);
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [sendDialogOpen, setSendDialogOpen] = React.useState(false);
@@ -73,6 +90,11 @@ export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
     downloadingId: receiptDownloadingId,
     error: receiptDownloadError,
   } = useDownloadReceipt(entityId);
+  const {
+    data: unpaidRentCalls,
+    isLoading: isLoadingUnpaid,
+    isError: isErrorUnpaid,
+  } = useUnpaidRentCalls(entityId);
 
   const activeLeases = React.useMemo(() => {
     if (!leases) return [];
@@ -233,7 +255,95 @@ export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
         </div>
       </div>
 
-      {batchResult && (
+      <div className="mb-4 flex gap-2">
+        <Button
+          variant={filter === "all" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setFilter("all")}
+        >
+          Tous
+        </Button>
+        <Button
+          variant={filter === "unpaid" ? "destructive" : "outline"}
+          size="sm"
+          onClick={() => setFilter("unpaid")}
+        >
+          <AlertTriangle className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+          Impayés
+          {unpaidRentCalls && unpaidRentCalls.length > 0 && (
+            <Badge variant="destructive" className="ml-1.5">
+              {unpaidRentCalls.length}
+            </Badge>
+          )}
+        </Button>
+      </div>
+
+      {filter === "unpaid" && (
+        <>
+          {isLoadingUnpaid && (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-20 w-full rounded-lg" />
+              ))}
+            </div>
+          )}
+          {isErrorUnpaid && (
+            <div className="flex items-center justify-center py-12">
+              <p className="text-sm text-destructive">
+                Erreur lors du chargement des impayés
+              </p>
+            </div>
+          )}
+          {!isLoadingUnpaid && !isErrorUnpaid && unpaidRentCalls && (
+            <>
+              {unpaidRentCalls.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Receipt className="h-10 w-10 text-muted-foreground" aria-hidden="true" />
+                  <p className="mt-3 text-sm font-medium text-muted-foreground">
+                    Aucun impayé
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {unpaidRentCalls.map((rc) => (
+                    <Card key={rc.id}>
+                      <CardContent className="flex items-center justify-between p-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">
+                              {rc.tenantType === "company" && rc.tenantCompanyName
+                                ? rc.tenantCompanyName
+                                : `${rc.tenantFirstName} ${rc.tenantLastName}`}
+                            </span>
+                            <span className="text-sm text-muted-foreground">
+                              — {rc.unitIdentifier}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <span>{rc.month}</span>
+                            <span>•</span>
+                            <span>{formatAmount(rc.remainingBalanceCents ?? rc.totalAmountCents)}</span>
+                            {rc.paymentStatus === "partial" && (
+                              <Badge variant="secondary" className="text-xs">
+                                Partiel
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        <Badge variant="destructive">
+                          {rc.daysLate} j de retard
+                        </Badge>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </>
+      )}
+
+      {filter === "all" && batchResult && (
         <div className="mb-6">
           <BatchSummary
             generated={batchResult.generated}
@@ -243,7 +353,7 @@ export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
         </div>
       )}
 
-      {sendResult && (
+      {filter === "all" && sendResult && (
         <div className="mb-6">
           <SendBatchSummary
             sent={sendResult.sent}
@@ -254,7 +364,7 @@ export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
         </div>
       )}
 
-      {isLoadingRentCalls && (
+      {filter === "all" && isLoadingRentCalls && (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-20 w-full rounded-lg" />
@@ -262,7 +372,7 @@ export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
         </div>
       )}
 
-      {isErrorRentCalls && (
+      {filter === "all" && isErrorRentCalls && (
         <div className="flex items-center justify-center py-12">
           <p className="text-sm text-destructive">
             Erreur lors du chargement des appels de loyer
@@ -270,7 +380,7 @@ export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
         </div>
       )}
 
-      {!isLoadingRentCalls && !isErrorRentCalls && rentCalls && (
+      {filter === "all" && !isLoadingRentCalls && !isErrorRentCalls && rentCalls && (
         <RentCallList
           rentCalls={rentCalls}
           tenantNames={tenantNames}

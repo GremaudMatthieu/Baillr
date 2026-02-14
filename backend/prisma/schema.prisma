@@ -18,9 +18,10 @@ model OwnershipEntity {
   addressCity       String   @map("address_city")
   addressCountry    String   @map("address_country") @default("France")
   addressComplement String?  @map("address_complement")
-  legalInformation  String?  @map("legal_information")
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  legalInformation       String?  @map("legal_information")
+  latePaymentDelayDays   Int      @default(5) @map("late_payment_delay_days")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
 
   bankAccounts   BankAccount[]
   properties     Property[]

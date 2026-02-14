@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useEntityUnits } from "@/hooks/use-units";
 import { useLeases } from "@/hooks/use-leases";
 import { useRentCalls } from "@/hooks/use-rent-calls";
+import { useUnpaidRentCalls } from "@/hooks/use-unpaid-rent-calls";
 import { UNIT_TYPE_LABELS } from "@/lib/constants/unit-types";
 import type { UnitWithPropertyData } from "@/lib/api/units-api";
 
@@ -116,6 +117,12 @@ export function UnitMosaic({ entityId }: UnitMosaicProps) {
   const now = React.useMemo(() => new Date(), []);
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const { data: rentCalls } = useRentCalls(entityId, currentMonth);
+  const { data: unpaidRentCalls } = useUnpaidRentCalls(entityId);
+
+  const unpaidUnitIds = React.useMemo(() => {
+    if (!unpaidRentCalls) return new Set<string>();
+    return new Set(unpaidRentCalls.map((rc) => rc.unitId));
+  }, [unpaidRentCalls]);
 
   const occupiedUnitIds = React.useMemo(() => {
     if (!leases) return new Set<string>();
@@ -221,28 +228,33 @@ export function UnitMosaic({ entityId }: UnitMosaicProps) {
             >
               {propertyUnits.map((unit) => {
                 const idx = unitIndexMap.get(unit.id) ?? 0;
+                const isUnpaid = unpaidUnitIds.has(unit.id);
                 const isOccupied = occupiedUnitIds.has(unit.id);
                 const isPaid = paidUnitIds.has(unit.id);
                 const isPartiallyPaid = partiallyPaidUnitIds.has(unit.id);
                 const isSent = sentUnitIds.has(unit.id);
-                const statusLabel = isPaid
-                  ? "payé"
-                  : isPartiallyPaid
-                    ? "partiellement payé"
-                    : isSent
-                      ? "envoyé"
-                      : isOccupied
-                        ? "occupé"
-                        : "vacant";
-                const bgClass = isPaid
-                  ? "bg-green-100 dark:bg-green-900/30"
-                  : isPartiallyPaid
-                    ? "bg-amber-100 dark:bg-amber-900/30"
-                    : isSent
+                const statusLabel = isUnpaid
+                  ? "impayé"
+                  : isPaid
+                    ? "payé"
+                    : isPartiallyPaid
+                      ? "partiellement payé"
+                      : isSent
+                        ? "envoyé"
+                        : isOccupied
+                          ? "occupé"
+                          : "vacant";
+                const bgClass = isUnpaid
+                  ? "bg-red-100 dark:bg-red-900/30"
+                  : isPaid
+                    ? "bg-green-100 dark:bg-green-900/30"
+                    : isPartiallyPaid
                       ? "bg-amber-100 dark:bg-amber-900/30"
-                      : isOccupied
-                        ? "bg-green-100 dark:bg-green-900/30"
-                        : "bg-muted";
+                      : isSent
+                        ? "bg-orange-100 dark:bg-orange-900/30"
+                        : isOccupied
+                          ? "bg-green-100 dark:bg-green-900/30"
+                          : "bg-muted";
                 return (
                   <button
                     key={unit.id}

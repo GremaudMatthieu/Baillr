@@ -6,6 +6,7 @@ import { UpdateAnEntityHandler } from './commands/update-an-entity.handler.js';
 import { AddABankAccountHandler } from './commands/add-a-bank-account.handler.js';
 import { UpdateABankAccountHandler } from './commands/update-a-bank-account.handler.js';
 import { RemoveABankAccountHandler } from './commands/remove-a-bank-account.handler.js';
+import { ConfigureLatePaymentDelayHandler } from './commands/configure-late-payment-delay.handler.js';
 
 @Module({
   imports: [CqrxModule.forFeature([EntityAggregate])],
@@ -15,6 +16,7 @@ import { RemoveABankAccountHandler } from './commands/remove-a-bank-account.hand
     AddABankAccountHandler,
     UpdateABankAccountHandler,
     RemoveABankAccountHandler,
+    ConfigureLatePaymentDelayHandler,
   ],
 })
 export class EntityDomainModule {}

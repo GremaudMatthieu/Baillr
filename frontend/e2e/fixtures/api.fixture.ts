@@ -756,6 +756,48 @@ export class ApiHelper {
     };
   }
 
+  async configureLatePaymentDelay(entityId: string, days: number) {
+    const response = await this.request.put(
+      `${API_BASE}/api/entities/${entityId}/late-payment-delay`,
+      {
+        headers: this.headers(),
+        data: { days },
+      },
+    );
+    if (!response.ok()) {
+      throw new Error(
+        `Failed to configure late payment delay: ${response.status()} ${await response.text()}`,
+      );
+    }
+  }
+
+  async getUnpaidRentCalls(entityId: string) {
+    const response = await this.request.get(
+      `${API_BASE}/api/entities/${entityId}/rent-calls/unpaid`,
+      { headers: this.headers() },
+    );
+    if (!response.ok()) {
+      throw new Error(`Failed to get unpaid rent calls: ${response.status()}`);
+    }
+    return (await response.json()) as { data: Record<string, unknown>[] };
+  }
+
+  async waitForUnpaidRentCallCount(
+    entityId: string,
+    expectedCount: number,
+    timeoutMs = 5000,
+  ) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      const { data } = await this.getUnpaidRentCalls(entityId);
+      if (data.length >= expectedCount) return data;
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    throw new Error(
+      `Timed out waiting for ${expectedCount} unpaid rent calls (${timeoutMs}ms)`,
+    );
+  }
+
   getCreatedEntityIds() {
     return [...this.createdEntityIds];
   }

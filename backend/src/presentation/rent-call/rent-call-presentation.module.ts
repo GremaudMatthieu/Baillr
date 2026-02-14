@@ -11,7 +11,10 @@ import { SendRentCallsByEmailController } from './controllers/send-rent-calls-by
 import { RecordManualPaymentController } from './controllers/record-manual-payment.controller.js';
 import { GetTenantAccountController } from './controllers/get-tenant-account.controller.js';
 import { GetRentCallPaymentsController } from './controllers/get-rent-call-payments.controller.js';
+import { GetUnpaidRentCallsController } from './controllers/get-unpaid-rent-calls.controller.js';
 import { GetRentCallsHandler } from './queries/get-rent-calls.handler.js';
+import { GetUnpaidRentCallsHandler } from './queries/get-unpaid-rent-calls.query.js';
+import { UnpaidRentCallFinder } from './finders/unpaid-rent-call.finder.js';
 import { GenerateRentCallsForMonthHandler } from '@billing/rent-call/commands/generate-rent-calls-for-month.handler';
 import { SendRentCallsByEmailHandler } from '@billing/rent-call/commands/send-rent-calls-by-email.handler';
 import { RentCallProjection } from './projections/rent-call.projection.js';
@@ -26,7 +29,7 @@ import { RentCallAggregate } from '@billing/rent-call/rent-call.aggregate';
 
 @Module({
   imports: [CqrsModule, CqrxModule.forFeature([RentCallAggregate]), EntityPresentationModule, LeasePresentationModule],
-  controllers: [GenerateRentCallsForMonthController, GetRentCallsController, GetRentCallPdfController, GetReceiptPdfController, SendRentCallsByEmailController, RecordManualPaymentController, GetTenantAccountController, GetRentCallPaymentsController],
+  controllers: [GenerateRentCallsForMonthController, GetRentCallsController, GetUnpaidRentCallsController, GetRentCallPdfController, GetReceiptPdfController, SendRentCallsByEmailController, RecordManualPaymentController, GetTenantAccountController, GetRentCallPaymentsController],
   providers: [
     GetRentCallsHandler,
     GenerateRentCallsForMonthHandler,
@@ -34,6 +37,8 @@ import { RentCallAggregate } from '@billing/rent-call/rent-call.aggregate';
     RentCallProjection,
     AccountEntryProjection,
     RentCallFinder,
+    UnpaidRentCallFinder,
+    GetUnpaidRentCallsHandler,
     AccountEntryFinder,
     PaymentFinder,
     RentCallPdfAssembler,
