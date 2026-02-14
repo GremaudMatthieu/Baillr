@@ -6,8 +6,10 @@ import { LeasePresentationModule } from '../lease/lease-presentation.module.js';
 import { InseeIndexPresentationModule } from '../insee-index/insee-index-presentation.module.js';
 import { RevisionAggregate } from '@indexation/revision/revision.aggregate';
 import { CalculateARevisionHandler } from '@indexation/revision/commands/calculate-a-revision.handler';
+import { ApproveRevisionsHandler } from '@indexation/revision/commands/approve-revisions.handler';
 import { CalculateRevisionsController } from './controllers/calculate-revisions.controller.js';
 import { GetRevisionsController } from './controllers/get-revisions.controller.js';
+import { ApproveRevisionsController } from './controllers/approve-revisions.controller.js';
 import { RevisionProjection } from './projections/revision.projection.js';
 import { RevisionFinder } from './finders/revision.finder.js';
 
@@ -19,9 +21,10 @@ import { RevisionFinder } from './finders/revision.finder.js';
     LeasePresentationModule,
     InseeIndexPresentationModule,
   ],
-  controllers: [CalculateRevisionsController, GetRevisionsController],
+  controllers: [CalculateRevisionsController, GetRevisionsController, ApproveRevisionsController],
   providers: [
     CalculateARevisionHandler,
+    ApproveRevisionsHandler,
     RevisionProjection,
     RevisionFinder,
   ],

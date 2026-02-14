@@ -13,6 +13,13 @@ export class RevisionFinder {
     });
   }
 
+  async findPendingByEntity(entityId: string): Promise<Revision[]> {
+    return this.prisma.revision.findMany({
+      where: { entityId, status: 'pending' },
+      orderBy: { calculatedAt: 'desc' },
+    });
+  }
+
   async existsByLeaseAndPeriod(
     leaseId: string,
     newIndexYear: number,

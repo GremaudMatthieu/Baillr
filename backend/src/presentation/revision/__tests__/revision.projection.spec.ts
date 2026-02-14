@@ -7,6 +7,7 @@ describe('RevisionProjection', () => {
     revision: {
       findUnique: jest.Mock;
       create: jest.Mock;
+      updateMany: jest.Mock;
     };
   };
 
@@ -22,6 +23,7 @@ describe('RevisionProjection', () => {
       revision: {
         findUnique: jest.fn(),
         create: jest.fn(),
+        updateMany: jest.fn(),
       },
     };
     projection = new RevisionProjection(
@@ -130,6 +132,69 @@ describe('RevisionProjection', () => {
       ).handleEvent('RentRevisionCalculated', invalidData);
 
       expect(mockPrisma.revision.create).not.toHaveBeenCalled();
+    });
+
+    it('should update status on RevisionApproved event', async () => {
+      mockPrisma.revision.updateMany.mockResolvedValue({ count: 1 });
+
+      await (
+        projection as unknown as {
+          handleEvent: (
+            t: string,
+            d: Record<string, unknown>,
+          ) => Promise<void>;
+        }
+      ).handleEvent('RevisionApproved', {
+        revisionId: 'rev-1',
+        leaseId: 'lease-1',
+        entityId: 'entity-1',
+        userId: 'user-1',
+        newRentCents: 77097,
+        previousRentCents: 75000,
+        newIndexValue: 142.06,
+        newIndexQuarter: 'Q2',
+        newIndexYear: 2025,
+        approvedAt: '2026-02-14T12:00:00Z',
+      });
+
+      expect(mockPrisma.revision.updateMany).toHaveBeenCalledWith({
+        where: { id: 'rev-1' },
+        data: {
+          status: 'approved',
+          approvedAt: new Date('2026-02-14T12:00:00Z'),
+        },
+      });
+    });
+
+    it('should skip RevisionApproved when revision not found', async () => {
+      mockPrisma.revision.updateMany.mockResolvedValue({ count: 0 });
+
+      await (
+        projection as unknown as {
+          handleEvent: (
+            t: string,
+            d: Record<string, unknown>,
+          ) => Promise<void>;
+        }
+      ).handleEvent('RevisionApproved', {
+        revisionId: 'rev-missing',
+        approvedAt: '2026-02-14T12:00:00Z',
+      });
+
+      expect(mockPrisma.revision.updateMany).toHaveBeenCalled();
+    });
+
+    it('should skip RevisionApproved with invalid data', async () => {
+      await (
+        projection as unknown as {
+          handleEvent: (
+            t: string,
+            d: Record<string, unknown>,
+          ) => Promise<void>;
+        }
+      ).handleEvent('RevisionApproved', { revisionId: 123 });
+
+      expect(mockPrisma.revision.updateMany).not.toHaveBeenCalled();
     });
 
     it('should ignore unknown event types', async () => {

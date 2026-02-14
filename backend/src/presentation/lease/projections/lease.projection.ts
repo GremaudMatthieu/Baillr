@@ -6,6 +6,7 @@ import type { LeaseCreatedData } from '@tenancy/lease/events/lease-created.event
 import type { LeaseBillingLinesConfiguredData } from '@tenancy/lease/events/lease-billing-lines-configured.event';
 import type { LeaseRevisionParametersConfiguredData } from '@tenancy/lease/events/lease-revision-parameters-configured.event';
 import type { LeaseTerminatedData } from '@tenancy/lease/events/lease-terminated.event';
+import type { LeaseRentRevisedData } from '@tenancy/lease/events/lease-rent-revised.event';
 
 @Injectable()
 export class LeaseProjection implements OnModuleInit {
@@ -66,6 +67,9 @@ export class LeaseProjection implements OnModuleInit {
           break;
         case 'LeaseTerminated':
           await this.onLeaseTerminated(data as unknown as LeaseTerminatedData);
+          break;
+        case 'LeaseRentRevised':
+          await this.onLeaseRentRevised(data as unknown as LeaseRentRevisedData);
           break;
         default:
           break;
@@ -151,5 +155,24 @@ export class LeaseProjection implements OnModuleInit {
       return;
     }
     this.logger.log(`Projected LeaseTerminated for ${data.leaseId}`);
+  }
+
+  private async onLeaseRentRevised(data: LeaseRentRevisedData): Promise<void> {
+    const updated = await this.prisma.lease.updateMany({
+      where: { id: data.leaseId },
+      data: {
+        rentAmountCents: data.newRentCents,
+        baseIndexValue: data.newBaseIndexValue,
+        referenceQuarter: data.newReferenceQuarter,
+        referenceYear: data.newReferenceYear,
+      },
+    });
+    if (updated.count === 0) {
+      this.logger.warn(
+        `Lease ${data.leaseId} not found for LeaseRentRevised — skipping projection`,
+      );
+      return;
+    }
+    this.logger.log(`Projected LeaseRentRevised for ${data.leaseId}`);
   }
 }

@@ -6,6 +6,7 @@ import { LeaseCreated } from '../events/lease-created.event';
 import { LeaseBillingLinesConfigured } from '../events/lease-billing-lines-configured.event';
 import { LeaseRevisionParametersConfigured } from '../events/lease-revision-parameters-configured.event';
 import { LeaseTerminated } from '../events/lease-terminated.event';
+import { LeaseRentRevised } from '../events/lease-rent-revised.event';
 import { DomainException } from '@shared/exceptions/domain.exception';
 
 function createAggregate(id = 'lease-123'): LeaseAggregate {
@@ -478,6 +479,102 @@ describe('LeaseAggregate', () => {
       expect(() => aggregate.terminate('2026-01-01T00:00:00.000Z')).toThrow(
         'La date de fin ne peut pas être antérieure à la date de début',
       );
+    });
+  });
+
+  describe('reviseRent', () => {
+    function createExistingLease(id = 'lease-123'): LeaseAggregate {
+      const aggregate = createAggregate(id);
+      aggregate.create(
+        validParams.userId,
+        validParams.entityId,
+        validParams.tenantId,
+        validParams.unitId,
+        validParams.startDate,
+        validParams.rentAmountCents,
+        validParams.securityDepositCents,
+        validParams.monthlyDueDate,
+        validParams.revisionIndexType,
+      );
+      aggregate.commit();
+      return aggregate;
+    }
+
+    it('should emit LeaseRentRevised event on existing lease', () => {
+      const aggregate = createExistingLease();
+      aggregate.reviseRent(65000, 142.06, 'Q2', 2025, 'rev-1');
+
+      const events = aggregate.getUncommittedEvents();
+      expect(events).toHaveLength(1);
+      expect(events[0]).toBeInstanceOf(LeaseRentRevised);
+    });
+
+    it('should include correct data in LeaseRentRevised event', () => {
+      const aggregate = createExistingLease();
+      aggregate.reviseRent(65000, 142.06, 'Q2', 2025, 'rev-1');
+
+      const event = aggregate.getUncommittedEvents()[0] as LeaseRentRevised;
+      expect(event.data.leaseId).toBe('lease-123');
+      expect(event.data.entityId).toBe('entity-1');
+      expect(event.data.previousRentCents).toBe(63000);
+      expect(event.data.newRentCents).toBe(65000);
+      expect(event.data.newBaseIndexValue).toBe(142.06);
+      expect(event.data.newReferenceQuarter).toBe('Q2');
+      expect(event.data.newReferenceYear).toBe(2025);
+      expect(event.data.revisionId).toBe('rev-1');
+      expect(event.data.approvedAt).toBeDefined();
+    });
+
+    it('should update aggregate state after reviseRent', () => {
+      const aggregate = createExistingLease();
+      // Configure revision parameters first
+      aggregate.configureRevisionParameters(1, 1, 'Q1', 2024, 138.19);
+      aggregate.commit();
+
+      aggregate.reviseRent(65000, 142.06, 'Q2', 2025, 'rev-1');
+
+      // A second reviseRent should use the updated previousRentCents
+      aggregate.commit();
+      aggregate.reviseRent(67000, 145.0, 'Q3', 2026, 'rev-2');
+
+      const event = aggregate.getUncommittedEvents()[0] as LeaseRentRevised;
+      expect(event.data.previousRentCents).toBe(65000); // was updated by first reviseRent
+      expect(event.data.newRentCents).toBe(67000);
+    });
+
+    it('should throw when lease has not been created', () => {
+      const aggregate = createAggregate();
+      expect(() => aggregate.reviseRent(65000, 142.06, 'Q2', 2025, 'rev-1')).toThrow(
+        DomainException,
+      );
+      expect(() => aggregate.reviseRent(65000, 142.06, 'Q2', 2025, 'rev-1')).toThrow(
+        'Lease has not been created yet',
+      );
+    });
+
+    it('should throw when lease is terminated', () => {
+      const aggregate = createExistingLease();
+      aggregate.terminate('2027-01-01T00:00:00.000Z');
+      aggregate.commit();
+
+      expect(() => aggregate.reviseRent(65000, 142.06, 'Q2', 2025, 'rev-1')).toThrow(
+        DomainException,
+      );
+      expect(() => aggregate.reviseRent(65000, 142.06, 'Q2', 2025, 'rev-1')).toThrow(
+        'Ce bail est déjà résilié',
+      );
+    });
+
+    it('should be idempotent — no-op when same revisionId applied twice', () => {
+      const aggregate = createExistingLease();
+      aggregate.reviseRent(65000, 142.06, 'Q2', 2025, 'rev-1');
+      aggregate.commit();
+
+      // Same revisionId again — should be a no-op
+      aggregate.reviseRent(65000, 142.06, 'Q2', 2025, 'rev-1');
+
+      const events = aggregate.getUncommittedEvents();
+      expect(events).toHaveLength(0);
     });
   });
 

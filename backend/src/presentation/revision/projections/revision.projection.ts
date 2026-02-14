@@ -3,6 +3,7 @@ import { KurrentDbService } from '@infrastructure/eventstore/kurrentdb.service.j
 import { PrismaService } from '@infrastructure/database/prisma.service.js';
 import { START, streamNameFilter } from '@kurrent/kurrentdb-client';
 import type { RentRevisionCalculatedData } from '@indexation/revision/events/rent-revision-calculated.event';
+import type { RevisionApprovedData } from '@indexation/revision/events/revision-approved.event';
 
 @Injectable()
 export class RevisionProjection implements OnModuleInit {
@@ -92,6 +93,17 @@ export class RevisionProjection implements OnModuleInit {
             data as unknown as RentRevisionCalculatedData,
           );
           break;
+        case 'RevisionApproved':
+          if (!this.isValidRevisionApprovedData(data)) {
+            this.logger.error(
+              `Invalid RevisionApproved event data for revision ${data.revisionId}`,
+            );
+            return;
+          }
+          await this.onRevisionApproved(
+            data as unknown as RevisionApprovedData,
+          );
+          break;
         default:
           break;
       }
@@ -139,5 +151,33 @@ export class RevisionProjection implements OnModuleInit {
       },
     });
     this.logger.log(`Projected RentRevisionCalculated for ${data.revisionId}`);
+  }
+
+  private isValidRevisionApprovedData(
+    data: Record<string, unknown>,
+  ): boolean {
+    return (
+      typeof data.revisionId === 'string' &&
+      typeof data.approvedAt === 'string'
+    );
+  }
+
+  private async onRevisionApproved(
+    data: RevisionApprovedData,
+  ): Promise<void> {
+    const updated = await this.prisma.revision.updateMany({
+      where: { id: data.revisionId },
+      data: {
+        status: 'approved',
+        approvedAt: new Date(data.approvedAt),
+      },
+    });
+    if (updated.count === 0) {
+      this.logger.warn(
+        `Revision ${data.revisionId} not found for RevisionApproved — skipping projection`,
+      );
+      return;
+    }
+    this.logger.log(`Projected RevisionApproved for ${data.revisionId}`);
   }
 }

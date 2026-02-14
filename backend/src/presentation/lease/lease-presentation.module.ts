@@ -12,6 +12,7 @@ import { GetALeaseController } from './controllers/get-a-lease.controller.js';
 import { GetLeasesHandler } from './queries/get-leases.handler.js';
 import { GetALeaseHandler } from './queries/get-a-lease.handler.js';
 import { LeaseProjection } from './projections/lease.projection.js';
+import { RevisionApprovedReaction } from './reactions/revision-approved.reaction.js';
 import { LeaseFinder } from './finders/lease.finder.js';
 
 @Module({
@@ -29,7 +30,7 @@ import { LeaseFinder } from './finders/lease.finder.js';
     GetLeasesController,
     GetALeaseController,
   ],
-  providers: [GetLeasesHandler, GetALeaseHandler, LeaseProjection, LeaseFinder],
+  providers: [GetLeasesHandler, GetALeaseHandler, LeaseProjection, RevisionApprovedReaction, LeaseFinder],
   exports: [LeaseFinder],
 })
 export class LeasePresentationModule {}

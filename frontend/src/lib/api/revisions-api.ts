@@ -53,5 +53,23 @@ export function useRevisionsApi() {
       );
       return res.json();
     },
+
+    async approveRevisions(
+      entityId: string,
+      revisionIds: string[],
+    ): Promise<void> {
+      const res = await fetchWithAuth(
+        `/entities/${entityId}/revisions/approve`,
+        getToken,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ revisionIds }),
+        },
+      );
+      if (!res.ok) {
+        throw new Error("Erreur lors de l'approbation des révisions");
+      }
+    },
   };
 }

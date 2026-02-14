@@ -46,6 +46,12 @@ vi.mock("@/hooks/use-revisions", () => ({
     isPending: false,
     reset: vi.fn(),
   }),
+  useApproveRevisions: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+    isError: false,
+    reset: vi.fn(),
+  }),
 }));
 
 describe("RevisionsPage", () => {

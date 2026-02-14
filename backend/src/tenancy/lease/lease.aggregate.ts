@@ -15,6 +15,7 @@ import { LeaseCreated } from './events/lease-created.event.js';
 import { LeaseBillingLinesConfigured } from './events/lease-billing-lines-configured.event.js';
 import { LeaseRevisionParametersConfigured } from './events/lease-revision-parameters-configured.event.js';
 import { LeaseTerminated } from './events/lease-terminated.event.js';
+import { LeaseRentRevised } from './events/lease-rent-revised.event.js';
 import { LeaseAlreadyCreatedException } from './exceptions/lease-already-created.exception.js';
 import { LeaseNotCreatedException } from './exceptions/lease-not-created.exception.js';
 import { LeaseAlreadyTerminatedException } from './exceptions/lease-already-terminated.exception.js';
@@ -45,6 +46,7 @@ export class LeaseAggregate extends AggregateRoot {
   private referenceYear: ReferenceYear | null = null;
   private baseIndexValue: BaseIndexValue = BaseIndexValue.empty();
   private endDate: LeaseEndDate | null = null;
+  private lastAppliedRevisionId: string | null = null;
   private created = false;
   private terminated = false;
 
@@ -219,9 +221,53 @@ export class LeaseAggregate extends AggregateRoot {
         : BaseIndexValue.empty();
   }
 
+  reviseRent(
+    newRentCents: number,
+    newBaseIndexValue: number,
+    newReferenceQuarter: string,
+    newReferenceYear: number,
+    revisionId: string,
+  ): void {
+    if (!this.created) {
+      throw LeaseNotCreatedException.create();
+    }
+    if (this.terminated) {
+      throw LeaseAlreadyTerminatedException.create();
+    }
+    if (this.lastAppliedRevisionId === revisionId) {
+      return; // idempotent — already applied
+    }
+
+    this.apply(
+      new LeaseRentRevised({
+        leaseId: this.id,
+        entityId: this.entityId,
+        previousRentCents: this.rentAmountCents.value,
+        newRentCents,
+        previousBaseIndexValue: this.baseIndexValue.value,
+        newBaseIndexValue: newBaseIndexValue,
+        newReferenceQuarter,
+        newReferenceYear,
+        revisionId,
+        approvedAt: new Date().toISOString(),
+      }),
+    );
+  }
+
   @EventHandler(LeaseTerminated)
   onLeaseTerminated(event: LeaseTerminated): void {
     this.endDate = LeaseEndDate.fromString(event.data.endDate);
     this.terminated = true;
+  }
+
+  @EventHandler(LeaseRentRevised)
+  onLeaseRentRevised(event: LeaseRentRevised): void {
+    this.rentAmountCents = RentAmount.fromNumber(event.data.newRentCents);
+    this.baseIndexValue = BaseIndexValue.create(event.data.newBaseIndexValue);
+    this.referenceQuarter = ReferenceQuarter.fromString(
+      event.data.newReferenceQuarter,
+    );
+    this.referenceYear = ReferenceYear.fromNumber(event.data.newReferenceYear);
+    this.lastAppliedRevisionId = event.data.revisionId;
   }
 }

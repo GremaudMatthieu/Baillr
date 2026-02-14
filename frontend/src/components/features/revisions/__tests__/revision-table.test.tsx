@@ -1,8 +1,18 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/test/test-utils";
 import { RevisionTable } from "../revision-table";
 import type { Revision } from "@/lib/api/revisions-api";
+
+vi.mock("@/hooks/use-revisions", () => ({
+  useApproveRevisions: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+    isError: false,
+    reset: vi.fn(),
+  }),
+}));
 
 const mockRevision: Revision = {
   id: "rev-1",
@@ -29,14 +39,14 @@ const mockRevision: Revision = {
 
 describe("RevisionTable", () => {
   it("renders empty state when no revisions", () => {
-    renderWithProviders(<RevisionTable revisions={[]} />);
+    renderWithProviders(<RevisionTable entityId="entity-1" revisions={[]} />);
     expect(
       screen.getByText("Aucune révision en attente."),
     ).toBeInTheDocument();
   });
 
   it("renders revision data in table", () => {
-    renderWithProviders(<RevisionTable revisions={[mockRevision]} />);
+    renderWithProviders(<RevisionTable entityId="entity-1" revisions={[mockRevision]} />);
 
     expect(screen.getByText("Dupont Jean")).toBeInTheDocument();
     expect(screen.getByText("Apt A")).toBeInTheDocument();
@@ -45,12 +55,12 @@ describe("RevisionTable", () => {
   });
 
   it("renders formula details", () => {
-    renderWithProviders(<RevisionTable revisions={[mockRevision]} />);
+    renderWithProviders(<RevisionTable entityId="entity-1" revisions={[mockRevision]} />);
     expect(screen.getByText(/138\.19 → 142\.06/)).toBeInTheDocument();
   });
 
   it("shows positive difference with +", () => {
-    renderWithProviders(<RevisionTable revisions={[mockRevision]} />);
+    renderWithProviders(<RevisionTable entityId="entity-1" revisions={[mockRevision]} />);
     // Positive difference should have + prefix
     const cells = screen.getAllByRole("cell");
     const diffCell = cells.find((c) => c.textContent?.includes("+"));
@@ -59,12 +69,12 @@ describe("RevisionTable", () => {
 
   it("shows approved status badge", () => {
     const approved = { ...mockRevision, status: "approved" };
-    renderWithProviders(<RevisionTable revisions={[approved]} />);
+    renderWithProviders(<RevisionTable entityId="entity-1" revisions={[approved]} />);
     expect(screen.getByText("Approuvée")).toBeInTheDocument();
   });
 
   it("renders table headers", () => {
-    renderWithProviders(<RevisionTable revisions={[mockRevision]} />);
+    renderWithProviders(<RevisionTable entityId="entity-1" revisions={[mockRevision]} />);
     expect(screen.getByText("Locataire")).toBeInTheDocument();
     expect(screen.getByText("Lot")).toBeInTheDocument();
     expect(screen.getByText("Loyer actuel")).toBeInTheDocument();
@@ -72,5 +82,86 @@ describe("RevisionTable", () => {
     expect(screen.getByText("Différence")).toBeInTheDocument();
     expect(screen.getByText("Indice")).toBeInTheDocument();
     expect(screen.getByText("Statut")).toBeInTheDocument();
+  });
+
+  it("renders checkboxes for pending revisions", () => {
+    renderWithProviders(
+      <RevisionTable entityId="entity-1" revisions={[mockRevision]} />,
+    );
+    expect(
+      screen.getByLabelText("Sélectionner la révision de Dupont Jean"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(
+        "Sélectionner toutes les révisions en attente",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("does not render checkboxes when all revisions are approved", () => {
+    const approved = { ...mockRevision, status: "approved" };
+    renderWithProviders(
+      <RevisionTable entityId="entity-1" revisions={[approved]} />,
+    );
+    expect(
+      screen.queryByLabelText(
+        "Sélectionner toutes les révisions en attente",
+      ),
+    ).not.toBeInTheDocument();
+  });
+
+  it("enables approve selection button when checkbox is selected", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <RevisionTable entityId="entity-1" revisions={[mockRevision]} />,
+    );
+
+    const approveBtn = screen.getByRole("button", {
+      name: /approuver la sélection/i,
+    });
+    expect(approveBtn).toBeDisabled();
+
+    const checkbox = screen.getByLabelText(
+      "Sélectionner la révision de Dupont Jean",
+    );
+    await user.click(checkbox);
+
+    expect(approveBtn).not.toBeDisabled();
+  });
+
+  it("select all checkbox selects all pending revisions", async () => {
+    const user = userEvent.setup();
+    const rev2: Revision = {
+      ...mockRevision,
+      id: "rev-2",
+      tenantName: "Martin Pierre",
+    };
+    renderWithProviders(
+      <RevisionTable
+        entityId="entity-1"
+        revisions={[mockRevision, rev2]}
+      />,
+    );
+
+    const selectAll = screen.getByLabelText(
+      "Sélectionner toutes les révisions en attente",
+    );
+    await user.click(selectAll);
+
+    expect(
+      screen.getByLabelText("Sélectionner la révision de Dupont Jean"),
+    ).toBeChecked();
+    expect(
+      screen.getByLabelText("Sélectionner la révision de Martin Pierre"),
+    ).toBeChecked();
+  });
+
+  it("renders tout approuver button with pending count", () => {
+    renderWithProviders(
+      <RevisionTable entityId="entity-1" revisions={[mockRevision]} />,
+    );
+    expect(
+      screen.getByRole("button", { name: /tout approuver \(1\)/i }),
+    ).toBeInTheDocument();
   });
 });

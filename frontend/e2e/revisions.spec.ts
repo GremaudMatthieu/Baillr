@@ -188,6 +188,53 @@ test.describe("Revisions", () => {
     });
   });
 
+  test("approve individual revision and verify status change", async ({
+    page,
+  }) => {
+    test.skip(!entityId, "Requires seed data");
+
+    await page.goto("/revisions");
+    await expect(
+      page.getByRole("heading", { name: "Révisions de loyer" }),
+    ).toBeVisible({ timeout: 10_000 });
+
+    // Wait for table with pending revision
+    await expect(page.getByText("En attente")).toBeVisible({
+      timeout: 10_000,
+    });
+
+    // Select the first pending revision
+    const checkbox = page
+      .getByRole("checkbox")
+      .filter({ hasNot: page.locator("[aria-label*='toutes']") })
+      .first();
+    await checkbox.check();
+
+    // Click approve selection button
+    await page
+      .getByRole("button", { name: /approuver la sélection/i })
+      .click();
+
+    // Confirm in dialog
+    await expect(
+      page.getByText(/vous allez approuver/i),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Approuver" }).click();
+
+    // Wait for success
+    await expect(
+      page.getByText(/approuvée.*avec succès/i),
+    ).toBeVisible({ timeout: 10_000 });
+
+    // Close dialog
+    await page.getByRole("button", { name: "Fermer" }).click();
+
+    // Verify status changed to approved (with projection delay)
+    await expect(page.getByText("Approuvée")).toBeVisible({
+      timeout: 10_000,
+    });
+  });
+
   test("sidebar navigation includes Révisions link", async ({ page }) => {
     await page.goto("/dashboard");
     await expect(

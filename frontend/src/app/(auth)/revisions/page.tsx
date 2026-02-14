@@ -43,7 +43,7 @@ function RevisionsContent({ entityId }: { entityId: string }) {
             Une erreur est survenue lors du chargement des révisions.
           </div>
         ) : (
-          <RevisionTable revisions={revisions ?? []} />
+          <RevisionTable revisions={revisions ?? []} entityId={entityId} />
         )}
       </div>
     </div>
