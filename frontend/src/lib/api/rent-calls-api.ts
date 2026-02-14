@@ -21,6 +21,14 @@ export interface RentCallData {
   occupiedDays: number | null;
   totalDaysInMonth: number | null;
   sentAt: string | null;
+  paidAt: string | null;
+  paidAmountCents: number | null;
+  transactionId: string | null;
+  bankStatementId: string | null;
+  payerName: string | null;
+  paymentDate: string | null;
+  paymentMethod: string | null;
+  paymentReference: string | null;
   recipientEmail: string | null;
   createdAt: string;
 }
@@ -109,6 +117,27 @@ export function useRentCallsApi() {
         },
       );
       return (await res.json()) as SendResult;
+    },
+
+    async recordManualPayment(
+      entityId: string,
+      rentCallId: string,
+      data: {
+        amountCents: number;
+        paymentMethod: 'cash' | 'check';
+        paymentDate: string;
+        payerName: string;
+        paymentReference?: string;
+      },
+    ): Promise<void> {
+      await fetchWithAuth(
+        `/entities/${entityId}/rent-calls/${rentCallId}/payments/manual`,
+        getToken,
+        {
+          method: 'POST',
+          body: JSON.stringify(data),
+        },
+      );
     },
 
     async getRentCalls(

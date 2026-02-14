@@ -21,6 +21,14 @@ const baseRentCall: RentCallData = {
   occupiedDays: null,
   totalDaysInMonth: null,
   sentAt: null,
+  paidAt: null,
+  paidAmountCents: null,
+  transactionId: null,
+  bankStatementId: null,
+  payerName: null,
+  paymentDate: null,
+  paymentMethod: null,
+  paymentReference: null,
   recipientEmail: null,
   createdAt: "2026-03-01T00:00:00.000Z",
 };
@@ -122,7 +130,7 @@ describe("RentCallList", () => {
     );
 
     expect(
-      screen.getByRole("button", { name: /Télécharger PDF/i }),
+      screen.getByRole("button", { name: /PDF/i }),
     ).toBeInTheDocument();
   });
 
@@ -136,7 +144,7 @@ describe("RentCallList", () => {
     );
 
     expect(
-      screen.queryByRole("button", { name: /Télécharger PDF/i }),
+      screen.queryByRole("button", { name: /PDF/i }),
     ).not.toBeInTheDocument();
   });
 
@@ -154,7 +162,7 @@ describe("RentCallList", () => {
     );
 
     await user.click(
-      screen.getByRole("button", { name: /Télécharger PDF/i }),
+      screen.getByRole("button", { name: /PDF/i }),
     );
     expect(onDownloadPdf).toHaveBeenCalledWith("rc-1");
   });
@@ -170,7 +178,7 @@ describe("RentCallList", () => {
       />,
     );
 
-    const button = screen.getByRole("button", { name: /Télécharger PDF/i });
+    const button = screen.getByRole("button", { name: /PDF/i });
     expect(button).toBeDisabled();
   });
 
@@ -191,7 +199,7 @@ describe("RentCallList", () => {
       />,
     );
 
-    const buttons = screen.getAllByRole("button", { name: /Télécharger PDF/i });
+    const buttons = screen.getAllByRole("button", { name: /PDF/i });
     expect(buttons).toHaveLength(2);
     expect(buttons[0]).toBeDisabled();
     expect(buttons[1]).toBeDisabled();
@@ -225,6 +233,101 @@ describe("RentCallList", () => {
     );
 
     expect(screen.queryByText(/Envoyé le/)).not.toBeInTheDocument();
+  });
+
+  it("should show Payé badge with payment method icon for paid rent call", () => {
+    const paidRentCall: RentCallData = {
+      ...baseRentCall,
+      paidAt: "2026-03-10T12:00:00.000Z",
+      paidAmountCents: 85000,
+      paymentDate: "2026-03-10T00:00:00.000Z",
+      paymentMethod: "cash",
+      payerName: "Jean Dupont",
+    };
+
+    renderWithProviders(
+      <RentCallList
+        rentCalls={[paidRentCall]}
+        tenantNames={tenantNames}
+        unitIdentifiers={unitIdentifiers}
+      />,
+    );
+
+    expect(screen.getByText(/Payé le/)).toBeInTheDocument();
+  });
+
+  it("should hide record payment button for paid rent call", () => {
+    const paidRentCall: RentCallData = {
+      ...baseRentCall,
+      paidAt: "2026-03-10T12:00:00.000Z",
+      paidAmountCents: 85000,
+      paymentDate: "2026-03-10T00:00:00.000Z",
+      paymentMethod: "bank_transfer",
+      payerName: "Jean Dupont",
+    };
+
+    renderWithProviders(
+      <RentCallList
+        rentCalls={[paidRentCall]}
+        tenantNames={tenantNames}
+        unitIdentifiers={unitIdentifiers}
+        onRecordPayment={() => {}}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: /Enregistrer un paiement/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("should show record payment button for unpaid rent call", () => {
+    const onRecordPayment = vi.fn();
+
+    renderWithProviders(
+      <RentCallList
+        rentCalls={[baseRentCall]}
+        tenantNames={tenantNames}
+        unitIdentifiers={unitIdentifiers}
+        onRecordPayment={onRecordPayment}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: /Enregistrer un paiement/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("should call onRecordPayment when button is clicked", async () => {
+    const user = userEvent.setup();
+    const onRecordPayment = vi.fn();
+
+    renderWithProviders(
+      <RentCallList
+        rentCalls={[baseRentCall]}
+        tenantNames={tenantNames}
+        unitIdentifiers={unitIdentifiers}
+        onRecordPayment={onRecordPayment}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: /Enregistrer un paiement/i }),
+    );
+    expect(onRecordPayment).toHaveBeenCalledWith("rc-1");
+  });
+
+  it("should not show record payment button when callback not provided", () => {
+    renderWithProviders(
+      <RentCallList
+        rentCalls={[baseRentCall]}
+        tenantNames={tenantNames}
+        unitIdentifiers={unitIdentifiers}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: /Enregistrer un paiement/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("should display download error when present", () => {

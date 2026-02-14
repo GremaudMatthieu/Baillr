@@ -18,6 +18,10 @@ import type {
   MatchingResult,
 } from '@billing/payment-matching/domain/service/matching.types';
 
+interface MatchPaymentsResponse extends MatchingResult {
+  availableRentCalls: RentCallCandidate[];
+}
+
 @Controller('entities/:entityId/bank-statements/:bankStatementId')
 export class MatchPaymentsController {
   constructor(
@@ -33,7 +37,7 @@ export class MatchPaymentsController {
     @Param('entityId', ParseUUIDPipe) entityId: string,
     @Param('bankStatementId', ParseUUIDPipe) bankStatementId: string,
     @Query('month') month: string,
-  ): Promise<MatchingResult> {
+  ): Promise<MatchPaymentsResponse> {
     if (!month || !/^\d{4}-\d{2}$/.test(month)) {
       throw new BadRequestException('Month must be in YYYY-MM format');
     }
@@ -48,12 +52,11 @@ export class MatchPaymentsController {
       userId,
     );
 
-    const rentCalls =
-      await this.rentCallFinder.findAllWithRelationsByEntityAndMonth(
-        entityId,
-        userId,
-        month,
-      );
+    const rentCalls = await this.rentCallFinder.findAllWithRelationsByEntityAndMonth(
+      entityId,
+      userId,
+      month,
+    );
 
     // Map to domain types
     const transactionData: TransactionData[] = transactions.map((tx) => ({
@@ -78,13 +81,25 @@ export class MatchPaymentsController {
       month: rc.month,
     }));
 
-    // For now, no excluded rent call IDs (Story 5.3 will add payment tracking)
-    const excludedRentCallIds = new Set<string>();
+    // Exclude already-paid rent calls from matching proposals
+    const paidIds = await this.rentCallFinder.findPaidRentCallIds(
+      entityId,
+      userId,
+      month,
+    );
+    const excludedRentCallIds = new Set<string>(paidIds);
 
-    return this.matchingService.match(
+    const result = this.matchingService.match(
       transactionData,
       rentCallCandidates,
       excludedRentCallIds,
     );
+
+    return {
+      ...result,
+      availableRentCalls: rentCallCandidates.filter(
+        (rc) => !excludedRentCallIds.has(rc.id),
+      ),
+    };
   }
 }

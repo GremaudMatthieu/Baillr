@@ -7,6 +7,7 @@ import { GenerateRentCallsForMonthController } from './controllers/generate-rent
 import { GetRentCallsController } from './controllers/get-rent-calls.controller.js';
 import { GetRentCallPdfController } from './controllers/get-rent-call-pdf.controller.js';
 import { SendRentCallsByEmailController } from './controllers/send-rent-calls-by-email.controller.js';
+import { RecordManualPaymentController } from './controllers/record-manual-payment.controller.js';
 import { GetRentCallsHandler } from './queries/get-rent-calls.handler.js';
 import { GenerateRentCallsForMonthHandler } from '@billing/rent-call/commands/generate-rent-calls-for-month.handler';
 import { SendRentCallsByEmailHandler } from '@billing/rent-call/commands/send-rent-calls-by-email.handler';
@@ -18,7 +19,7 @@ import { RentCallAggregate } from '@billing/rent-call/rent-call.aggregate';
 
 @Module({
   imports: [CqrsModule, CqrxModule.forFeature([RentCallAggregate]), EntityPresentationModule, LeasePresentationModule],
-  controllers: [GenerateRentCallsForMonthController, GetRentCallsController, GetRentCallPdfController, SendRentCallsByEmailController],
+  controllers: [GenerateRentCallsForMonthController, GetRentCallsController, GetRentCallPdfController, SendRentCallsByEmailController, RecordManualPaymentController],
   providers: [
     GetRentCallsHandler,
     GenerateRentCallsForMonthHandler,

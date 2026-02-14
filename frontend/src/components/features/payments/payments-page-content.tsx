@@ -112,7 +112,7 @@ export function PaymentsPageContent({ entityId }: PaymentsPageContentProps) {
 
           <hr className="my-6" />
 
-          <MatchingProposalsContent entityId={entityId} />
+          <MatchingProposalsContent entityId={entityId} hasStatements={bankStatements.length > 0} />
         </div>
       )}
 

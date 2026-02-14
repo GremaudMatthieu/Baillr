@@ -226,3 +226,256 @@ test.describe('Payment matching', () => {
     ).toBeVisible();
   });
 });
+
+test.describe('Manual payment recording', () => {
+  test.describe.configure({ mode: 'serial' });
+
+  const timestamp = Date.now();
+  let entityId: string;
+  let api: ApiHelper;
+
+  test('5.4.1 — seed entity, property, unit, tenant, lease, rent call via API', async ({
+    page,
+    request,
+  }) => {
+    const token = await page.evaluate(async () => {
+      const w = window as unknown as {
+        Clerk?: { session?: { getToken: () => Promise<string> } };
+      };
+      return w.Clerk?.session?.getToken() ?? '';
+    });
+    expect(token).toBeTruthy();
+
+    api = new ApiHelper({ request, token });
+
+    entityId = await api.createEntity({
+      name: `Manual Pay ${timestamp}`,
+    });
+    await api.waitForEntityCount(1);
+
+    const propertyId = await api.createProperty({
+      entityId,
+      name: `Prop ${timestamp}`,
+    });
+    await api.waitForPropertyCount(entityId, 1);
+
+    const unitId = await api.createUnit({
+      propertyId,
+      identifier: `Apt Cash ${timestamp}`,
+    });
+    await api.waitForUnitCount(propertyId, 1);
+
+    const tenantId = await api.registerTenant({
+      entityId,
+      firstName: 'Paul',
+      lastName: 'Lecash',
+      email: `lecash-${timestamp}@test.com`,
+    });
+    await api.waitForTenantCount(entityId, 1);
+
+    const currentMonth = new Date();
+    const leaseStartDate = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth(),
+      1,
+    ).toISOString();
+
+    await api.createLease({
+      entityId,
+      tenantId,
+      unitId,
+      startDate: leaseStartDate,
+      rentAmountCents: 60000,
+    });
+    await api.waitForLeaseCount(entityId, 1);
+
+    const month = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
+    await api.generateRentCalls(entityId, month);
+    await api.waitForRentCallCount(entityId, month, 1);
+  });
+
+  test('5.4.2 — record cash payment via rent calls page', async ({ page }) => {
+    await page.goto('/rent-calls');
+
+    // Wait for rent call list
+    await expect(page.getByText('Paul Lecash')).toBeVisible({ timeout: 10000 });
+
+    // Click record payment button
+    await page.getByRole('button', { name: /Enregistrer un paiement/i }).click();
+
+    // Dialog should open
+    await expect(
+      page.getByText('Enregistrer un paiement'),
+    ).toBeVisible();
+
+    // Payer name should be pre-filled
+    const payerInput = page.getByLabel('Nom du payeur');
+    await expect(payerInput).toHaveValue('Paul Lecash');
+
+    // Amount should be pre-filled (600.00)
+    const amountInput = page.getByLabel('Montant (€)');
+    await expect(amountInput).toHaveValue('600.00');
+
+    // Submit with default values (cash)
+    await page.getByRole('button', { name: 'Enregistrer' }).click();
+
+    // Wait for dialog to close and payment to be recorded
+    await expect(page.getByText(/Payé le/)).toBeVisible({ timeout: 10000 });
+  });
+});
+
+test.describe('Payment validation', () => {
+  test.describe.configure({ mode: 'serial' });
+
+  const timestamp = Date.now();
+  let entityId: string;
+  let bankAccountId: string;
+  let bankStatementId: string;
+  let api: ApiHelper;
+
+  test('5.3.1 — seed full data and trigger matching', async ({
+    page,
+    request,
+  }) => {
+    const token = await page.evaluate(async () => {
+      const w = window as unknown as {
+        Clerk?: { session?: { getToken: () => Promise<string> } };
+      };
+      return w.Clerk?.session?.getToken() ?? '';
+    });
+    expect(token).toBeTruthy();
+
+    api = new ApiHelper({ request, token });
+
+    // Create entity
+    entityId = await api.createEntity({
+      name: `Validation Entity ${timestamp}`,
+    });
+    await api.waitForEntityCount(1);
+
+    // Bank account
+    bankAccountId = await api.addBankAccount({
+      entityId,
+      label: `Compte ${timestamp}`,
+      iban: 'FR7612345678901234567890189',
+      bic: 'BNPAFRPP',
+      bankName: 'BNP',
+    });
+
+    // Property
+    const propertyId = await api.createProperty({
+      entityId,
+      name: `Prop ${timestamp}`,
+    });
+    await api.waitForPropertyCount(entityId, 1);
+
+    // Unit
+    const unitId = await api.createUnit({
+      propertyId,
+      identifier: `Apt Val ${timestamp}`,
+    });
+    await api.waitForUnitCount(propertyId, 1);
+
+    // Tenant
+    const tenantId = await api.registerTenant({
+      entityId,
+      firstName: 'Marie',
+      lastName: 'Martin',
+      email: `martin-${timestamp}@test.com`,
+    });
+    await api.waitForTenantCount(entityId, 1);
+
+    // Lease
+    const currentMonth = new Date();
+    const leaseStartDate = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth(),
+      1,
+    ).toISOString();
+
+    await api.createLease({
+      entityId,
+      tenantId,
+      unitId,
+      startDate: leaseStartDate,
+      rentAmountCents: 75000,
+    });
+    await api.waitForLeaseCount(entityId, 1);
+
+    // Generate rent call
+    const month = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
+    await api.generateRentCalls(entityId, month);
+    await api.waitForRentCallCount(entityId, month, 1);
+
+    // Import matching bank statement
+    const mm = String(currentMonth.getMonth() + 1).padStart(2, '0');
+    const yyyy = String(currentMonth.getFullYear());
+    const csvContent = `Date,Montant,Libellé,Référence\n15/${mm}/${yyyy},"750,00",MARTIN MARIE,LOYER-${mm}\n16/${mm}/${yyyy},"-30,00",INCONNU,REF-Y`;
+    const importResult = await api.importBankStatement(
+      entityId,
+      bankAccountId,
+      csvContent,
+      `val-releve-${timestamp}.csv`,
+    );
+    bankStatementId = importResult.bankStatementId;
+    await api.waitForBankStatementCount(entityId, 1);
+  });
+
+  test('5.3.2 — validate a matched payment via UI', async ({ page }) => {
+    await page.goto('/payments');
+
+    // Select statement
+    const statementSelect = page.getByLabel('Sélectionner un relevé bancaire');
+    await statementSelect.click();
+    await page.getByRole('option').first().click();
+
+    // Click match
+    await page.getByRole('button', { name: /Lancer le rapprochement/i }).click();
+
+    // Wait for matching results
+    await expect(page.getByText('Rapprochements proposés')).toBeVisible({
+      timeout: 15000,
+    });
+
+    // Validate the matched proposal (multiple rows may have this label)
+    const validateBtn = page.getByLabel('Valider le rapprochement').first();
+    await validateBtn.click();
+
+    // Row should show validated state
+    await expect(page.getByText('Validé')).toBeVisible({ timeout: 5000 });
+  });
+
+  test('5.3.3 — reject an unmatched transaction via UI', async ({ page }) => {
+    await page.goto('/payments');
+
+    // Re-run matching to get fresh results
+    const statementSelect = page.getByLabel('Sélectionner un relevé bancaire');
+    await statementSelect.click();
+    await page.getByRole('option').first().click();
+    await page.getByRole('button', { name: /Lancer le rapprochement/i }).click();
+
+    // Wait for results
+    await expect(
+      page.getByText(/non rapproché/),
+    ).toBeVisible({ timeout: 15000 });
+
+    // Find and click reject button on unmatched row
+    const rejectBtns = page.getByLabel('Rejeter le rapprochement');
+    await expect(rejectBtns.first()).toBeVisible({ timeout: 5000 });
+    await rejectBtns.last().click();
+    // Should show rejected state
+    await expect(page.getByText('Rejeté')).toBeVisible({ timeout: 5000 });
+  });
+
+  test('5.3.4 — stepper shows validation progress', async ({ page }) => {
+    await page.goto('/payments');
+
+    // Stepper should be visible
+    await expect(
+      page.getByRole('list', { name: 'Étapes du cycle mensuel' }),
+    ).toBeVisible({ timeout: 10000 });
+
+    // Import step should show completed (has statements)
+    await expect(page.getByText('Fichier chargé')).toBeVisible();
+  });
+});

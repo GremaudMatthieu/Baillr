@@ -1,6 +1,6 @@
 "use client";
 
-import { Receipt, Download, Loader2, CheckCircle2 } from "lucide-react";
+import { Receipt, Download, Loader2, CheckCircle2, Banknote, FileText, Building2, CircleDot } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,6 +13,19 @@ function formatAmount(cents: number): string {
   }).format(cents / 100);
 }
 
+function PaymentMethodIcon({ method }: { method: string | null }) {
+  switch (method) {
+    case "cash":
+      return <Banknote className="mr-1 h-3 w-3" aria-hidden="true" />;
+    case "check":
+      return <FileText className="mr-1 h-3 w-3" aria-hidden="true" />;
+    case "bank_transfer":
+      return <Building2 className="mr-1 h-3 w-3" aria-hidden="true" />;
+    default:
+      return <CircleDot className="mr-1 h-3 w-3" aria-hidden="true" />;
+  }
+}
+
 interface RentCallListProps {
   rentCalls: RentCallData[];
   tenantNames: Map<string, string>;
@@ -20,6 +33,7 @@ interface RentCallListProps {
   onDownloadPdf?: (rentCallId: string) => void;
   downloadingId?: string | null;
   downloadError?: string | null;
+  onRecordPayment?: (rentCallId: string) => void;
 }
 
 export function RentCallList({
@@ -29,6 +43,7 @@ export function RentCallList({
   onDownloadPdf,
   downloadingId,
   downloadError,
+  onRecordPayment,
 }: RentCallListProps) {
   if (rentCalls.length === 0) {
     return (
@@ -82,8 +97,18 @@ export function RentCallList({
               {rc.isProRata && (
                 <Badge variant="secondary">Pro-rata</Badge>
               )}
-              {rc.sentAt && (
-                <Badge variant="outline" className="text-green-700 border-green-300">
+              {rc.paidAt && (
+                <Badge variant="outline" className="text-green-700 border-green-300 dark:text-green-400 dark:border-green-700">
+                  <PaymentMethodIcon method={rc.paymentMethod} />
+                  Payé le{" "}
+                  {new Date(rc.paymentDate ?? rc.paidAt).toLocaleDateString("fr-FR", {
+                    day: "numeric",
+                    month: "short",
+                  })}
+                </Badge>
+              )}
+              {!rc.paidAt && rc.sentAt && (
+                <Badge variant="outline" className="text-orange-700 border-orange-300 dark:text-orange-400 dark:border-orange-700">
                   <CheckCircle2 className="mr-1 h-3 w-3" aria-hidden="true" />
                   Envoyé le{" "}
                   {new Date(rc.sentAt).toLocaleDateString("fr-FR", {
@@ -92,22 +117,33 @@ export function RentCallList({
                   })}
                 </Badge>
               )}
-              {onDownloadPdf && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onDownloadPdf(rc.id)}
-                  disabled={downloadingId != null}
-                  className="mt-1"
-                >
-                  {downloadingId === rc.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                  ) : (
-                    <Download className="h-4 w-4" aria-hidden="true" />
-                  )}
-                  <span className="ml-1">Télécharger PDF</span>
-                </Button>
-              )}
+              <div className="flex gap-1 mt-1">
+                {onDownloadPdf && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onDownloadPdf(rc.id)}
+                    disabled={downloadingId != null}
+                  >
+                    {downloadingId === rc.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Download className="h-4 w-4" aria-hidden="true" />
+                    )}
+                    <span className="ml-1">PDF</span>
+                  </Button>
+                )}
+                {onRecordPayment && !rc.paidAt && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onRecordPayment(rc.id)}
+                  >
+                    <Banknote className="h-4 w-4" aria-hidden="true" />
+                    <span className="ml-1">Enregistrer un paiement</span>
+                  </Button>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>

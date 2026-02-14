@@ -6,7 +6,10 @@ describe('MatchPaymentsController', () => {
   let controller: MatchPaymentsController;
   let entityFinder: { findByIdAndUserId: jest.Mock };
   let bankStatementFinder: { findTransactions: jest.Mock };
-  let rentCallFinder: { findAllWithRelationsByEntityAndMonth: jest.Mock };
+  let rentCallFinder: {
+    findAllWithRelationsByEntityAndMonth: jest.Mock;
+    findPaidRentCallIds: jest.Mock;
+  };
   let matchingService: { match: jest.Mock };
 
   const mockResult: MatchingResult = {
@@ -25,6 +28,7 @@ describe('MatchPaymentsController', () => {
     };
     rentCallFinder = {
       findAllWithRelationsByEntityAndMonth: jest.fn().mockResolvedValue([]),
+      findPaidRentCallIds: jest.fn().mockResolvedValue([]),
     };
     matchingService = {
       match: jest.fn().mockReturnValue(mockResult),
@@ -159,7 +163,19 @@ describe('MatchPaymentsController', () => {
       ],
       new Set(),
     );
-    expect(result).toEqual(customResult);
+    expect(result).toMatchObject(customResult);
+    expect(result.availableRentCalls).toEqual([
+      {
+        id: 'rc-1',
+        tenantFirstName: 'Jean',
+        tenantLastName: 'Dupont',
+        companyName: null,
+        unitIdentifier: 'Apt 3B',
+        leaseId: 'lease-1',
+        totalAmountCents: 85000,
+        month: '2026-02',
+      },
+    ]);
   });
 
   it('should return empty result when no transactions', async () => {
@@ -171,6 +187,24 @@ describe('MatchPaymentsController', () => {
     );
 
     expect(matchingService.match).toHaveBeenCalledWith([], [], new Set());
-    expect(result).toEqual(mockResult);
+    expect(result).toMatchObject(mockResult);
+    expect(result.availableRentCalls).toEqual([]);
+  });
+
+  it('should pass paid rent call IDs as excludedRentCallIds', async () => {
+    rentCallFinder.findPaidRentCallIds.mockResolvedValue(['rc-2', 'rc-4']);
+
+    await controller.handle('user-1', 'entity-1', 'bs-1', '2026-02');
+
+    expect(rentCallFinder.findPaidRentCallIds).toHaveBeenCalledWith(
+      'entity-1',
+      'user-1',
+      '2026-02',
+    );
+    expect(matchingService.match).toHaveBeenCalledWith(
+      [],
+      [],
+      new Set(['rc-2', 'rc-4']),
+    );
   });
 });

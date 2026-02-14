@@ -127,6 +127,76 @@ describe("MatchedRow", () => {
     const amounts = screen.getAllByText(/850,00/);
     expect(amounts.length).toBeGreaterThanOrEqual(2);
   });
+
+  it("should render validate and reject buttons in default state", () => {
+    renderWithProviders(<MatchedRow match={defaultMatch} />);
+
+    expect(
+      screen.getByLabelText("Valider le rapprochement"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Rejeter le rapprochement"),
+    ).toBeInTheDocument();
+  });
+
+  it("should call onValidate when validate button is clicked", async () => {
+    const user = userEvent.setup();
+    const onValidate = vi.fn();
+
+    renderWithProviders(
+      <MatchedRow match={defaultMatch} onValidate={onValidate} />,
+    );
+
+    await user.click(screen.getByLabelText("Valider le rapprochement"));
+    expect(onValidate).toHaveBeenCalledWith("tx-1", "rc-1");
+  });
+
+  it("should call onReject when reject button is clicked", async () => {
+    const user = userEvent.setup();
+    const onReject = vi.fn();
+
+    renderWithProviders(
+      <MatchedRow match={defaultMatch} onReject={onReject} />,
+    );
+
+    await user.click(screen.getByLabelText("Rejeter le rapprochement"));
+    expect(onReject).toHaveBeenCalledWith("tx-1");
+  });
+
+  it("should render green state when validated", () => {
+    renderWithProviders(
+      <MatchedRow match={defaultMatch} status="validated" />,
+    );
+
+    const row = screen.getByRole("listitem");
+    expect(row.className).toContain("bg-green-50");
+    expect(screen.getByText("Validé")).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Valider le rapprochement"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("should render dimmed state when rejected", () => {
+    renderWithProviders(
+      <MatchedRow match={defaultMatch} status="rejected" />,
+    );
+
+    const row = screen.getByRole("listitem");
+    expect(row.className).toContain("opacity-60");
+    expect(row.className).toContain("line-through");
+    expect(screen.getByText("Rejeté")).toBeInTheDocument();
+  });
+
+  it("should render loading spinner when loading", () => {
+    renderWithProviders(
+      <MatchedRow match={defaultMatch} status="loading" />,
+    );
+
+    expect(screen.getByLabelText("Chargement")).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Valider le rapprochement"),
+    ).not.toBeInTheDocument();
+  });
 });
 
 describe("AmbiguousRow", () => {
@@ -188,6 +258,35 @@ describe("AmbiguousRow", () => {
       expect.stringContaining("plusieurs rapprochements possibles"),
     );
   });
+
+  it("should render validate and reject buttons", () => {
+    renderWithProviders(<AmbiguousRow match={ambiguousMatch} />);
+
+    expect(
+      screen.getByLabelText("Valider le rapprochement"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Rejeter le rapprochement"),
+    ).toBeInTheDocument();
+  });
+
+  it("should disable validate button when no candidate selected", () => {
+    renderWithProviders(<AmbiguousRow match={ambiguousMatch} />);
+
+    const validateBtn = screen.getByLabelText("Valider le rapprochement");
+    expect(validateBtn).toBeDisabled();
+  });
+
+  it("should render validated state", () => {
+    renderWithProviders(
+      <AmbiguousRow match={ambiguousMatch} status="validated" />,
+    );
+
+    expect(screen.getByText("Validé")).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Valider le rapprochement"),
+    ).not.toBeInTheDocument();
+  });
 });
 
 describe("UnmatchedRow", () => {
@@ -240,5 +339,73 @@ describe("UnmatchedRow", () => {
     );
 
     expect(screen.getByText("—")).toBeInTheDocument();
+  });
+
+  it("should render reject button", () => {
+    renderWithProviders(<UnmatchedRow transaction={unmatchedTx} />);
+
+    expect(
+      screen.getByLabelText("Rejeter le rapprochement"),
+    ).toBeInTheDocument();
+  });
+
+  it("should call onReject when reject button is clicked", async () => {
+    const user = userEvent.setup();
+    const onReject = vi.fn();
+
+    renderWithProviders(
+      <UnmatchedRow transaction={unmatchedTx} onReject={onReject} />,
+    );
+
+    await user.click(screen.getByLabelText("Rejeter le rapprochement"));
+    expect(onReject).toHaveBeenCalledWith("tx-1");
+  });
+
+  it("should render manual assignment dropdown when rent calls available", () => {
+    const availableRentCalls = [
+      {
+        id: "rc-1",
+        tenantFirstName: "Jean",
+        tenantLastName: "Dupont",
+        companyName: null,
+        unitIdentifier: "Apt 3B",
+        totalAmountCents: 85000,
+        month: "2026-02",
+      },
+    ];
+
+    renderWithProviders(
+      <UnmatchedRow
+        transaction={unmatchedTx}
+        availableRentCalls={availableRentCalls}
+      />,
+    );
+
+    expect(
+      screen.getByLabelText("Assigner à un appel de loyer"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Assigner le paiement"),
+    ).toBeInTheDocument();
+  });
+
+  it("should render assigned state", () => {
+    renderWithProviders(
+      <UnmatchedRow transaction={unmatchedTx} status="assigned" />,
+    );
+
+    const row = screen.getByRole("listitem");
+    expect(row.className).toContain("bg-blue-50");
+    expect(screen.getByText("Assigné")).toBeInTheDocument();
+  });
+
+  it("should render rejected state", () => {
+    renderWithProviders(
+      <UnmatchedRow transaction={unmatchedTx} status="rejected" />,
+    );
+
+    const row = screen.getByRole("listitem");
+    expect(row.className).toContain("opacity-60");
+    expect(screen.getByText("Rejeté")).toBeInTheDocument();
   });
 });

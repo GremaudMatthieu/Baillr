@@ -107,11 +107,45 @@ export interface MatchingSummary {
   rentCallCount: number;
 }
 
+export interface AvailableRentCall {
+  id: string;
+  tenantFirstName: string | null;
+  tenantLastName: string | null;
+  companyName: string | null;
+  unitIdentifier: string;
+  leaseId: string;
+  totalAmountCents: number;
+  month: string;
+}
+
 export interface MatchingResult {
   matches: MatchProposal[];
   ambiguous: AmbiguousMatch[];
   unmatched: UnmatchedTransaction[];
   summary: MatchingSummary;
+  availableRentCalls: AvailableRentCall[];
+}
+
+export interface ValidateMatchPayload {
+  transactionId: string;
+  rentCallId: string;
+  amountCents: number;
+  payerName: string;
+  paymentDate: string;
+  bankStatementId?: string;
+}
+
+export interface RejectMatchPayload {
+  transactionId: string;
+}
+
+export interface ManualAssignMatchPayload {
+  transactionId: string;
+  rentCallId: string;
+  amountCents: number;
+  payerName: string;
+  paymentDate: string;
+  bankStatementId?: string;
 }
 
 export function useBankStatementsApi() {
@@ -173,6 +207,39 @@ export function useBankStatementsApi() {
         { method: "POST" },
       );
       return (await res.json()) as MatchingResult;
+    },
+
+    async validateMatch(
+      entityId: string,
+      data: ValidateMatchPayload,
+    ): Promise<void> {
+      await fetchWithAuth(
+        `/entities/${entityId}/payment-matches/validate`,
+        getToken,
+        { method: "POST", body: JSON.stringify(data) },
+      );
+    },
+
+    async rejectMatch(
+      entityId: string,
+      data: RejectMatchPayload,
+    ): Promise<void> {
+      await fetchWithAuth(
+        `/entities/${entityId}/payment-matches/reject`,
+        getToken,
+        { method: "POST", body: JSON.stringify(data) },
+      );
+    },
+
+    async manualAssignMatch(
+      entityId: string,
+      data: ManualAssignMatchPayload,
+    ): Promise<void> {
+      await fetchWithAuth(
+        `/entities/${entityId}/payment-matches/assign`,
+        getToken,
+        { method: "POST", body: JSON.stringify(data) },
+      );
     },
   };
 }

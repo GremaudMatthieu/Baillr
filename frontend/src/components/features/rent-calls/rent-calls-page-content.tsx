@@ -26,6 +26,8 @@ import { BatchSummary } from "./batch-summary";
 import { SendBatchSummary } from "./send-batch-summary";
 import { GenerateRentCallsDialog } from "./generate-rent-calls-dialog";
 import { SendRentCallsDialog } from "./send-rent-calls-dialog";
+import { RecordManualPaymentDialog } from "./record-manual-payment-dialog";
+import { useRecordManualPayment } from "@/hooks/use-record-manual-payment";
 import type { GenerationResult, SendResult } from "@/lib/api/rent-calls-api";
 import { getCurrentMonth, getMonthOptions } from "@/lib/month-options";
 
@@ -42,6 +44,8 @@ export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
   const [sendResult, setSendResult] = React.useState<SendResult | null>(null);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
   const [sendError, setSendError] = React.useState<string | null>(null);
+  const [paymentDialogOpen, setPaymentDialogOpen] = React.useState(false);
+  const [paymentRentCallId, setPaymentRentCallId] = React.useState<string | null>(null);
 
   const {
     data: rentCalls,
@@ -58,6 +62,11 @@ export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
     downloadingId,
     error: downloadError,
   } = useDownloadRentCallPdf(entityId);
+  const {
+    recordPayment,
+    isPending: isRecordingPayment,
+    error: recordPaymentError,
+  } = useRecordManualPayment(entityId);
 
   const activeLeases = React.useMemo(() => {
     if (!leases) return [];
@@ -105,6 +114,11 @@ export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
     return map;
   }, [units]);
 
+  const paymentRentCall = React.useMemo(() => {
+    if (!paymentRentCallId || !rentCalls) return null;
+    return rentCalls.find((rc) => rc.id === paymentRentCallId) ?? null;
+  }, [paymentRentCallId, rentCalls]);
+
   const monthOptions = React.useMemo(() => getMonthOptions(), []);
 
   function handleGenerate() {
@@ -135,6 +149,26 @@ export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
         );
       },
     });
+  }
+
+  function handleOpenPaymentDialog(rentCallId: string) {
+    setPaymentRentCallId(rentCallId);
+    setPaymentDialogOpen(true);
+  }
+
+  async function handleRecordPayment(data: {
+    amountCents: number;
+    paymentMethod: "cash" | "check";
+    paymentDate: string;
+    payerName: string;
+    paymentReference?: string;
+  }) {
+    if (!paymentRentCallId || isRecordingPayment) return;
+    const success = await recordPayment(paymentRentCallId, data);
+    if (success) {
+      setPaymentDialogOpen(false);
+      setPaymentRentCallId(null);
+    }
   }
 
   function handleMonthChange(value: string) {
@@ -238,6 +272,7 @@ export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
           onDownloadPdf={downloadPdf}
           downloadingId={downloadingId}
           downloadError={downloadError}
+          onRecordPayment={handleOpenPaymentDialog}
         />
       )}
 
@@ -260,6 +295,23 @@ export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
         unsentCount={unsentRentCalls.length}
         missingEmailCount={missingEmailCount}
         submitError={sendError}
+      />
+
+      <RecordManualPaymentDialog
+        open={paymentDialogOpen}
+        onOpenChange={(v) => {
+          setPaymentDialogOpen(v);
+          if (!v) setPaymentRentCallId(null);
+        }}
+        onConfirm={handleRecordPayment}
+        isPending={isRecordingPayment}
+        defaultPayerName={
+          paymentRentCall
+            ? (tenantNames.get(paymentRentCall.tenantId) ?? "")
+            : ""
+        }
+        defaultAmountCents={paymentRentCall?.totalAmountCents ?? 0}
+        error={recordPaymentError}
       />
     </div>
   );

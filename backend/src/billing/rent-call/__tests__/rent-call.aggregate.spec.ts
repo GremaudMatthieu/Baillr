@@ -4,6 +4,7 @@ jest.mock('nestjs-cqrx', () => require('./mock-cqrx').mockCqrx);
 import { RentCallAggregate } from '../rent-call.aggregate';
 import { RentCallGenerated } from '../events/rent-call-generated.event';
 import { RentCallSent } from '../events/rent-call-sent.event';
+import { PaymentRecorded } from '../events/payment-recorded.event';
 import { DomainException } from '@shared/exceptions/domain.exception';
 
 describe('RentCallAggregate', () => {
@@ -195,6 +196,153 @@ describe('RentCallAggregate', () => {
       // Verify state is applied by checking idempotent no-op
       aggregate.markAsSent(new Date(), 'different@example.com');
       expect(aggregate.getUncommittedEvents()).toHaveLength(0);
+    });
+  });
+
+  describe('recordPayment', () => {
+    const recordedAt = new Date('2026-02-14T12:00:00Z');
+    const paymentArgs = {
+      transactionId: 'tx-1',
+      bankStatementId: 'bs-1',
+      amountCents: 85000,
+      payerName: 'DOS SANTOS',
+      paymentDate: '2026-02-10',
+      recordedAt,
+      userId: 'user_123',
+    };
+
+    it('should emit PaymentRecorded event on a generated rent call', () => {
+      const aggregate = createGeneratedAggregate();
+
+      aggregate.recordPayment(
+        paymentArgs.transactionId,
+        paymentArgs.bankStatementId,
+        paymentArgs.amountCents,
+        paymentArgs.payerName,
+        paymentArgs.paymentDate,
+        paymentArgs.recordedAt,
+        paymentArgs.userId,
+      );
+
+      const events = aggregate.getUncommittedEvents();
+      expect(events).toHaveLength(1);
+      expect(events[0]).toBeInstanceOf(PaymentRecorded);
+      const eventData = (events[0] as PaymentRecorded).data;
+      expect(eventData.rentCallId).toBe('rc-1');
+      expect(eventData.entityId).toBe(baseArgs.entityId);
+      expect(eventData.userId).toBe('user_123');
+      expect(eventData.transactionId).toBe('tx-1');
+      expect(eventData.bankStatementId).toBe('bs-1');
+      expect(eventData.amountCents).toBe(85000);
+      expect(eventData.payerName).toBe('DOS SANTOS');
+      expect(eventData.paymentDate).toBe('2026-02-10');
+      expect(eventData.recordedAt).toBe('2026-02-14T12:00:00.000Z');
+    });
+
+    it('should accept null bankStatementId for manual payments', () => {
+      const aggregate = createGeneratedAggregate();
+
+      aggregate.recordPayment(
+        'tx-1',
+        null,
+        85000,
+        'DOS SANTOS',
+        '2026-02-10',
+        recordedAt,
+        'user_123',
+      );
+
+      const events = aggregate.getUncommittedEvents();
+      expect(events).toHaveLength(1);
+      expect((events[0] as PaymentRecorded).data.bankStatementId).toBeNull();
+    });
+
+    it('should throw DomainException when rent call not yet created', () => {
+      const aggregate = new RentCallAggregate('rc-1');
+
+      expect(() =>
+        aggregate.recordPayment(
+          paymentArgs.transactionId,
+          paymentArgs.bankStatementId,
+          paymentArgs.amountCents,
+          paymentArgs.payerName,
+          paymentArgs.paymentDate,
+          paymentArgs.recordedAt,
+          paymentArgs.userId,
+        ),
+      ).toThrow(DomainException);
+    });
+
+    it('should emit PaymentRecorded with paymentMethod and paymentReference', () => {
+      const aggregate = createGeneratedAggregate();
+
+      aggregate.recordPayment(
+        'tx-1',
+        null,
+        85000,
+        'DOS SANTOS',
+        '2026-02-10',
+        recordedAt,
+        'user_123',
+        'check',
+        'CHK-789',
+      );
+
+      const events = aggregate.getUncommittedEvents();
+      expect(events).toHaveLength(1);
+      const eventData = (events[0] as PaymentRecorded).data;
+      expect(eventData.paymentMethod).toBe('check');
+      expect(eventData.paymentReference).toBe('CHK-789');
+      expect(eventData.bankStatementId).toBeNull();
+    });
+
+    it('should default paymentMethod to bank_transfer when not specified', () => {
+      const aggregate = createGeneratedAggregate();
+
+      aggregate.recordPayment(
+        'tx-1',
+        'bs-1',
+        85000,
+        'DOS SANTOS',
+        '2026-02-10',
+        recordedAt,
+        'user_123',
+      );
+
+      const events = aggregate.getUncommittedEvents();
+      expect(events).toHaveLength(1);
+      const eventData = (events[0] as PaymentRecorded).data;
+      expect(eventData.paymentMethod).toBe('bank_transfer');
+      expect(eventData.paymentReference).toBeNull();
+    });
+
+    it('should no-op when already paid (idempotent)', () => {
+      const aggregate = createGeneratedAggregate();
+
+      aggregate.recordPayment(
+        paymentArgs.transactionId,
+        paymentArgs.bankStatementId,
+        paymentArgs.amountCents,
+        paymentArgs.payerName,
+        paymentArgs.paymentDate,
+        paymentArgs.recordedAt,
+        paymentArgs.userId,
+      );
+      aggregate.commit();
+
+      // Second call should be a no-op
+      aggregate.recordPayment(
+        'tx-2',
+        'bs-2',
+        90000,
+        'DIFFERENT PAYER',
+        '2026-02-15',
+        new Date('2026-02-15T10:00:00Z'),
+        'user_123',
+      );
+
+      const events = aggregate.getUncommittedEvents();
+      expect(events).toHaveLength(0);
     });
   });
 });

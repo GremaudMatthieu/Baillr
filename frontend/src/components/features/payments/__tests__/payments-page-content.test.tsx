@@ -25,6 +25,17 @@ vi.mock("@/hooks/use-bank-accounts", () => ({
   }),
 }));
 
+vi.mock("@/hooks/use-payment-actions", () => ({
+  usePaymentActions: () => ({
+    handleValidate: vi.fn(),
+    handleReject: vi.fn(),
+    handleAssign: vi.fn(),
+    getRowStatus: vi.fn().mockReturnValue("default"),
+    progress: { validated: 0, rejected: 0, assigned: 0 },
+    error: null,
+  }),
+}));
+
 describe("PaymentsPageContent", () => {
   it("should render page title", () => {
     renderWithProviders(<PaymentsPageContent entityId="entity-1" />);

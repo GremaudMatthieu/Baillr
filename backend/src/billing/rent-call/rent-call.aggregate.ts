@@ -1,6 +1,7 @@
 import { AggregateRoot, EventHandler } from 'nestjs-cqrx';
 import { RentCallGenerated } from './events/rent-call-generated.event.js';
 import { RentCallSent } from './events/rent-call-sent.event.js';
+import { PaymentRecorded } from './events/payment-recorded.event.js';
 import { RentCallNotCreatedException } from './exceptions/rent-call-not-created.exception.js';
 
 export class RentCallAggregate extends AggregateRoot {
@@ -19,6 +20,11 @@ export class RentCallAggregate extends AggregateRoot {
   private created = false;
   private sentAt: Date | null = null;
   private recipientEmail: string | null = null;
+  private paidAt: Date | null = null;
+  private transactionId: string | null = null;
+  private paidAmountCents: number | null = null;
+  private paymentMethod: string | null = null;
+  private paymentReference: string | null = null;
 
   static readonly streamName = 'rent-call';
 
@@ -99,5 +105,49 @@ export class RentCallAggregate extends AggregateRoot {
   onRentCallSent(event: RentCallSent): void {
     this.sentAt = new Date(event.data.sentAt);
     this.recipientEmail = event.data.recipientEmail;
+  }
+
+  recordPayment(
+    transactionId: string,
+    bankStatementId: string | null,
+    amountCents: number,
+    payerName: string,
+    paymentDate: string,
+    recordedAt: Date,
+    userId: string,
+    paymentMethod: string = 'bank_transfer',
+    paymentReference: string | null = null,
+  ): void {
+    if (!this.created) {
+      throw RentCallNotCreatedException.create();
+    }
+    if (this.paidAt !== null) {
+      return; // no-op guard: already paid
+    }
+
+    this.apply(
+      new PaymentRecorded({
+        rentCallId: this.id,
+        entityId: this.entityId,
+        userId,
+        transactionId,
+        bankStatementId,
+        amountCents,
+        payerName,
+        paymentDate,
+        recordedAt: recordedAt.toISOString(),
+        paymentMethod,
+        paymentReference,
+      }),
+    );
+  }
+
+  @EventHandler(PaymentRecorded)
+  onPaymentRecorded(event: PaymentRecorded): void {
+    this.paidAt = new Date(event.data.recordedAt);
+    this.transactionId = event.data.transactionId;
+    this.paidAmountCents = event.data.amountCents;
+    this.paymentMethod = event.data.paymentMethod ?? 'bank_transfer';
+    this.paymentReference = event.data.paymentReference ?? null;
   }
 }

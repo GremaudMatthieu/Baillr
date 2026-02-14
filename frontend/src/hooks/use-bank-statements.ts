@@ -15,6 +15,10 @@ import {
   type UnmatchedTransaction,
   type MatchingSummary,
   type ConfidenceLevel,
+  type AvailableRentCall,
+  type ValidateMatchPayload,
+  type RejectMatchPayload,
+  type ManualAssignMatchPayload,
 } from "@/lib/api/bank-statements-api";
 
 export type {
@@ -29,6 +33,10 @@ export type {
   UnmatchedTransaction,
   MatchingSummary,
   ConfidenceLevel,
+  AvailableRentCall,
+  ValidateMatchPayload,
+  RejectMatchPayload,
+  ManualAssignMatchPayload,
 };
 
 export function useBankStatements(entityId: string) {

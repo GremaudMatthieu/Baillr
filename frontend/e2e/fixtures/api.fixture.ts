@@ -642,6 +642,89 @@ export class ApiHelper {
     };
   }
 
+  async validateMatch(
+    entityId: string,
+    payload: {
+      transactionId: string;
+      rentCallId: string;
+      amountCents: number;
+      payerName: string;
+      paymentDate: string;
+      bankStatementId?: string;
+    },
+  ) {
+    const response = await this.request.post(
+      `${API_BASE}/api/entities/${entityId}/payment-matches/validate`,
+      {
+        headers: this.headers(),
+        data: payload,
+      },
+    );
+    if (!response.ok()) {
+      throw new Error(
+        `Failed to validate match: ${response.status()} ${await response.text()}`,
+      );
+    }
+  }
+
+  async rejectMatch(entityId: string, transactionId: string) {
+    const response = await this.request.post(
+      `${API_BASE}/api/entities/${entityId}/payment-matches/reject`,
+      {
+        headers: this.headers(),
+        data: { transactionId },
+      },
+    );
+    if (!response.ok()) {
+      throw new Error(
+        `Failed to reject match: ${response.status()} ${await response.text()}`,
+      );
+    }
+  }
+
+  async recordManualPayment(
+    entityId: string,
+    rentCallId: string,
+    payload: {
+      amountCents: number;
+      paymentMethod: 'cash' | 'check';
+      paymentDate: string;
+      payerName: string;
+      paymentReference?: string;
+    },
+  ) {
+    const response = await this.request.post(
+      `${API_BASE}/api/entities/${entityId}/rent-calls/${rentCallId}/payments/manual`,
+      {
+        headers: this.headers(),
+        data: payload,
+      },
+    );
+    if (!response.ok()) {
+      throw new Error(
+        `Failed to record manual payment: ${response.status()} ${await response.text()}`,
+      );
+    }
+  }
+
+  async waitForRentCallPaid(
+    entityId: string,
+    month: string,
+    rentCallId: string,
+    timeoutMs = 5000,
+  ) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      const { data } = await this.getRentCalls(entityId, month);
+      const rc = data.find((r) => r.id === rentCallId);
+      if (rc && rc.paidAt) return rc;
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    throw new Error(
+      `Timed out waiting for rent call ${rentCallId} to be paid (${timeoutMs}ms)`,
+    );
+  }
+
   getCreatedEntityIds() {
     return [...this.createdEntityIds];
   }

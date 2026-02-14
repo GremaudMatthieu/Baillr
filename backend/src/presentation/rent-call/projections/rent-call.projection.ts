@@ -4,6 +4,7 @@ import { PrismaService } from '@infrastructure/database/prisma.service';
 import { START, streamNameFilter } from '@kurrent/kurrentdb-client';
 import type { RentCallGeneratedData } from '@billing/rent-call/events/rent-call-generated.event';
 import type { RentCallSentData } from '@billing/rent-call/events/rent-call-sent.event';
+import type { PaymentRecordedData } from '@billing/rent-call/events/payment-recorded.event';
 
 @Injectable()
 export class RentCallProjection implements OnModuleInit {
@@ -62,6 +63,15 @@ export class RentCallProjection implements OnModuleInit {
     );
   }
 
+  private isValidPaymentRecordedData(data: Record<string, unknown>): boolean {
+    return (
+      typeof data.rentCallId === 'string' &&
+      typeof data.transactionId === 'string' &&
+      typeof data.amountCents === 'number' &&
+      typeof data.recordedAt === 'string'
+    );
+  }
+
   private async handleEvent(eventType: string, data: Record<string, unknown>): Promise<void> {
     try {
       switch (eventType) {
@@ -76,6 +86,15 @@ export class RentCallProjection implements OnModuleInit {
           break;
         case 'RentCallSent':
           await this.onRentCallSent(data as unknown as RentCallSentData);
+          break;
+        case 'PaymentRecorded':
+          if (!this.isValidPaymentRecordedData(data)) {
+            this.logger.error(
+              `Invalid PaymentRecorded event data for rent call ${data.rentCallId}`,
+            );
+            return;
+          }
+          await this.onPaymentRecorded(data as unknown as PaymentRecordedData);
           break;
         default:
           break;
@@ -142,5 +161,32 @@ export class RentCallProjection implements OnModuleInit {
       },
     });
     this.logger.log(`Projected RentCallSent for ${data.rentCallId}`);
+  }
+
+  private async onPaymentRecorded(data: PaymentRecordedData): Promise<void> {
+    const existing = await this.prisma.rentCall.findUnique({
+      where: { id: data.rentCallId },
+    });
+    if (!existing) {
+      this.logger.warn(
+        `RentCall ${data.rentCallId} not found for PaymentRecorded projection — skipping`,
+      );
+      return;
+    }
+
+    await this.prisma.rentCall.update({
+      where: { id: data.rentCallId },
+      data: {
+        paidAt: new Date(data.recordedAt),
+        paidAmountCents: data.amountCents,
+        transactionId: data.transactionId,
+        bankStatementId: data.bankStatementId ?? null,
+        payerName: data.payerName ?? null,
+        paymentDate: data.paymentDate ? new Date(data.paymentDate) : null,
+        paymentMethod: data.paymentMethod ?? 'bank_transfer',
+        paymentReference: data.paymentReference ?? null,
+      },
+    });
+    this.logger.log(`Projected PaymentRecorded for ${data.rentCallId}`);
   }
 }

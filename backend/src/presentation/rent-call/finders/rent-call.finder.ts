@@ -1,12 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type {
-  RentCall,
-  Tenant,
-  Unit,
-  Lease,
-  OwnershipEntity,
-  BankAccount,
-} from '@prisma/client';
+import type { RentCall, Tenant, Unit, Lease, OwnershipEntity, BankAccount } from '@prisma/client';
 import { PrismaService } from '@infrastructure/database/prisma.service';
 
 export type RentCallWithRelations = RentCall & {
@@ -102,14 +95,23 @@ export class RentCallFinder {
     });
   }
 
-  async existsByEntityAndMonth(
-    entityId: string,
-    month: string,
-    userId: string,
-  ): Promise<boolean> {
+  async existsByEntityAndMonth(entityId: string, month: string, userId: string): Promise<boolean> {
     const count = await this.prisma.rentCall.count({
       where: { entityId, month, userId },
     });
     return count > 0;
+  }
+
+  async findPaidRentCallIds(entityId: string, userId: string, month: string): Promise<string[]> {
+    const paidCalls = await this.prisma.rentCall.findMany({
+      where: {
+        entityId,
+        userId,
+        month,
+        paidAt: { not: null },
+      },
+      select: { id: true },
+    });
+    return paidCalls.map((rc) => rc.id);
   }
 }
