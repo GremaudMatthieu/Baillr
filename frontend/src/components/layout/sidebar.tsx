@@ -14,6 +14,7 @@ import {
   FolderOpen,
   TrendingUp,
   BarChart3,
+  Coins,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -48,6 +49,7 @@ const navItems = [
   { label: "Documents", icon: FolderOpen, href: "/documents" },
   { label: "Indices", icon: TrendingUp, href: "/indices" },
   { label: "Révisions", icon: BarChart3, href: "/revisions" },
+  { label: "Charges", icon: Coins, href: "/charges" },
 ] as const;
 
 const settingsItem = {

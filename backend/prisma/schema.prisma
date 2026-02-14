@@ -328,6 +328,21 @@ model Revision {
   @@index([leaseId])
 }
 
+model AnnualCharges {
+  id               String   @id
+  entityId         String   @map("entity_id")
+  userId           String   @map("user_id")
+  fiscalYear       Int      @map("fiscal_year")
+  charges          Json     @default("[]")
+  totalAmountCents Int      @map("total_amount_cents")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@unique([entityId, fiscalYear])
+  @@map("annual_charges")
+  @@index([entityId])
+}
+
 model BankTransaction {
   id              String   @id @default(uuid())
   bankStatementId String   @map("bank_statement_id")

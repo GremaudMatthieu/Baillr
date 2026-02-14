@@ -19,6 +19,7 @@ import { EscalationPresentationModule } from './presentation/escalation/escalati
 import { BankStatementPresentationModule } from './presentation/bank-statement/bank-statement-presentation.module';
 import { InseeIndexPresentationModule } from './presentation/insee-index/insee-index-presentation.module';
 import { RevisionPresentationModule } from './presentation/revision/revision-presentation.module';
+import { AnnualChargesPresentationModule } from './presentation/annual-charges/annual-charges-presentation.module';
 import { DocumentModule } from './infrastructure/document/document.module';
 import { EmailModule } from './infrastructure/email/email.module';
 import { BankImportModule } from './infrastructure/bank-import/bank-import.module';
@@ -50,6 +51,7 @@ import { AppService } from './app.service';
     BankStatementPresentationModule,
     InseeIndexPresentationModule,
     RevisionPresentationModule,
+    AnnualChargesPresentationModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ClerkAuthGuard }],

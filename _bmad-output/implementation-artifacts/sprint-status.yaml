@@ -107,7 +107,8 @@ development_status:
   7-2-calculate-revised-rent-using-official-formula: done # reviewed 2026-02-14, 10 findings (3H/4M/3L), 9 fixes — cross-entity data leak (entityId on findByTypeQuarterYear), dead code exceptions removed, double-click guard, error display, useRevisions tests, test rename, E2E selector
   7-3-review-and-batch-approve-pending-revisions: done # reviewed 2026-02-14, 12 findings (2H/6M/4L), 10 fixes + Saga/Reaction arch refactor — cross-BC decoupled via RevisionApprovedReaction (KurrentDB subscription → CommandBus dispatch → ReviseLeaseRentHandler in Tenancy BC), zero cross-BC aggregate imports
   7-4-generate-irl-ilc-icc-revision-letters: done # reviewed 2026-02-14, 10 fixes — baseIndexYear missing from CQRS chain (H1, 12 files), useRef download guard (M2+M5), template test coverage (M4), UTC date formatting (L2), @HttpCode removal (L1), E2E simplification (L3)
-  7-5-enter-actual-annual-charges-by-category: backlog
+  7-5-enter-actual-annual-charges-by-category: done # reviewed 2026-02-14, 12 findings (1C/3H/4M/4L), 6 fixes — repository.load() for rehydration (C1), label tooLong() factory (H1), DTO @MaxLength id (H2), InvalidChargeAmountException rename (M3), File List count fix (M1), no-op guard handler test
+  7-5b-add-charge-category-to-billing-lines: ready-for-dev
   7-6-enter-individual-water-meter-readings-per-unit: backlog
   7-7-calculate-and-generate-charge-regularization-statements: backlog
   7-8-apply-regularization-credits-debits-to-tenant-accounts: backlog
