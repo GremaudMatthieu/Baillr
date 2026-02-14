@@ -79,7 +79,7 @@ describe("UnitMosaic — sent rent call status", () => {
       name: /Apt 1.*envoyé/,
     });
     expect(apt1).toBeInTheDocument();
-    expect(apt1.className).toContain("bg-amber-100");
+    expect(apt1.className).toContain("bg-orange-100");
 
     // u2 has no sent rent call — should remain green (occupied)
     const apt2 = screen.getByRole("gridcell", {

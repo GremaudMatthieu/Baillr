@@ -60,7 +60,7 @@ interface SidebarProps {
 function SidebarNav({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
   const pathname = usePathname();
   const { entityId } = useCurrentEntity();
-  const { data: unpaidRentCalls } = useUnpaidRentCalls(entityId);
+  const { data: unpaidRentCalls } = useUnpaidRentCalls(entityId ?? undefined);
   const unpaidCount = unpaidRentCalls?.length ?? 0;
 
   return (

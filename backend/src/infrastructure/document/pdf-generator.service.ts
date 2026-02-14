@@ -2,8 +2,12 @@ import { Injectable } from '@nestjs/common';
 import PDFDocument from 'pdfkit';
 import type { RentCallPdfData } from './rent-call-pdf-data.interface.js';
 import type { ReceiptPdfData } from './receipt-pdf-data.interface.js';
+import type { FormalNoticePdfData } from './formal-notice-pdf-data.interface.js';
+import type { StakeholderLetterPdfData } from './stakeholder-letter-pdf-data.interface.js';
 import { renderRentCallPdf } from './templates/rent-call.template.js';
 import { renderReceiptPdf } from './templates/receipt.template.js';
+import { renderFormalNoticePdf } from './templates/formal-notice.template.js';
+import { renderStakeholderLetterPdf } from './templates/stakeholder-letter.template.js';
 
 @Injectable()
 export class PdfGeneratorService {
@@ -52,6 +56,50 @@ export class PdfGeneratorService {
       doc.on('error', (err: Error) => reject(err));
 
       renderReceiptPdf(doc, data);
+      doc.end();
+    });
+  }
+
+  async generateFormalNoticePdf(data: FormalNoticePdfData): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margin: 50,
+        info: {
+          Title: `Mise en demeure - ${data.tenantName}`,
+          Author: data.entityName,
+          Subject: 'Mise en demeure de paiement',
+        },
+      });
+
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', (err: Error) => reject(err));
+
+      renderFormalNoticePdf(doc, data);
+      doc.end();
+    });
+  }
+
+  async generateStakeholderLetterPdf(data: StakeholderLetterPdfData): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margin: 50,
+        info: {
+          Title: `Signalement impayés - ${data.tenantName}`,
+          Author: data.entityName,
+          Subject: 'Signalement de loyers impayés',
+        },
+      });
+
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', (err: Error) => reject(err));
+
+      renderStakeholderLetterPdf(doc, data);
       doc.end();
     });
   }

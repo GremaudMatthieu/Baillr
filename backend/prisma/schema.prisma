@@ -247,6 +247,23 @@ model AccountEntry {
   @@index([tenantId])
 }
 
+model Escalation {
+  id                String    @id @default(uuid())
+  rentCallId        String    @unique @map("rent_call_id")
+  entityId          String    @map("entity_id")
+  userId            String    @map("user_id")
+  tenantId          String    @map("tenant_id")
+  tier1SentAt       DateTime? @map("tier1_sent_at")
+  tier1RecipientEmail String? @map("tier1_recipient_email")
+  tier2SentAt       DateTime? @map("tier2_sent_at")
+  tier3SentAt       DateTime? @map("tier3_sent_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  @@map("escalations")
+  @@index([entityId])
+  @@index([userId])
+}
+
 model BankStatement {
   id               String   @id @default(uuid())
   entityId         String   @map("entity_id")

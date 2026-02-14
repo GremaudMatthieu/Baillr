@@ -48,6 +48,12 @@ vi.mock("@/hooks/use-unpaid-rent-calls", () => ({
   useUnpaidRentCalls: () => ({ data: mockUnpaidData }),
 }));
 
+vi.mock("@/hooks/use-escalation", () => ({
+  useEscalationStatuses: () => ({ data: mockEscalationData }),
+}));
+
+let mockEscalationData: { rentCallId: string; tier1SentAt: string | null; tier2SentAt: string | null; tier3SentAt: string | null }[] = [];
+
 describe("ActionFeed — unpaid alerts", () => {
   it("should show no unpaid alerts when no unpaid rent calls", () => {
     mockUnpaidData = [];
@@ -203,7 +209,7 @@ describe("ActionFeed — unpaid alerts", () => {
     expect(screen.getByText("Urgent")).toBeInTheDocument();
   });
 
-  it("should link to unpaid filter view", () => {
+  it("should link to rent call detail page", () => {
     mockUnpaidData = [
       {
         id: "rc-1",
@@ -226,8 +232,83 @@ describe("ActionFeed — unpaid alerts", () => {
         daysLate: 36,
       },
     ];
+    mockEscalationData = [];
     renderWithProviders(<ActionFeed />);
     const links = screen.getAllByRole("link", { name: /Commencer/ });
-    expect(links[0]).toHaveAttribute("href", "/rent-calls?filter=unpaid");
+    expect(links[0]).toHaveAttribute("href", "/rent-calls/rc-1");
+  });
+
+  it("should show escalation tier 1 status in description", () => {
+    mockUnpaidData = [
+      {
+        id: "rc-1",
+        entityId: "entity-1",
+        leaseId: "lease-1",
+        tenantId: "t1",
+        unitId: "u1",
+        month: "2026-01",
+        totalAmountCents: 80000,
+        paidAmountCents: null,
+        remainingBalanceCents: null,
+        paymentStatus: null,
+        sentAt: "2026-01-01T00:00:00Z",
+        tenantFirstName: "Jean",
+        tenantLastName: "Dupont",
+        tenantCompanyName: null,
+        tenantType: "individual",
+        unitIdentifier: "Apt 101",
+        dueDate: "2026-01-05T00:00:00Z",
+        daysLate: 36,
+      },
+    ];
+    mockEscalationData = [
+      {
+        rentCallId: "rc-1",
+        tier1SentAt: "2026-02-10T10:00:00Z",
+        tier2SentAt: null,
+        tier3SentAt: null,
+      },
+    ];
+    renderWithProviders(<ActionFeed />);
+    expect(
+      screen.getByText(/Relance envoyée le/),
+    ).toBeInTheDocument();
+  });
+
+  it("should show escalation tier 2 status in description", () => {
+    mockUnpaidData = [
+      {
+        id: "rc-1",
+        entityId: "entity-1",
+        leaseId: "lease-1",
+        tenantId: "t1",
+        unitId: "u1",
+        month: "2026-01",
+        totalAmountCents: 80000,
+        paidAmountCents: null,
+        remainingBalanceCents: null,
+        paymentStatus: null,
+        sentAt: "2026-01-01T00:00:00Z",
+        tenantFirstName: "Jean",
+        tenantLastName: "Dupont",
+        tenantCompanyName: null,
+        tenantType: "individual",
+        unitIdentifier: "Apt 101",
+        dueDate: "2026-01-05T00:00:00Z",
+        daysLate: 36,
+      },
+    ];
+    mockEscalationData = [
+      {
+        rentCallId: "rc-1",
+        tier1SentAt: "2026-02-10T10:00:00Z",
+        tier2SentAt: "2026-02-12T10:00:00Z",
+        tier3SentAt: null,
+      },
+    ];
+    renderWithProviders(<ActionFeed />);
+    expect(
+      screen.getByText(/Mise en demeure générée le/),
+    ).toBeInTheDocument();
   });
 });

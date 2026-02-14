@@ -36,6 +36,8 @@ import { useLeases } from "@/hooks/use-leases";
 import { useRentCalls } from "@/hooks/use-rent-calls";
 import { useBankStatements } from "@/hooks/use-bank-statements";
 import { useUnpaidRentCalls } from "@/hooks/use-unpaid-rent-calls";
+import { useEscalationStatuses } from "@/hooks/use-escalation";
+import { useMemo } from "react";
 
 const iconMap: Record<string, LucideIcon> = {
   AlertTriangle,
@@ -306,9 +308,46 @@ function formatAmount(cents: number): string {
   }).format(cents / 100);
 }
 
+function formatEscalationStatus(
+  escalation: { tier1SentAt: string | null; tier2SentAt: string | null; tier3SentAt: string | null } | undefined,
+): string {
+  if (!escalation) return "";
+  if (escalation.tier3SentAt) {
+    return ` — Signalements générés le ${new Date(escalation.tier3SentAt).toLocaleDateString("fr-FR")}`;
+  }
+  if (escalation.tier2SentAt) {
+    return ` — Mise en demeure générée le ${new Date(escalation.tier2SentAt).toLocaleDateString("fr-FR")}`;
+  }
+  if (escalation.tier1SentAt) {
+    return ` — Relance envoyée le ${new Date(escalation.tier1SentAt).toLocaleDateString("fr-FR")}`;
+  }
+  return "";
+}
+
 function useUnpaidAlerts(): ActionItem[] {
   const { entityId } = useCurrentEntity();
-  const { data: unpaidRentCalls } = useUnpaidRentCalls(entityId);
+  const { data: unpaidRentCalls } = useUnpaidRentCalls(entityId ?? undefined);
+
+  const rentCallIds = useMemo(
+    () => (unpaidRentCalls ?? []).map((rc) => rc.id),
+    [unpaidRentCalls],
+  );
+
+  const { data: escalationStatuses } = useEscalationStatuses(
+    entityId ?? undefined,
+    rentCallIds,
+  );
+
+  const escalationMap = useMemo(() => {
+    const map = new Map<string, { tier1SentAt: string | null; tier2SentAt: string | null; tier3SentAt: string | null }>();
+    if (escalationStatuses) {
+      for (const es of escalationStatuses) {
+        map.set(es.rentCallId, es);
+      }
+    }
+    return map;
+  }, [escalationStatuses]);
+
   const actions: ActionItem[] = [];
 
   if (!unpaidRentCalls) return actions;
@@ -319,13 +358,15 @@ function useUnpaidAlerts(): ActionItem[] {
         ? rc.tenantCompanyName
         : `${rc.tenantFirstName} ${rc.tenantLastName}`;
     const amount = formatAmount(rc.remainingBalanceCents ?? rc.totalAmountCents);
+    const escalation = escalationMap.get(rc.id);
+    const escalationSuffix = formatEscalationStatus(escalation);
 
     actions.push({
       id: `unpaid-${rc.id}`,
       icon: "AlertTriangle",
       title: `Loyer impayé — ${tenantName} — ${amount} — ${rc.daysLate} jour${rc.daysLate > 1 ? "s" : ""} de retard`,
-      description: `Lot ${rc.unitIdentifier} — Période ${rc.month}`,
-      href: "/rent-calls?filter=unpaid",
+      description: `Lot ${rc.unitIdentifier} — Période ${rc.month}${escalationSuffix}`,
+      href: `/rent-calls/${rc.id}`,
       priority: "critical",
     });
   }

@@ -8,11 +8,13 @@ import { ClerkAuthGuard } from './infrastructure/auth/clerk-auth.guard';
 import { PortfolioModule } from './portfolio/portfolio.module';
 import { TenancyModule } from './tenancy/tenancy.module';
 import { BillingModule } from './billing/billing.module';
+import { RecoveryModule } from './recovery/recovery.module';
 import { EntityPresentationModule } from './presentation/entity/entity-presentation.module';
 import { PropertyPresentationModule } from './presentation/property/property-presentation.module';
 import { TenantPresentationModule } from './presentation/tenant/tenant-presentation.module';
 import { LeasePresentationModule } from './presentation/lease/lease-presentation.module';
 import { RentCallPresentationModule } from './presentation/rent-call/rent-call-presentation.module';
+import { EscalationPresentationModule } from './presentation/escalation/escalation-presentation.module';
 import { BankStatementPresentationModule } from './presentation/bank-statement/bank-statement-presentation.module';
 import { DocumentModule } from './infrastructure/document/document.module';
 import { EmailModule } from './infrastructure/email/email.module';
@@ -34,11 +36,13 @@ import { AppService } from './app.service';
     PortfolioModule,
     TenancyModule,
     BillingModule,
+    RecoveryModule,
     EntityPresentationModule,
     PropertyPresentationModule,
     TenantPresentationModule,
     LeasePresentationModule,
     RentCallPresentationModule,
+    EscalationPresentationModule,
     BankStatementPresentationModule,
   ],
   controllers: [AppController],

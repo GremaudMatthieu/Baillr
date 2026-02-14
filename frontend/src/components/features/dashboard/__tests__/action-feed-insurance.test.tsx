@@ -79,6 +79,10 @@ vi.mock("@/hooks/use-leases", () => ({
   useLeases: () => ({ data: [] }),
 }));
 
+vi.mock("@/hooks/use-escalation", () => ({
+  useEscalationStatuses: () => ({ data: [] }),
+}));
+
 describe("ActionFeed — insurance alerts", () => {
   beforeEach(() => {
     mockTenantsData = undefined;

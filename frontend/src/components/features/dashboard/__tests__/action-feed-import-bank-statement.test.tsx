@@ -80,6 +80,10 @@ vi.mock("@/hooks/use-bank-statements", () => ({
   useBankStatements: () => ({ data: [] }),
 }));
 
+vi.mock("@/hooks/use-escalation", () => ({
+  useEscalationStatuses: () => ({ data: [] }),
+}));
+
 describe("ActionFeed — step 9 import bank statement", () => {
   it("should show import bank statement action when rent calls sent and no statements", () => {
     renderWithProviders(<ActionFeed />);

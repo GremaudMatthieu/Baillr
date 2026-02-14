@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Receipt, Mail, AlertTriangle } from "lucide-react";
 
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -330,9 +331,16 @@ export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
                             )}
                           </div>
                         </div>
-                        <Badge variant="destructive">
-                          {rc.daysLate} j de retard
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="destructive">
+                            {rc.daysLate} j de retard
+                          </Badge>
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={`/rent-calls/${rc.id}`}>
+                              Voir détails
+                            </Link>
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
                   ))}

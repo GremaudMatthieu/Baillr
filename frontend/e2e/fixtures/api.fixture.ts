@@ -798,6 +798,36 @@ export class ApiHelper {
     );
   }
 
+  async getEscalationStatus(entityId: string, rentCallId: string) {
+    const response = await this.request.get(
+      `${API_BASE}/api/entities/${entityId}/rent-calls/${rentCallId}/escalation`,
+      { headers: this.headers() },
+    );
+    if (!response.ok()) {
+      throw new Error(`Failed to get escalation status: ${response.status()}`);
+    }
+    return (await response.json()) as {
+      rentCallId: string;
+      tier1SentAt: string | null;
+      tier1RecipientEmail: string | null;
+      tier2SentAt: string | null;
+      tier3SentAt: string | null;
+    };
+  }
+
+  async sendEscalationReminder(entityId: string, rentCallId: string) {
+    const response = await this.request.post(
+      `${API_BASE}/api/entities/${entityId}/rent-calls/${rentCallId}/escalation/reminder`,
+      { headers: this.headers() },
+    );
+    if (!response.ok()) {
+      throw new Error(
+        `Failed to send escalation reminder: ${response.status()} ${await response.text()}`,
+      );
+    }
+    return (await response.json()) as { sent: boolean };
+  }
+
   getCreatedEntityIds() {
     return [...this.createdEntityIds];
   }

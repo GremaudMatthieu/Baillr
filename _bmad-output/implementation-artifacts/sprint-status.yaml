@@ -93,17 +93,17 @@ development_status:
   epic-5-retrospective: done
 
   # Epic 6: Unpaid Rent Management & Reminders (5 stories)
-  epic-6: in-progress
+  epic-6: done
   6-1-detect-late-payments-and-display-unpaid-status: done # reviewed 2026-02-14, 10 findings (2H/5M/3L), 7 fixes — DTO @IsNotEmpty/@Type, unpaid cache invalidation, E2E assertion robustness, E2E selector alignment, UnitMosaic sent color regression, timezone normalization
-  6-2-propose-3-tier-escalation-actions: backlog
-  6-3-send-email-reminders-tier-1: backlog
-  6-4-generate-formal-notices-mise-en-demeure-tier-2: backlog
-  6-5-generate-stakeholder-notification-letters-tier-3: backlog
+  6-2-propose-3-tier-escalation-actions: done # reviewed 2026-02-14, 10 findings (3H/5M/2L), 12 fixes — dead code exceptions removed (H1), N+1 batch endpoint (H2), success icon (H3), unused imports/constants (M1/M2), @IsString DTO (M3), File List sync (M4/M5), table name (L2), type errors (bonus), re-stage (L1)
+  6-3-send-email-reminders-tier-1: done # absorbed by 6.2 — Tier 1 email reminder fully implemented (controller, handler, template, frontend hook, E2E)
+  6-4-generate-formal-notices-mise-en-demeure-tier-2: done # absorbed by 6.2 — Tier 2 formal notice PDF fully implemented (controller, handler, template, assembler, frontend hook, E2E)
+  6-5-generate-stakeholder-notification-letters-tier-3: done # absorbed by 6.2 — Tier 3 stakeholder letters fully implemented (controller, handler, template, assembler, frontend hook)
   epic-6-retrospective: optional
 
   # Epic 7: Index Revision & Annual Charges (8 stories)
-  epic-7: backlog
-  7-1-enter-and-validate-insee-indices-irl-ilc-icc: backlog
+  epic-7: in-progress
+  7-1-enter-and-validate-insee-indices-irl-ilc-icc: ready-for-dev
   7-2-calculate-revised-rent-using-official-formula: backlog
   7-3-review-and-batch-approve-pending-revisions: backlog
   7-4-generate-irl-ilc-icc-revision-letters: backlog

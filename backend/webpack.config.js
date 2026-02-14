@@ -13,6 +13,7 @@ module.exports = (options) => ({
       '@infrastructure': path.resolve(__dirname, 'src/infrastructure'),
       '@tenancy': path.resolve(__dirname, 'src/tenancy'),
       '@billing': path.resolve(__dirname, 'src/billing'),
+      '@recovery': path.resolve(__dirname, 'src/recovery'),
     },
   },
 });

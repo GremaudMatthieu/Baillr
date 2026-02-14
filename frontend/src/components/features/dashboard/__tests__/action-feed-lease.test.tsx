@@ -56,6 +56,10 @@ vi.mock("@/hooks/use-leases", () => ({
   useLeases: () => ({ data: mockLeasesData }),
 }));
 
+vi.mock("@/hooks/use-escalation", () => ({
+  useEscalationStatuses: () => ({ data: [] }),
+}));
+
 describe("ActionFeed — lease onboarding step 6", () => {
   beforeEach(() => {
     mockTenantsData = [

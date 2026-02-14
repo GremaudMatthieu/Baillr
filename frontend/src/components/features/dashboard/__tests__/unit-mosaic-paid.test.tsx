@@ -114,7 +114,7 @@ describe("UnitMosaic — paid rent call status", () => {
     const apt2 = screen.getByRole("gridcell", {
       name: /Apt 2.*envoyé/,
     });
-    expect(apt2.className).toContain("bg-amber-100");
+    expect(apt2.className).toContain("bg-orange-100");
   });
 
   it("should show occupied green for unit with no rent call", () => {

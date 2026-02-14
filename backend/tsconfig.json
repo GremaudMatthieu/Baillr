@@ -19,7 +19,8 @@
       "@infrastructure/*": ["src/infrastructure/*"],
       "@portfolio/*": ["src/portfolio/*"],
       "@tenancy/*": ["src/tenancy/*"],
-      "@billing/*": ["src/billing/*"]
+      "@billing/*": ["src/billing/*"],
+      "@recovery/*": ["src/recovery/*"]
     },
     "incremental": true,
     "skipLibCheck": true,

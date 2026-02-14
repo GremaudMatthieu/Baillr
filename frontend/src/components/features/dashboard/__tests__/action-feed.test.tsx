@@ -41,6 +41,10 @@ vi.mock("@/hooks/use-bank-statements", () => ({
   useBankStatements: () => ({ data: undefined }),
 }));
 
+vi.mock("@/hooks/use-escalation", () => ({
+  useEscalationStatuses: () => ({ data: [] }),
+}));
+
 describe("ActionFeed", () => {
   it("should display section heading", () => {
     renderWithProviders(<ActionFeed actions={[]} />);
