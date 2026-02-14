@@ -28,6 +28,7 @@ export class CalculateARevisionHandler
       command.currentRentCents,
       command.baseIndexValue,
       command.baseIndexQuarter,
+      command.baseIndexYear,
       command.newIndexValue,
       command.newIndexQuarter,
       command.newIndexYear,

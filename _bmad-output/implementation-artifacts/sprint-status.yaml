@@ -106,7 +106,7 @@ development_status:
   7-1-enter-and-validate-insee-indices-irl-ilc-icc: done # reviewed 2026-02-14, 12 findings (3H/4M/3L), 10 fixes — @IsNotEmpty DTO H1, dead DuplicateIndexException removed H2, form.reset timing H3, GET type validation M1, finder userId consistency M2, E2E AC#6 duplicate test M3, IndexValue float decimal fix M4, duplicate error display L1, file list count L2, empty module removed L3
   7-2-calculate-revised-rent-using-official-formula: done # reviewed 2026-02-14, 10 findings (3H/4M/3L), 9 fixes — cross-entity data leak (entityId on findByTypeQuarterYear), dead code exceptions removed, double-click guard, error display, useRevisions tests, test rename, E2E selector
   7-3-review-and-batch-approve-pending-revisions: done # reviewed 2026-02-14, 12 findings (2H/6M/4L), 10 fixes + Saga/Reaction arch refactor — cross-BC decoupled via RevisionApprovedReaction (KurrentDB subscription → CommandBus dispatch → ReviseLeaseRentHandler in Tenancy BC), zero cross-BC aggregate imports
-  7-4-generate-irl-ilc-icc-revision-letters: backlog
+  7-4-generate-irl-ilc-icc-revision-letters: done # reviewed 2026-02-14, 10 fixes — baseIndexYear missing from CQRS chain (H1, 12 files), useRef download guard (M2+M5), template test coverage (M4), UTC date formatting (L2), @HttpCode removal (L1), E2E simplification (L3)
   7-5-enter-actual-annual-charges-by-category: backlog
   7-6-enter-individual-water-meter-readings-per-unit: backlog
   7-7-calculate-and-generate-charge-regularization-statements: backlog

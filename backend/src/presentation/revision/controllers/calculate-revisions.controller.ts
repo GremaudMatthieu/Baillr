@@ -106,6 +106,7 @@ export class CalculateRevisionsController {
             lease.rentAmountCents,
             lease.baseIndexValue!,
             lease.referenceQuarter!,
+            lease.referenceYear!,
             newIndex.value,
             newIndex.quarter,
             newIndex.year,

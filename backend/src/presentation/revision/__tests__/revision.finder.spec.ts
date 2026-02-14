@@ -5,6 +5,7 @@ describe('RevisionFinder', () => {
   let mockPrisma: {
     revision: {
       findMany: jest.Mock;
+      findFirst: jest.Mock;
       count: jest.Mock;
     };
   };
@@ -13,6 +14,7 @@ describe('RevisionFinder', () => {
     mockPrisma = {
       revision: {
         findMany: jest.fn().mockResolvedValue([]),
+        findFirst: jest.fn().mockResolvedValue(null),
         count: jest.fn().mockResolvedValue(0),
       },
     };
@@ -36,6 +38,24 @@ describe('RevisionFinder', () => {
         where: { entityId: 'entity-1', status: 'pending' },
         orderBy: { calculatedAt: 'desc' },
       });
+    });
+  });
+
+  describe('findByIdAndEntity', () => {
+    it('should query by id and entityId', async () => {
+      const revision = { id: 'rev-1', entityId: 'entity-1', status: 'approved' };
+      mockPrisma.revision.findFirst.mockResolvedValue(revision);
+
+      const result = await finder.findByIdAndEntity('rev-1', 'entity-1');
+      expect(result).toEqual(revision);
+      expect(mockPrisma.revision.findFirst).toHaveBeenCalledWith({
+        where: { id: 'rev-1', entityId: 'entity-1' },
+      });
+    });
+
+    it('should return null when not found', async () => {
+      const result = await finder.findByIdAndEntity('rev-1', 'entity-1');
+      expect(result).toBeNull();
     });
   });
 

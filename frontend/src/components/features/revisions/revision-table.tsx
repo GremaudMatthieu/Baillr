@@ -2,8 +2,9 @@
 
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Download, Loader2 } from 'lucide-react';
 import { ApproveRevisionsDialog } from './approve-revisions-dialog';
+import { useDownloadRevisionLetter } from '@/hooks/use-download-revision-letter';
 import { formatEuros } from '@/lib/format';
 import type { Revision } from '@/lib/api/revisions-api';
 
@@ -18,10 +19,26 @@ export function RevisionTable({ revisions, entityId }: RevisionTableProps) {
   const [approveMode, setApproveMode] = useState<'selected' | 'all'>(
     'selected',
   );
+  const [isBatchDownloading, setIsBatchDownloading] = useState(false);
+  const { downloadLetter, isDownloading, downloadingId } =
+    useDownloadRevisionLetter(entityId);
 
   const pendingRevisions = useMemo(
     () => revisions.filter((r) => r.status === 'pending'),
     [revisions],
+  );
+
+  const approvedRevisions = useMemo(
+    () => revisions.filter((r) => r.status === 'approved'),
+    [revisions],
+  );
+
+  const selectedApprovedRevisions = useMemo(
+    () =>
+      revisions.filter(
+        (r) => selectedIds.has(r.id) && r.status === 'approved',
+      ),
+    [revisions, selectedIds],
   );
 
   const selectedRevisions = useMemo(
@@ -60,6 +77,22 @@ export function RevisionTable({ revisions, entityId }: RevisionTableProps) {
     setSelectedIds(new Set());
   };
 
+  const handleBatchDownload = async () => {
+    if (isBatchDownloading || isDownloading) return;
+    setIsBatchDownloading(true);
+    try {
+      const targets =
+        selectedApprovedRevisions.length > 0
+          ? selectedApprovedRevisions
+          : approvedRevisions;
+      for (const revision of targets) {
+        await downloadLetter(revision.id);
+      }
+    } finally {
+      setIsBatchDownloading(false);
+    }
+  };
+
   if (revisions.length === 0) {
     return (
       <div className="rounded-lg border p-8 text-center text-muted-foreground">
@@ -73,32 +106,52 @@ export function RevisionTable({ revisions, entityId }: RevisionTableProps) {
 
   return (
     <div>
-      {pendingRevisions.length > 0 && (
-        <div className="mb-4 flex items-center gap-2">
+      <div className="mb-4 flex items-center gap-2">
+        {pendingRevisions.length > 0 && (
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={selectedIds.size === 0}
+              onClick={() => {
+                setApproveMode('selected');
+                setDialogOpen(true);
+              }}
+            >
+              <CheckCircle2 className="mr-2 h-4 w-4" />
+              Approuver la sélection ({selectedIds.size})
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => {
+                setApproveMode('all');
+                setDialogOpen(true);
+              }}
+            >
+              Tout approuver ({pendingRevisions.length})
+            </Button>
+          </>
+        )}
+        {approvedRevisions.length > 0 && (
           <Button
             variant="outline"
             size="sm"
-            disabled={selectedIds.size === 0}
-            onClick={() => {
-              setApproveMode('selected');
-              setDialogOpen(true);
-            }}
+            disabled={isBatchDownloading || isDownloading}
+            onClick={handleBatchDownload}
           >
-            <CheckCircle2 className="mr-2 h-4 w-4" />
-            Approuver la sélection ({selectedIds.size})
+            {isBatchDownloading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 h-4 w-4" />
+            )}
+            Télécharger les lettres
+            {selectedApprovedRevisions.length > 0
+              ? ` (${selectedApprovedRevisions.length})`
+              : ` (${approvedRevisions.length})`}
           </Button>
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => {
-              setApproveMode('all');
-              setDialogOpen(true);
-            }}
-          >
-            Tout approuver ({pendingRevisions.length})
-          </Button>
-        </div>
-      )}
+        )}
+      </div>
 
       <div className="rounded-lg border">
         <div className="overflow-x-auto">
@@ -130,6 +183,7 @@ export function RevisionTable({ revisions, entityId }: RevisionTableProps) {
                 <th className="px-4 py-3 text-left font-medium">Indice</th>
                 <th className="px-4 py-3 text-left font-medium">Formule</th>
                 <th className="px-4 py-3 text-left font-medium">Statut</th>
+                <th className="px-4 py-3 text-center font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -189,6 +243,23 @@ export function RevisionTable({ revisions, entityId }: RevisionTableProps) {
                         ? 'Approuvée'
                         : 'En attente'}
                     </span>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    {revision.status === 'approved' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={isDownloading}
+                        onClick={() => downloadLetter(revision.id)}
+                        aria-label={`Télécharger la lettre de révision de ${revision.tenantName}`}
+                      >
+                        {downloadingId === revision.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Download className="h-4 w-4" />
+                        )}
+                      </Button>
+                    )}
                   </td>
                 </tr>
               ))}

@@ -21,6 +21,7 @@ describe('RevisionAggregate', () => {
     currentRentCents: 75000,
     baseIndexValue: 138.19,
     baseIndexQuarter: 'Q2',
+    baseIndexYear: 2024,
     newIndexValue: 142.06,
     newIndexQuarter: 'Q2',
     newIndexYear: 2025,
@@ -40,6 +41,7 @@ describe('RevisionAggregate', () => {
       baseParams.currentRentCents,
       baseParams.baseIndexValue,
       baseParams.baseIndexQuarter,
+      baseParams.baseIndexYear,
       baseParams.newIndexValue,
       baseParams.newIndexQuarter,
       baseParams.newIndexYear,
@@ -63,6 +65,7 @@ describe('RevisionAggregate', () => {
         baseParams.currentRentCents,
         baseParams.baseIndexValue,
         baseParams.baseIndexQuarter,
+        baseParams.baseIndexYear,
         baseParams.newIndexValue,
         baseParams.newIndexQuarter,
         baseParams.newIndexYear,
@@ -88,6 +91,7 @@ describe('RevisionAggregate', () => {
         baseParams.currentRentCents,
         baseParams.baseIndexValue,
         baseParams.baseIndexQuarter,
+        baseParams.baseIndexYear,
         baseParams.newIndexValue,
         baseParams.newIndexQuarter,
         baseParams.newIndexYear,
@@ -122,6 +126,7 @@ describe('RevisionAggregate', () => {
         baseParams.currentRentCents,
         baseParams.baseIndexValue,
         baseParams.baseIndexQuarter,
+        baseParams.baseIndexYear,
         baseParams.newIndexValue,
         baseParams.newIndexQuarter,
         baseParams.newIndexYear,
@@ -141,6 +146,7 @@ describe('RevisionAggregate', () => {
         99999,
         baseParams.baseIndexValue,
         baseParams.baseIndexQuarter,
+        baseParams.baseIndexYear,
         baseParams.newIndexValue,
         baseParams.newIndexQuarter,
         baseParams.newIndexYear,
@@ -165,6 +171,7 @@ describe('RevisionAggregate', () => {
         baseParams.currentRentCents,
         baseParams.baseIndexValue,
         baseParams.baseIndexQuarter,
+        baseParams.baseIndexYear,
         baseParams.newIndexValue,
         baseParams.newIndexQuarter,
         baseParams.newIndexYear,
@@ -175,6 +182,7 @@ describe('RevisionAggregate', () => {
       const event = aggregate.getUncommittedEvents()[0] as RentRevisionCalculated;
       expect(event.data.baseIndexValue).toBe(138.19);
       expect(event.data.baseIndexQuarter).toBe('Q2');
+      expect(event.data.baseIndexYear).toBe(2024);
       expect(event.data.newIndexValue).toBe(142.06);
       expect(event.data.newIndexQuarter).toBe('Q2');
       expect(event.data.newIndexYear).toBe(2025);

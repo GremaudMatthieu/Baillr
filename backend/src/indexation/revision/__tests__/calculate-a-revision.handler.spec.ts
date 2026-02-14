@@ -30,6 +30,7 @@ describe('CalculateARevisionHandler', () => {
       75000,
       138.19,
       'Q2',
+      2024,
       142.06,
       'Q2',
       2025,

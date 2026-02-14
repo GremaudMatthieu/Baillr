@@ -235,6 +235,54 @@ test.describe("Revisions", () => {
     });
   });
 
+  test("download revision letter for approved revision", async ({ page }) => {
+    test.skip(!entityId, "Requires seed data");
+
+    await page.goto("/revisions");
+    await expect(
+      page.getByRole("heading", { name: "Révisions de loyer" }),
+    ).toBeVisible({ timeout: 10_000 });
+
+    // Wait for approved revision to appear
+    await expect(page.getByText("Approuvée")).toBeVisible({
+      timeout: 10_000,
+    });
+
+    // Verify download button is visible for approved revision
+    const downloadBtn = page.getByRole("button", {
+      name: /télécharger la lettre de révision/i,
+    });
+    await expect(downloadBtn).toBeVisible();
+
+    // Click and wait for download
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      downloadBtn.click(),
+    ]);
+
+    const suggestedFilename = download.suggestedFilename();
+    expect(suggestedFilename).toContain("lettre-revision");
+    expect(suggestedFilename).toContain(".pdf");
+  });
+
+  test("download buttons match approved revision count", async ({ page }) => {
+    test.skip(!entityId, "Requires seed data");
+
+    await page.goto("/revisions");
+    await expect(
+      page.getByRole("heading", { name: "Révisions de loyer" }),
+    ).toBeVisible({ timeout: 10_000 });
+
+    // Count approved badges and download buttons — they should match
+    const approvedBadges = page.getByText("Approuvée");
+    const approvedCount = await approvedBadges.count();
+    const downloadBtns = page.getByRole("button", {
+      name: /télécharger la lettre de révision/i,
+    });
+    const downloadCount = await downloadBtns.count();
+    expect(downloadCount).toBe(approvedCount);
+  });
+
   test("sidebar navigation includes Révisions link", async ({ page }) => {
     await page.goto("/dashboard");
     await expect(

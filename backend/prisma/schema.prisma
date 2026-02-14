@@ -313,6 +313,7 @@ model Revision {
   differenceCents    Int       @map("difference_cents")
   baseIndexValue     Float     @map("base_index_value")
   baseIndexQuarter   String    @map("base_index_quarter")
+  baseIndexYear      Int?      @map("base_index_year")
   newIndexValue      Float     @map("new_index_value")
   newIndexQuarter    String    @map("new_index_quarter")
   newIndexYear       Int       @map("new_index_year")

@@ -143,6 +143,7 @@ export class RevisionProjection implements OnModuleInit {
         differenceCents: data.differenceCents,
         baseIndexValue: data.baseIndexValue,
         baseIndexQuarter: data.baseIndexQuarter,
+        baseIndexYear: typeof data.baseIndexYear === 'number' ? data.baseIndexYear : data.newIndexYear,
         newIndexValue: data.newIndexValue,
         newIndexQuarter: data.newIndexQuarter,
         newIndexYear: data.newIndexYear,

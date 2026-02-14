@@ -20,6 +20,12 @@ export class RevisionFinder {
     });
   }
 
+  async findByIdAndEntity(revisionId: string, entityId: string): Promise<Revision | null> {
+    return this.prisma.revision.findFirst({
+      where: { id: revisionId, entityId },
+    });
+  }
+
   async existsByLeaseAndPeriod(
     leaseId: string,
     newIndexYear: number,

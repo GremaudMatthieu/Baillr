@@ -83,7 +83,10 @@ describe('CalculateRevisionsController', () => {
     expect(mockCommandBus.execute).toHaveBeenCalledWith(
       expect.any(CalculateARevisionCommand),
     );
-    // Verify entityId is passed to index lookup (H1 fix)
+    // Verify baseIndexYear is passed to the command
+    const command = mockCommandBus.execute.mock.calls[0][0] as CalculateARevisionCommand;
+    expect(command.baseIndexYear).toBe(2025);
+    // Verify entityId is passed to index lookup
     expect(mockInseeIndexFinder.findByTypeQuarterYear).toHaveBeenCalledWith(
       'IRL',
       'Q2',

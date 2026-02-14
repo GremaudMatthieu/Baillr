@@ -4,10 +4,12 @@ import type { RentCallPdfData } from './rent-call-pdf-data.interface.js';
 import type { ReceiptPdfData } from './receipt-pdf-data.interface.js';
 import type { FormalNoticePdfData } from './formal-notice-pdf-data.interface.js';
 import type { StakeholderLetterPdfData } from './stakeholder-letter-pdf-data.interface.js';
+import type { RevisionLetterPdfData } from './revision-letter-pdf-data.interface.js';
 import { renderRentCallPdf } from './templates/rent-call.template.js';
 import { renderReceiptPdf } from './templates/receipt.template.js';
 import { renderFormalNoticePdf } from './templates/formal-notice.template.js';
 import { renderStakeholderLetterPdf } from './templates/stakeholder-letter.template.js';
+import { renderRevisionLetterPdf } from './templates/revision-letter.template.js';
 
 @Injectable()
 export class PdfGeneratorService {
@@ -100,6 +102,30 @@ export class PdfGeneratorService {
       doc.on('error', (err: Error) => reject(err));
 
       renderStakeholderLetterPdf(doc, data);
+      doc.end();
+    });
+  }
+
+  async generateRevisionLetterPdf(data: RevisionLetterPdfData): Promise<Buffer> {
+    const tenantName = data.tenantCompanyName ?? `${data.tenantFirstName} ${data.tenantLastName}`;
+
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margin: 50,
+        info: {
+          Title: `Lettre de révision - ${tenantName}`,
+          Author: data.entityName,
+          Subject: 'Avis de révision de loyer',
+        },
+      });
+
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', (err: Error) => reject(err));
+
+      renderRevisionLetterPdf(doc, data);
       doc.end();
     });
   }

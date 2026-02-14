@@ -11,6 +11,7 @@ export class CalculateARevisionCommand {
     public readonly currentRentCents: number,
     public readonly baseIndexValue: number,
     public readonly baseIndexQuarter: string,
+    public readonly baseIndexYear: number,
     public readonly newIndexValue: number,
     public readonly newIndexQuarter: string,
     public readonly newIndexYear: number,

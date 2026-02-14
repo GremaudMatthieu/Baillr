@@ -34,6 +34,7 @@ const mockRevisions: Revision[] = [
     differenceCents: 2097,
     baseIndexValue: 138.19,
     baseIndexQuarter: "Q2",
+    baseIndexYear: 2024,
     newIndexValue: 142.06,
     newIndexQuarter: "Q2",
     newIndexYear: 2025,

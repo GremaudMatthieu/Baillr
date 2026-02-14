@@ -14,6 +14,16 @@ vi.mock("@/hooks/use-revisions", () => ({
   }),
 }));
 
+const mockDownloadLetter = vi.fn();
+vi.mock("@/hooks/use-download-revision-letter", () => ({
+  useDownloadRevisionLetter: () => ({
+    downloadLetter: mockDownloadLetter,
+    isDownloading: false,
+    downloadingId: null,
+    error: null,
+  }),
+}));
+
 const mockRevision: Revision = {
   id: "rev-1",
   leaseId: "lease-1",
@@ -28,6 +38,7 @@ const mockRevision: Revision = {
   differenceCents: 2097,
   baseIndexValue: 138.19,
   baseIndexQuarter: "Q2",
+  baseIndexYear: 2024,
   newIndexValue: 142.06,
   newIndexQuarter: "Q2",
   newIndexYear: 2025,
@@ -163,5 +174,83 @@ describe("RevisionTable", () => {
     expect(
       screen.getByRole("button", { name: /tout approuver \(1\)/i }),
     ).toBeInTheDocument();
+  });
+
+  it("renders download button only for approved revisions", () => {
+    const approved: Revision = {
+      ...mockRevision,
+      id: "rev-2",
+      status: "approved",
+      tenantName: "Martin Pierre",
+      approvedAt: "2026-02-14T12:00:00Z",
+    };
+    renderWithProviders(
+      <RevisionTable
+        entityId="entity-1"
+        revisions={[mockRevision, approved]}
+      />,
+    );
+
+    expect(
+      screen.getByLabelText(
+        "Télécharger la lettre de révision de Martin Pierre",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(
+        "Télécharger la lettre de révision de Dupont Jean",
+      ),
+    ).not.toBeInTheDocument();
+  });
+
+  it("calls downloadLetter when download button is clicked", async () => {
+    const user = userEvent.setup();
+    const approved: Revision = {
+      ...mockRevision,
+      status: "approved",
+      approvedAt: "2026-02-14T12:00:00Z",
+    };
+    renderWithProviders(
+      <RevisionTable entityId="entity-1" revisions={[approved]} />,
+    );
+
+    const downloadBtn = screen.getByLabelText(
+      "Télécharger la lettre de révision de Dupont Jean",
+    );
+    await user.click(downloadBtn);
+
+    expect(mockDownloadLetter).toHaveBeenCalledWith("rev-1");
+  });
+
+  it("renders batch download button when approved revisions exist", () => {
+    const approved: Revision = {
+      ...mockRevision,
+      status: "approved",
+      approvedAt: "2026-02-14T12:00:00Z",
+    };
+    renderWithProviders(
+      <RevisionTable entityId="entity-1" revisions={[approved]} />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: /télécharger les lettres/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("does not render batch download button when no approved revisions", () => {
+    renderWithProviders(
+      <RevisionTable entityId="entity-1" revisions={[mockRevision]} />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: /télécharger les lettres/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders Actions column header", () => {
+    renderWithProviders(
+      <RevisionTable entityId="entity-1" revisions={[mockRevision]} />,
+    );
+    expect(screen.getByText("Actions")).toBeInTheDocument();
   });
 });

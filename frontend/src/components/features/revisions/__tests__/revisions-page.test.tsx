@@ -15,6 +15,15 @@ vi.mock("@/hooks/use-current-entity", () => ({
   }),
 }));
 
+vi.mock("@/hooks/use-download-revision-letter", () => ({
+  useDownloadRevisionLetter: () => ({
+    downloadLetter: vi.fn(),
+    isDownloading: false,
+    downloadingId: null,
+    error: null,
+  }),
+}));
+
 vi.mock("@/hooks/use-revisions", () => ({
   useRevisions: () => ({
     data: [
@@ -29,6 +38,7 @@ vi.mock("@/hooks/use-revisions", () => ({
         differenceCents: 2097,
         baseIndexValue: 138.19,
         baseIndexQuarter: "Q2",
+        baseIndexYear: 2024,
         newIndexValue: 142.06,
         newIndexQuarter: "Q2",
         newIndexYear: 2025,

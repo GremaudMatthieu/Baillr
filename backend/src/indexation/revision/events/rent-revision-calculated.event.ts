@@ -14,6 +14,7 @@ export interface RentRevisionCalculatedData {
   differenceCents: number;
   baseIndexValue: number;
   baseIndexQuarter: string;
+  baseIndexYear: number;
   newIndexValue: number;
   newIndexQuarter: string;
   newIndexYear: number;
