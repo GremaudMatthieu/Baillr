@@ -19,6 +19,17 @@ export class InseeIndexFinder {
     });
   }
 
+  async findByTypeQuarterYear(
+    type: string,
+    quarter: string,
+    year: number,
+    entityId: string,
+  ): Promise<InseeIndex | null> {
+    return this.prisma.inseeIndex.findFirst({
+      where: { type, quarter, year, entityId },
+    });
+  }
+
   async existsByTypeQuarterYearEntity(
     type: string,
     quarter: string,

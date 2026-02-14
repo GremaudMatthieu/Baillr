@@ -299,6 +299,34 @@ model InseeIndex {
   @@index([userId])
 }
 
+model Revision {
+  id                 String    @id
+  leaseId            String    @map("lease_id")
+  entityId           String    @map("entity_id")
+  userId             String    @map("user_id")
+  tenantId           String    @map("tenant_id")
+  unitId             String    @map("unit_id")
+  tenantName         String    @map("tenant_name")
+  unitLabel          String    @map("unit_label")
+  currentRentCents   Int       @map("current_rent_cents")
+  newRentCents       Int       @map("new_rent_cents")
+  differenceCents    Int       @map("difference_cents")
+  baseIndexValue     Float     @map("base_index_value")
+  baseIndexQuarter   String    @map("base_index_quarter")
+  newIndexValue      Float     @map("new_index_value")
+  newIndexQuarter    String    @map("new_index_quarter")
+  newIndexYear       Int       @map("new_index_year")
+  revisionIndexType  String    @map("revision_index_type")
+  status             String    @default("pending") // pending | approved
+  calculatedAt       DateTime  @map("calculated_at")
+  approvedAt         DateTime? @map("approved_at")
+
+  @@unique([leaseId, newIndexYear, newIndexQuarter])
+  @@map("revisions")
+  @@index([entityId])
+  @@index([leaseId])
+}
+
 model BankTransaction {
   id              String   @id @default(uuid())
   bankStatementId String   @map("bank_statement_id")

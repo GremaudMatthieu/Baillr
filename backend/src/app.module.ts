@@ -18,6 +18,7 @@ import { RentCallPresentationModule } from './presentation/rent-call/rent-call-p
 import { EscalationPresentationModule } from './presentation/escalation/escalation-presentation.module';
 import { BankStatementPresentationModule } from './presentation/bank-statement/bank-statement-presentation.module';
 import { InseeIndexPresentationModule } from './presentation/insee-index/insee-index-presentation.module';
+import { RevisionPresentationModule } from './presentation/revision/revision-presentation.module';
 import { DocumentModule } from './infrastructure/document/document.module';
 import { EmailModule } from './infrastructure/email/email.module';
 import { BankImportModule } from './infrastructure/bank-import/bank-import.module';
@@ -48,6 +49,7 @@ import { AppService } from './app.service';
     EscalationPresentationModule,
     BankStatementPresentationModule,
     InseeIndexPresentationModule,
+    RevisionPresentationModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ClerkAuthGuard }],

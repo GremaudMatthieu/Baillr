@@ -104,7 +104,7 @@ development_status:
   # Epic 7: Index Revision & Annual Charges (8 stories)
   epic-7: in-progress
   7-1-enter-and-validate-insee-indices-irl-ilc-icc: done # reviewed 2026-02-14, 12 findings (3H/4M/3L), 10 fixes — @IsNotEmpty DTO H1, dead DuplicateIndexException removed H2, form.reset timing H3, GET type validation M1, finder userId consistency M2, E2E AC#6 duplicate test M3, IndexValue float decimal fix M4, duplicate error display L1, file list count L2, empty module removed L3
-  7-2-calculate-revised-rent-using-official-formula: backlog
+  7-2-calculate-revised-rent-using-official-formula: done # reviewed 2026-02-14, 10 findings (3H/4M/3L), 9 fixes — cross-entity data leak (entityId on findByTypeQuarterYear), dead code exceptions removed, double-click guard, error display, useRevisions tests, test rename, E2E selector
   7-3-review-and-batch-approve-pending-revisions: backlog
   7-4-generate-irl-ilc-icc-revision-letters: backlog
   7-5-enter-actual-annual-charges-by-category: backlog

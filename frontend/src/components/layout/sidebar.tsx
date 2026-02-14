@@ -13,6 +13,7 @@ import {
   BookOpen,
   FolderOpen,
   TrendingUp,
+  BarChart3,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -46,6 +47,7 @@ const navItems = [
   { label: "Comptabilité", icon: BookOpen, href: "/accounting" },
   { label: "Documents", icon: FolderOpen, href: "/documents" },
   { label: "Indices", icon: TrendingUp, href: "/indices" },
+  { label: "Révisions", icon: BarChart3, href: "/revisions" },
 ] as const;
 
 const settingsItem = {

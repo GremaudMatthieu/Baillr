@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { Lease } from '@prisma/client';
+import type { Lease, Tenant, Unit } from '@prisma/client';
 import { PrismaService } from '@infrastructure/database/prisma.service';
 
 @Injectable()
@@ -39,6 +39,22 @@ export class LeaseFinder {
           { endDate: { gte: monthStart } },
         ],
       },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findAllActiveWithRevisionParams(
+    entityId: string,
+    userId: string,
+  ): Promise<(Lease & { tenant: Tenant; unit: Unit })[]> {
+    return this.prisma.lease.findMany({
+      where: {
+        entityId,
+        userId,
+        endDate: null,
+        revisionDay: { not: null },
+      },
+      include: { tenant: true, unit: true },
       orderBy: { createdAt: 'desc' },
     });
   }
