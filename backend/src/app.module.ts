@@ -9,6 +9,7 @@ import { PortfolioModule } from './portfolio/portfolio.module';
 import { TenancyModule } from './tenancy/tenancy.module';
 import { BillingModule } from './billing/billing.module';
 import { RecoveryModule } from './recovery/recovery.module';
+import { IndexationModule } from './indexation/indexation.module';
 import { EntityPresentationModule } from './presentation/entity/entity-presentation.module';
 import { PropertyPresentationModule } from './presentation/property/property-presentation.module';
 import { TenantPresentationModule } from './presentation/tenant/tenant-presentation.module';
@@ -16,6 +17,7 @@ import { LeasePresentationModule } from './presentation/lease/lease-presentation
 import { RentCallPresentationModule } from './presentation/rent-call/rent-call-presentation.module';
 import { EscalationPresentationModule } from './presentation/escalation/escalation-presentation.module';
 import { BankStatementPresentationModule } from './presentation/bank-statement/bank-statement-presentation.module';
+import { InseeIndexPresentationModule } from './presentation/insee-index/insee-index-presentation.module';
 import { DocumentModule } from './infrastructure/document/document.module';
 import { EmailModule } from './infrastructure/email/email.module';
 import { BankImportModule } from './infrastructure/bank-import/bank-import.module';
@@ -37,6 +39,7 @@ import { AppService } from './app.service';
     TenancyModule,
     BillingModule,
     RecoveryModule,
+    IndexationModule,
     EntityPresentationModule,
     PropertyPresentationModule,
     TenantPresentationModule,
@@ -44,6 +47,7 @@ import { AppService } from './app.service';
     RentCallPresentationModule,
     EscalationPresentationModule,
     BankStatementPresentationModule,
+    InseeIndexPresentationModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ClerkAuthGuard }],

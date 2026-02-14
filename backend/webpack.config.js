@@ -14,6 +14,7 @@ module.exports = (options) => ({
       '@tenancy': path.resolve(__dirname, 'src/tenancy'),
       '@billing': path.resolve(__dirname, 'src/billing'),
       '@recovery': path.resolve(__dirname, 'src/recovery'),
+      '@indexation': path.resolve(__dirname, 'src/indexation'),
     },
   },
 });

@@ -20,7 +20,8 @@
       "@portfolio/*": ["src/portfolio/*"],
       "@tenancy/*": ["src/tenancy/*"],
       "@billing/*": ["src/billing/*"],
-      "@recovery/*": ["src/recovery/*"]
+      "@recovery/*": ["src/recovery/*"],
+      "@indexation/*": ["src/indexation/*"]
     },
     "incremental": true,
     "skipLibCheck": true,

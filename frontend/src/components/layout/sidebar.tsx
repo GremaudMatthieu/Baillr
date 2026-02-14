@@ -12,6 +12,7 @@ import {
   CreditCard,
   BookOpen,
   FolderOpen,
+  TrendingUp,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -44,6 +45,7 @@ const navItems = [
   { label: "Paiements", icon: CreditCard, href: "/payments" },
   { label: "Comptabilité", icon: BookOpen, href: "/accounting" },
   { label: "Documents", icon: FolderOpen, href: "/documents" },
+  { label: "Indices", icon: TrendingUp, href: "/indices" },
 ] as const;
 
 const settingsItem = {

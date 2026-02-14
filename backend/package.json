@@ -96,7 +96,9 @@
       "^@billing/(.*)\\.js$": "<rootDir>/billing/$1",
       "^@billing/(.*)$": "<rootDir>/billing/$1",
       "^@recovery/(.*)\\.js$": "<rootDir>/recovery/$1",
-      "^@recovery/(.*)$": "<rootDir>/recovery/$1"
+      "^@recovery/(.*)$": "<rootDir>/recovery/$1",
+      "^@indexation/(.*)\\.js$": "<rootDir>/indexation/$1",
+      "^@indexation/(.*)$": "<rootDir>/indexation/$1"
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"

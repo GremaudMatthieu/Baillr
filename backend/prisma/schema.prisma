@@ -283,6 +283,22 @@ model BankStatement {
   @@index([userId])
 }
 
+model InseeIndex {
+  id        String   @id
+  type      String   // IRL, ILC, ICC
+  quarter   String   // Q1, Q2, Q3, Q4
+  year      Int
+  value     Float    // Stored as decimal (e.g., 142.06)
+  entityId  String   @map("entity_id")
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([type, quarter, year, entityId])
+  @@map("insee_indices")
+  @@index([entityId])
+  @@index([userId])
+}
+
 model BankTransaction {
   id              String   @id @default(uuid())
   bankStatementId String   @map("bank_statement_id")
