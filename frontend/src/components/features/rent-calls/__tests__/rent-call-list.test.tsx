@@ -5,6 +5,10 @@ import { renderWithProviders } from "@/test/test-utils";
 import { RentCallList } from "../rent-call-list";
 import type { RentCallData } from "@/lib/api/rent-calls-api";
 
+vi.mock("@/hooks/use-rent-call-payments", () => ({
+  useRentCallPayments: () => ({ data: undefined, isLoading: false }),
+}));
+
 const baseRentCall: RentCallData = {
   id: "rc-1",
   entityId: "entity-1",
@@ -495,5 +499,234 @@ describe("RentCallList", () => {
     );
 
     expect(screen.getByText("Erreur de téléchargement")).toBeInTheDocument();
+  });
+
+  describe("receipt download button", () => {
+    it("should show Quittance button for paid rent call", () => {
+      const paidRentCall: RentCallData = {
+        ...baseRentCall,
+        paymentStatus: "paid",
+        paidAt: "2026-03-10T12:00:00.000Z",
+        paidAmountCents: 85000,
+        paymentMethod: "bank_transfer",
+      };
+
+      renderWithProviders(
+        <RentCallList
+          rentCalls={[paidRentCall]}
+          tenantNames={tenantNames}
+          unitIdentifiers={unitIdentifiers}
+          onDownloadReceipt={() => {}}
+        />,
+      );
+
+      expect(
+        screen.getByRole("button", { name: /Quittance/i }),
+      ).toBeInTheDocument();
+    });
+
+    it("should show Quittance button for overpaid rent call", () => {
+      const overpaidRentCall: RentCallData = {
+        ...baseRentCall,
+        paymentStatus: "overpaid",
+        paidAmountCents: 90000,
+        paidAt: "2026-03-10T12:00:00.000Z",
+        overpaymentCents: 5000,
+        paymentMethod: "cash",
+      };
+
+      renderWithProviders(
+        <RentCallList
+          rentCalls={[overpaidRentCall]}
+          tenantNames={tenantNames}
+          unitIdentifiers={unitIdentifiers}
+          onDownloadReceipt={() => {}}
+        />,
+      );
+
+      expect(
+        screen.getByRole("button", { name: /Quittance/i }),
+      ).toBeInTheDocument();
+    });
+
+    it("should show Reçu button for partially paid rent call", () => {
+      const partialRentCall: RentCallData = {
+        ...baseRentCall,
+        paymentStatus: "partial",
+        paidAmountCents: 50000,
+        remainingBalanceCents: 35000,
+        paymentMethod: "bank_transfer",
+      };
+
+      renderWithProviders(
+        <RentCallList
+          rentCalls={[partialRentCall]}
+          tenantNames={tenantNames}
+          unitIdentifiers={unitIdentifiers}
+          onDownloadReceipt={() => {}}
+        />,
+      );
+
+      expect(
+        screen.getByRole("button", { name: /Reçu/i }),
+      ).toBeInTheDocument();
+    });
+
+    it("should not show receipt button for unpaid rent call", () => {
+      renderWithProviders(
+        <RentCallList
+          rentCalls={[baseRentCall]}
+          tenantNames={tenantNames}
+          unitIdentifiers={unitIdentifiers}
+          onDownloadReceipt={() => {}}
+        />,
+      );
+
+      expect(
+        screen.queryByRole("button", { name: /Quittance/i }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /Reçu/i }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("should not show receipt button when onDownloadReceipt is not provided", () => {
+      const paidRentCall: RentCallData = {
+        ...baseRentCall,
+        paymentStatus: "paid",
+        paidAt: "2026-03-10T12:00:00.000Z",
+        paidAmountCents: 85000,
+        paymentMethod: "bank_transfer",
+      };
+
+      renderWithProviders(
+        <RentCallList
+          rentCalls={[paidRentCall]}
+          tenantNames={tenantNames}
+          unitIdentifiers={unitIdentifiers}
+        />,
+      );
+
+      expect(
+        screen.queryByRole("button", { name: /Quittance/i }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("should call onDownloadReceipt when receipt button is clicked", async () => {
+      const user = userEvent.setup();
+      const onDownloadReceipt = vi.fn();
+      const paidRentCall: RentCallData = {
+        ...baseRentCall,
+        paymentStatus: "paid",
+        paidAt: "2026-03-10T12:00:00.000Z",
+        paidAmountCents: 85000,
+        paymentMethod: "bank_transfer",
+      };
+
+      renderWithProviders(
+        <RentCallList
+          rentCalls={[paidRentCall]}
+          tenantNames={tenantNames}
+          unitIdentifiers={unitIdentifiers}
+          onDownloadReceipt={onDownloadReceipt}
+        />,
+      );
+
+      await user.click(
+        screen.getByRole("button", { name: /Quittance/i }),
+      );
+      expect(onDownloadReceipt).toHaveBeenCalledWith("rc-1");
+    });
+
+    it("should disable receipt button when receipt is downloading", () => {
+      const paidRentCall: RentCallData = {
+        ...baseRentCall,
+        paymentStatus: "paid",
+        paidAt: "2026-03-10T12:00:00.000Z",
+        paidAmountCents: 85000,
+        paymentMethod: "bank_transfer",
+      };
+
+      renderWithProviders(
+        <RentCallList
+          rentCalls={[paidRentCall]}
+          tenantNames={tenantNames}
+          unitIdentifiers={unitIdentifiers}
+          onDownloadReceipt={() => {}}
+          receiptDownloadingId="rc-1"
+        />,
+      );
+
+      const button = screen.getByRole("button", { name: /Quittance/i });
+      expect(button).toBeDisabled();
+    });
+
+    it("should display receipt download error when present", () => {
+      const paidRentCall: RentCallData = {
+        ...baseRentCall,
+        paymentStatus: "paid",
+        paidAt: "2026-03-10T12:00:00.000Z",
+        paidAmountCents: 85000,
+        paymentMethod: "bank_transfer",
+      };
+
+      renderWithProviders(
+        <RentCallList
+          rentCalls={[paidRentCall]}
+          tenantNames={tenantNames}
+          unitIdentifiers={unitIdentifiers}
+          onDownloadReceipt={() => {}}
+          receiptDownloadError="Erreur de téléchargement de la quittance"
+        />,
+      );
+
+      expect(
+        screen.getByText("Erreur de téléchargement de la quittance"),
+      ).toBeInTheDocument();
+    });
+
+    it("should have correct title attribute for partial payment receipt", () => {
+      const partialRentCall: RentCallData = {
+        ...baseRentCall,
+        paymentStatus: "partial",
+        paidAmountCents: 50000,
+        remainingBalanceCents: 35000,
+        paymentMethod: "bank_transfer",
+      };
+
+      renderWithProviders(
+        <RentCallList
+          rentCalls={[partialRentCall]}
+          tenantNames={tenantNames}
+          unitIdentifiers={unitIdentifiers}
+          onDownloadReceipt={() => {}}
+        />,
+      );
+
+      const button = screen.getByRole("button", { name: /Reçu/i });
+      expect(button).toHaveAttribute("title", "Télécharger le reçu");
+    });
+
+    it("should have correct title attribute for full payment quittance", () => {
+      const paidRentCall: RentCallData = {
+        ...baseRentCall,
+        paymentStatus: "paid",
+        paidAt: "2026-03-10T12:00:00.000Z",
+        paidAmountCents: 85000,
+        paymentMethod: "bank_transfer",
+      };
+
+      renderWithProviders(
+        <RentCallList
+          rentCalls={[paidRentCall]}
+          tenantNames={tenantNames}
+          unitIdentifiers={unitIdentifiers}
+          onDownloadReceipt={() => {}}
+        />,
+      );
+
+      const button = screen.getByRole("button", { name: /Quittance/i });
+      expect(button).toHaveAttribute("title", "Télécharger la quittance");
+    });
   });
 });

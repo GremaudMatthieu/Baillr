@@ -15,6 +15,7 @@ import {
   Users,
   ShieldAlert,
   ShieldX,
+  FileCheck,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,7 @@ const iconMap: Record<string, LucideIcon> = {
   Users,
   ShieldAlert,
   ShieldX,
+  FileCheck,
 };
 
 export interface ActionItem {
@@ -226,6 +228,27 @@ function useOnboardingActions(): ActionItem[] {
         "Importez un relevé CSV ou Excel pour préparer le rapprochement bancaire",
       href: "/payments",
       priority: "high",
+    });
+  }
+
+  const hasPaidRentCalls =
+    rentCallsForCurrentMonth &&
+    rentCallsForCurrentMonth.length > 0 &&
+    rentCallsForCurrentMonth.some(
+      (rc) => rc.paymentStatus === "paid" || rc.paymentStatus === "overpaid",
+    );
+
+  // AC 9: "Envoyez les quittances" — batch email not yet implemented,
+  // prompt points to /rent-calls for manual download until email story lands.
+  if (entityId && hasPaidRentCalls) {
+    actions.push({
+      id: "onboarding-download-receipts",
+      icon: "FileCheck",
+      title: "Envoyez les quittances de loyer",
+      description:
+        "Des paiements ont été enregistrés — téléchargez les quittances pour vos locataires depuis la page des appels de loyer",
+      href: "/rent-calls",
+      priority: "medium",
     });
   }
 

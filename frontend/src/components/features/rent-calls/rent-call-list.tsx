@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Receipt, Download, Loader2, CheckCircle2, Banknote, FileText, Building2, CircleDot, ChevronDown, ChevronUp } from "lucide-react";
+import { Receipt, Download, FileDown, Loader2, CheckCircle2, Banknote, FileText, Building2, CircleDot, ChevronDown, ChevronUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,6 +37,9 @@ interface RentCallListProps {
   downloadingId?: string | null;
   downloadError?: string | null;
   onRecordPayment?: (rentCallId: string) => void;
+  onDownloadReceipt?: (rentCallId: string) => void;
+  receiptDownloadingId?: string | null;
+  receiptDownloadError?: string | null;
 }
 
 export function RentCallList({
@@ -47,6 +50,9 @@ export function RentCallList({
   downloadingId,
   downloadError,
   onRecordPayment,
+  onDownloadReceipt,
+  receiptDownloadingId,
+  receiptDownloadError,
 }: RentCallListProps) {
   if (rentCalls.length === 0) {
     return (
@@ -69,6 +75,9 @@ export function RentCallList({
     <div className="space-y-3">
       {downloadError && (
         <p className="text-sm text-destructive">{downloadError}</p>
+      )}
+      {receiptDownloadError && (
+        <p className="text-sm text-destructive">{receiptDownloadError}</p>
       )}
       {rentCalls.map((rc: RentCallData) => (
         <Card key={rc.id}>
@@ -160,6 +169,24 @@ export function RentCallList({
                       <Download className="h-4 w-4" aria-hidden="true" />
                     )}
                     <span className="ml-1">PDF</span>
+                  </Button>
+                )}
+                {onDownloadReceipt && (rc.paymentStatus === "paid" || rc.paymentStatus === "overpaid" || rc.paymentStatus === "partial") && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onDownloadReceipt(rc.id)}
+                    disabled={receiptDownloadingId != null}
+                    title={rc.paymentStatus === "partial" ? "Télécharger le reçu" : "Télécharger la quittance"}
+                  >
+                    {receiptDownloadingId === rc.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <FileDown className="h-4 w-4" aria-hidden="true" />
+                    )}
+                    <span className="ml-1">
+                      {rc.paymentStatus === "partial" ? "Reçu" : "Quittance"}
+                    </span>
                   </Button>
                 )}
                 {onRecordPayment && rc.paymentStatus !== "paid" && rc.paymentStatus !== "overpaid" && !(!rc.paymentStatus && rc.paidAt) && (

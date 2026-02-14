@@ -28,6 +28,7 @@ import { GenerateRentCallsDialog } from "./generate-rent-calls-dialog";
 import { SendRentCallsDialog } from "./send-rent-calls-dialog";
 import { RecordManualPaymentDialog } from "./record-manual-payment-dialog";
 import { useRecordManualPayment } from "@/hooks/use-record-manual-payment";
+import { useDownloadReceipt } from "@/hooks/use-download-receipt";
 import type { GenerationResult, SendResult } from "@/lib/api/rent-calls-api";
 import { getCurrentMonth, getMonthOptions } from "@/lib/month-options";
 
@@ -67,6 +68,11 @@ export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
     isPending: isRecordingPayment,
     error: recordPaymentError,
   } = useRecordManualPayment(entityId);
+  const {
+    downloadReceipt,
+    downloadingId: receiptDownloadingId,
+    error: receiptDownloadError,
+  } = useDownloadReceipt(entityId);
 
   const activeLeases = React.useMemo(() => {
     if (!leases) return [];
@@ -273,6 +279,9 @@ export function RentCallsPageContent({ entityId }: RentCallsPageContentProps) {
           downloadingId={downloadingId}
           downloadError={downloadError}
           onRecordPayment={handleOpenPaymentDialog}
+          onDownloadReceipt={downloadReceipt}
+          receiptDownloadingId={receiptDownloadingId}
+          receiptDownloadError={receiptDownloadError}
         />
       )}
 

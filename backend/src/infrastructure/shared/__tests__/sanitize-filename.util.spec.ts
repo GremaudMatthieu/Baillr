@@ -41,6 +41,10 @@ describe('sanitizeForFilename', () => {
     expect(sanitizeForFilename('a<b>c"d\\e')).toBe('a_b_c_d_e');
   });
 
+  it('should replace spaces', () => {
+    expect(sanitizeForFilename('ACME Corp')).toBe('ACME_Corp');
+  });
+
   it('should return safe strings unchanged', () => {
     expect(sanitizeForFilename('Dupont')).toBe('Dupont');
   });

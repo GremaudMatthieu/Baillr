@@ -83,14 +83,14 @@ development_status:
   epic-4-retrospective: optional
 
   # Epic 5: Bank Reconciliation & Payment Management (6 stories)
-  epic-5: in-progress
-  5-1-import-bank-statements-from-csv-excel: review
-  5-2-auto-match-payments-to-rent-calls: review
+  epic-5: done
+  5-1-import-bank-statements-from-csv-excel: done
+  5-2-auto-match-payments-to-rent-calls: done
   5-3-validate-reject-or-manually-assign-payment-matches: done # reviewed 2026-02-14, 12+15 findings, 10+14 fixes — pass 1: bankStatementId traceability, DTO validation, E2E URL, responsive stepper, dark mode, fragile selector, hook tests; pass 2 (adversarial): CRITICAL cross-entity auth bypass, bankStatementId null semantics, non-deterministic aggregate, event validation, double-click guard, availableRentCalls server-side, DTO dedup, line-through badge, E2E conditional assertion
   5-4-record-manual-payments-cash-check: done # reviewed 2026-02-14, 9 findings, 9 fixes — @IsString/@Max DTO H1+H2, || vs ?? M1, dialog useEffect sync M2, double-click guard M3, neutral default icon M5, already-paid test L1, E2E value type L2, File List gap L3
   5-5-handle-partial-payments-overpayments-and-tenant-current-account: done # reviewed 2026-02-14, 9 findings (3H/4M/2L), 9 fixes — @@unique idempotency (Payment+AccountEntry), cache invalidation tenant account, event validation parity, unused userId removal, scalar fields partial-payment guard, File List sync, paidAt guard, overpayment comment
-  5-6-generate-receipts-quittances-and-partial-payment-receipts: backlog
-  epic-5-retrospective: optional
+  5-6-generate-receipts-quittances-and-partial-payment-receipts: done # reviewed 2026-02-14, 12 findings (2H/5M/5L), 10 fixes — phantom File List entry, AC 9 title alignment, DRY download helper, sanitizeForFilename spaces, billingLines type widening, fixture email field, explicit mock, pdf-constants extraction, unused HttpCode import
+  epic-5-retrospective: done
 
   # Epic 6: Unpaid Rent Management & Reminders (5 stories)
   epic-6: backlog

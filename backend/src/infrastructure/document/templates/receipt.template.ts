@@ -1,10 +1,10 @@
-import type { RentCallPdfData } from '../rent-call-pdf-data.interface.js';
+import type { ReceiptPdfData } from '../receipt-pdf-data.interface.js';
 import { formatEuroCents } from '../format-euro.util.js';
 import { A4_PAGE_WIDTH, DEFAULT_MARGIN } from './pdf-constants.js';
 
-export function renderRentCallPdf(
+export function renderReceiptPdf(
   doc: PDFKit.PDFDocument,
-  data: RentCallPdfData,
+  data: ReceiptPdfData,
 ): void {
   const pageWidth = A4_PAGE_WIDTH;
   const margin = DEFAULT_MARGIN;
@@ -32,10 +32,14 @@ export function renderRentCallPdf(
 
   // === TITLE ===
   const titleY = Math.max(doc.y, margin + 100) + 20;
+  const title =
+    data.receiptType === 'quittance'
+      ? 'QUITTANCE DE LOYER'
+      : 'REÇU DE PAIEMENT PARTIEL';
   doc
     .fontSize(14)
     .font('Helvetica-Bold')
-    .text("AVIS D'ÉCHÉANCE", margin, titleY, {
+    .text(title, margin, titleY, {
       width: contentWidth,
       align: 'center',
     });
@@ -103,12 +107,12 @@ export function renderRentCallPdf(
 
   // Total line
   doc.font('Helvetica-Bold').fontSize(10);
-  doc.text('TOTAL', tableX, tableY, { width: labelColWidth });
+  const totalLabel = data.receiptType === 'quittance' ? 'TOTAL' : 'TOTAL DÛ';
+  doc.text(totalLabel, tableX, tableY, { width: labelColWidth });
   doc.text(formatEuroCents(data.totalAmountCents), tableX + labelColWidth, tableY, {
     width: amountColWidth,
     align: 'right',
   });
-  tableY = doc.y + 8;
 
   // === PRO-RATA NOTE (conditional) ===
   if (data.isProRata && data.occupiedDays != null && data.totalDaysInMonth != null) {
@@ -122,12 +126,25 @@ export function renderRentCallPdf(
       );
   }
 
-  // === DUE DATE ===
-  doc.moveDown(1);
+  if (data.receiptType === 'quittance') {
+    renderQuittanceFooter(doc, data, margin, contentWidth);
+  } else {
+    renderRecuFooter(doc, data, margin, contentWidth, tableX, labelColWidth, amountColWidth);
+  }
+}
+
+function renderQuittanceFooter(
+  doc: PDFKit.PDFDocument,
+  data: ReceiptPdfData,
+  margin: number,
+  contentWidth: number,
+): void {
+  // === PAYMENT CONFIRMATION ===
+  doc.moveDown(1.5);
   doc
     .font('Helvetica')
     .fontSize(10)
-    .text(`Date d'exigibilité : le ${data.dueDate} de chaque mois`, margin);
+    .text(`Payé le ${data.paymentDate}`, margin);
 
   // === PAYMENT INFO (conditional) ===
   if (data.iban) {
@@ -141,7 +158,6 @@ export function renderRentCallPdf(
   }
 
   // === LEGAL FOOTER ===
-  // Text specified verbatim in story AC — verify with a legal professional before production use
   doc.moveDown(2);
   doc
     .moveTo(margin, doc.y)
@@ -152,7 +168,85 @@ export function renderRentCallPdf(
     .font('Helvetica-Oblique')
     .fontSize(8)
     .text(
-      "Avis d'échéance envoyé à titre gratuit conformément à l'article 21 de la loi n° 89-462 du 6 juillet 1989",
+      "Pour acquit, la présente quittance est délivrée en application de l'article 21 de la loi n° 89-462 du 6 juillet 1989. La présente quittance annule et remplace tout reçu de paiement partiel précédemment délivré pour la même période.",
+      margin,
+      undefined,
+      { width: contentWidth, align: 'center' },
+    );
+}
+
+function renderRecuFooter(
+  doc: PDFKit.PDFDocument,
+  data: ReceiptPdfData,
+  margin: number,
+  contentWidth: number,
+  tableX: number,
+  labelColWidth: number,
+  amountColWidth: number,
+): void {
+  // === PAYMENT HISTORY TABLE ===
+  doc.moveDown(1.5);
+  doc.font('Helvetica-Bold').fontSize(10).text('Paiements reçus :', margin);
+  doc.moveDown(0.5);
+
+  let payY = doc.y;
+
+  // Payment history header
+  doc.font('Helvetica-Bold').fontSize(9);
+  doc.text('Date', tableX, payY, { width: labelColWidth * 0.35 });
+  doc.text('Mode', tableX + labelColWidth * 0.35, payY, { width: labelColWidth * 0.35 });
+  doc.text('Montant', tableX + labelColWidth * 0.7, payY, {
+    width: contentWidth - labelColWidth * 0.7,
+    align: 'right',
+  });
+
+  payY = doc.y + 3;
+  doc
+    .moveTo(tableX, payY)
+    .lineTo(tableX + contentWidth, payY)
+    .stroke();
+  payY += 6;
+
+  doc.font('Helvetica').fontSize(9);
+  for (const payment of data.payments) {
+    doc.text(payment.date, tableX, payY, { width: labelColWidth * 0.35 });
+    doc.text(payment.method, tableX + labelColWidth * 0.35, payY, { width: labelColWidth * 0.35 });
+    doc.text(formatEuroCents(payment.amountCents), tableX + labelColWidth * 0.7, payY, {
+      width: contentWidth - labelColWidth * 0.7,
+      align: 'right',
+    });
+    payY = doc.y + 4;
+  }
+
+  // Total paid line
+  doc.moveDown(0.5);
+  doc.font('Helvetica-Bold').fontSize(10);
+  doc.text('Total payé', tableX, doc.y, { width: labelColWidth });
+  doc.text(formatEuroCents(data.totalPaidCents), tableX + labelColWidth, doc.y - doc.currentLineHeight(), {
+    width: amountColWidth,
+    align: 'right',
+  });
+
+  // Remaining balance line
+  doc.moveDown(0.5);
+  doc.text('Solde restant dû', tableX, doc.y, { width: labelColWidth });
+  doc.text(formatEuroCents(data.remainingBalanceCents), tableX + labelColWidth, doc.y - doc.currentLineHeight(), {
+    width: amountColWidth,
+    align: 'right',
+  });
+
+  // === LEGAL DISCLAIMER ===
+  doc.moveDown(2);
+  doc
+    .moveTo(margin, doc.y)
+    .lineTo(margin + contentWidth, doc.y)
+    .stroke();
+  doc.moveDown(0.5);
+  doc
+    .font('Helvetica-Oblique')
+    .fontSize(8)
+    .text(
+      `Le présent reçu ne constitue pas une quittance de loyer au sens de l'article 21 de la loi n° 89-462 du 6 juillet 1989. Le solde restant dû est de ${formatEuroCents(data.remainingBalanceCents)}.`,
       margin,
       undefined,
       { width: contentWidth, align: 'center' },

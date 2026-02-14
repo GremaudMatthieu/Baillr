@@ -1,6 +1,6 @@
-import { NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { GetRentCallPdfController } from '../controllers/get-rent-call-pdf.controller';
-import type { RentCallPdfData } from '@infrastructure/document/rent-call-pdf-data.interface';
+import { NotFoundException, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { GetReceiptPdfController } from '../controllers/get-receipt-pdf.controller';
+import type { ReceiptPdfData } from '@infrastructure/document/receipt-pdf-data.interface';
 
 function makeRentCallWithRelations(overrides: Record<string, unknown> = {}) {
   return {
@@ -19,8 +19,8 @@ function makeRentCallWithRelations(overrides: Record<string, unknown> = {}) {
     isProRata: false,
     occupiedDays: null,
     totalDaysInMonth: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    paymentStatus: 'paid' as string | null,
+    remainingBalanceCents: 0 as number | null,
     tenant: {
       id: 'tenant-1',
       type: 'individual' as string,
@@ -41,6 +41,7 @@ function makeRentCallWithRelations(overrides: Record<string, unknown> = {}) {
     entity: {
       id: 'entity-1',
       name: 'SCI EXAMPLE',
+      email: 'contact@sci-example.com',
       siret: '12345678901234',
       addressStreet: '12 rue de la Paix',
       addressPostalCode: '75002',
@@ -60,11 +61,12 @@ function makeRentCallWithRelations(overrides: Record<string, unknown> = {}) {
   };
 }
 
-describe('GetRentCallPdfController', () => {
-  let controller: GetRentCallPdfController;
+describe('GetReceiptPdfController', () => {
+  let controller: GetReceiptPdfController;
   let mockEntityFinder: { findByIdAndUserId: jest.Mock };
   let mockRentCallFinder: { findByIdAndEntity: jest.Mock };
-  let mockPdfGenerator: { generateRentCallPdf: jest.Mock };
+  let mockPaymentFinder: { findByRentCallId: jest.Mock };
+  let mockPdfGenerator: { generateReceiptPdf: jest.Mock };
   let mockAssembler: { assembleFromRentCall: jest.Mock };
   let mockRes: { set: jest.Mock; end: jest.Mock };
 
@@ -73,18 +75,21 @@ describe('GetRentCallPdfController', () => {
   beforeEach(() => {
     mockEntityFinder = { findByIdAndUserId: jest.fn() };
     mockRentCallFinder = { findByIdAndEntity: jest.fn() };
-    mockPdfGenerator = { generateRentCallPdf: jest.fn().mockResolvedValue(pdfBuffer) };
+    mockPaymentFinder = { findByRentCallId: jest.fn().mockResolvedValue([]) };
+    mockPdfGenerator = { generateReceiptPdf: jest.fn().mockResolvedValue(pdfBuffer) };
     mockAssembler = {
       assembleFromRentCall: jest.fn().mockReturnValue({
+        receiptType: 'quittance',
         entityName: 'SCI EXAMPLE',
         tenantName: 'Jean DUPONT',
-      } as Partial<RentCallPdfData>),
+      } as Partial<ReceiptPdfData>),
     };
     mockRes = { set: jest.fn(), end: jest.fn() };
 
-    controller = new GetRentCallPdfController(
+    controller = new GetReceiptPdfController(
       mockEntityFinder as any,
       mockRentCallFinder as any,
+      mockPaymentFinder as any,
       mockPdfGenerator as any,
       mockAssembler as any,
     );
@@ -94,10 +99,10 @@ describe('GetRentCallPdfController', () => {
   const rentCallId = 'rc-1';
   const userId = 'user_123';
 
-  it('should return PDF buffer with correct headers', async () => {
+  it('should return quittance PDF with correct filename for paid rent call', async () => {
     mockEntityFinder.findByIdAndUserId.mockResolvedValue({ id: entityId });
     mockRentCallFinder.findByIdAndEntity.mockResolvedValue(
-      makeRentCallWithRelations(),
+      makeRentCallWithRelations({ paymentStatus: 'paid' }),
     );
 
     await controller.handle(entityId, rentCallId, userId, mockRes as any);
@@ -105,10 +110,59 @@ describe('GetRentCallPdfController', () => {
     expect(mockRes.set).toHaveBeenCalledWith(
       expect.objectContaining({
         'Content-Type': 'application/pdf',
-        'Content-Disposition': 'attachment; filename="appel-loyer-DUPONT-2026-02.pdf"',
+        'Content-Disposition': 'attachment; filename="quittance-DUPONT-2026-02.pdf"',
       }),
     );
     expect(mockRes.end).toHaveBeenCalledWith(pdfBuffer);
+  });
+
+  it('should return quittance PDF for overpaid rent call', async () => {
+    mockEntityFinder.findByIdAndUserId.mockResolvedValue({ id: entityId });
+    mockRentCallFinder.findByIdAndEntity.mockResolvedValue(
+      makeRentCallWithRelations({ paymentStatus: 'overpaid' }),
+    );
+
+    await controller.handle(entityId, rentCallId, userId, mockRes as any);
+
+    expect(mockRes.set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        'Content-Disposition': 'attachment; filename="quittance-DUPONT-2026-02.pdf"',
+      }),
+    );
+  });
+
+  it('should return reçu PDF with correct filename for partial rent call', async () => {
+    mockEntityFinder.findByIdAndUserId.mockResolvedValue({ id: entityId });
+    mockRentCallFinder.findByIdAndEntity.mockResolvedValue(
+      makeRentCallWithRelations({ paymentStatus: 'partial' }),
+    );
+
+    await controller.handle(entityId, rentCallId, userId, mockRes as any);
+
+    expect(mockRes.set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        'Content-Disposition': 'attachment; filename="recu-paiement-DUPONT-2026-02.pdf"',
+      }),
+    );
+  });
+
+  it('should throw BadRequestException for unpaid rent call', async () => {
+    mockEntityFinder.findByIdAndUserId.mockResolvedValue({ id: entityId });
+    mockRentCallFinder.findByIdAndEntity.mockResolvedValue(
+      makeRentCallWithRelations({ paymentStatus: null }),
+    );
+
+    await expect(
+      controller.handle(entityId, rentCallId, userId, mockRes as any),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('should throw UnauthorizedException when entity not found', async () => {
+    mockEntityFinder.findByIdAndUserId.mockResolvedValue(null);
+
+    await expect(
+      controller.handle(entityId, rentCallId, userId, mockRes as any),
+    ).rejects.toThrow(UnauthorizedException);
   });
 
   it('should throw NotFoundException when rent call not found', async () => {
@@ -120,44 +174,31 @@ describe('GetRentCallPdfController', () => {
     ).rejects.toThrow(NotFoundException);
   });
 
-  it('should throw UnauthorizedException when entity not found', async () => {
-    mockEntityFinder.findByIdAndUserId.mockResolvedValue(null);
-
-    await expect(
-      controller.handle(entityId, rentCallId, userId, mockRes as any),
-    ).rejects.toThrow(UnauthorizedException);
-  });
-
-  it('should handle pro-rata rent call', async () => {
+  it('should pass payments to assembler', async () => {
+    const payments = [
+      { id: 'p-1', amountCents: 85000, paymentDate: new Date(), paymentMethod: 'bank_transfer' },
+    ];
     mockEntityFinder.findByIdAndUserId.mockResolvedValue({ id: entityId });
     mockRentCallFinder.findByIdAndEntity.mockResolvedValue(
-      makeRentCallWithRelations({
-        isProRata: true,
-        occupiedDays: 15,
-        totalDaysInMonth: 28,
-      }),
+      makeRentCallWithRelations({ paymentStatus: 'paid' }),
     );
+    mockPaymentFinder.findByRentCallId.mockResolvedValue(payments);
 
     await controller.handle(entityId, rentCallId, userId, mockRes as any);
 
-    expect(mockAssembler.assembleFromRentCall).toHaveBeenCalled();
-    expect(mockPdfGenerator.generateRentCallPdf).toHaveBeenCalled();
-    expect(mockRes.end).toHaveBeenCalledWith(pdfBuffer);
-  });
-
-  it('should handle rent call without IBAN', async () => {
-    const rcData = makeRentCallWithRelations();
-    rcData.entity.bankAccounts = [];
-    mockEntityFinder.findByIdAndUserId.mockResolvedValue({ id: entityId });
-    mockRentCallFinder.findByIdAndEntity.mockResolvedValue(rcData);
-
-    await controller.handle(entityId, rentCallId, userId, mockRes as any);
-
-    expect(mockRes.end).toHaveBeenCalledWith(pdfBuffer);
+    expect(mockAssembler.assembleFromRentCall).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      payments,
+    );
   });
 
   it('should use companyName for filename when tenant is company', async () => {
-    const rcData = makeRentCallWithRelations();
+    const rcData = makeRentCallWithRelations({ paymentStatus: 'paid' });
     rcData.tenant = {
       ...rcData.tenant,
       type: 'company',
@@ -170,26 +211,7 @@ describe('GetRentCallPdfController', () => {
 
     expect(mockRes.set).toHaveBeenCalledWith(
       expect.objectContaining({
-        'Content-Disposition': 'attachment; filename="appel-loyer-ACME_Corp-2026-02.pdf"',
-      }),
-    );
-  });
-
-  it('should sanitize special characters in filename', async () => {
-    const rcData = makeRentCallWithRelations();
-    rcData.tenant = {
-      ...rcData.tenant,
-      type: 'company',
-      companyName: 'SCI "La Maison\\Bleue"',
-    };
-    mockEntityFinder.findByIdAndUserId.mockResolvedValue({ id: entityId });
-    mockRentCallFinder.findByIdAndEntity.mockResolvedValue(rcData);
-
-    await controller.handle(entityId, rentCallId, userId, mockRes as any);
-
-    expect(mockRes.set).toHaveBeenCalledWith(
-      expect.objectContaining({
-        'Content-Disposition': 'attachment; filename="appel-loyer-SCI__La_Maison_Bleue_-2026-02.pdf"',
+        'Content-Disposition': 'attachment; filename="quittance-ACME_Corp-2026-02.pdf"',
       }),
     );
   });

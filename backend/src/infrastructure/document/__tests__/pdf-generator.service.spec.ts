@@ -1,5 +1,6 @@
 import { PdfGeneratorService } from '../pdf-generator.service';
 import { makeTestPdfData as makeTestData } from './rent-call-pdf-data.fixture';
+import { makeTestReceiptData } from './receipt-pdf-data.fixture';
 
 describe('PdfGeneratorService', () => {
   let service: PdfGeneratorService;
@@ -55,5 +56,34 @@ describe('PdfGeneratorService', () => {
     expect(content).toContain('SCI EXAMPLE');
     // PDF info contains Helvetica fonts used for rendering
     expect(content).toContain('/Helvetica-Bold');
+  });
+
+  describe('generateReceiptPdf', () => {
+    it('should generate a valid quittance PDF buffer', async () => {
+      const data = makeTestReceiptData({ receiptType: 'quittance' });
+      const buffer = await service.generateReceiptPdf(data);
+
+      expect(buffer).toBeInstanceOf(Buffer);
+      const header = buffer.subarray(0, 5).toString('ascii');
+      expect(header).toBe('%PDF-');
+    });
+
+    it('should generate a valid reçu PDF buffer', async () => {
+      const data = makeTestReceiptData({ receiptType: 'recu_paiement' });
+      const buffer = await service.generateReceiptPdf(data);
+
+      expect(buffer).toBeInstanceOf(Buffer);
+      const header = buffer.subarray(0, 5).toString('ascii');
+      expect(header).toBe('%PDF-');
+    });
+
+    it('should include receipt type in PDF metadata', async () => {
+      const data = makeTestReceiptData({ receiptType: 'quittance' });
+      const buffer = await service.generateReceiptPdf(data);
+      const content = buffer.toString('latin1');
+
+      expect(content).toContain('Quittance de loyer');
+      expect(content).toContain('SCI EXAMPLE');
+    });
   });
 });

@@ -138,4 +138,34 @@ describe("ActionFeed", () => {
       screen.getByText("Créez votre première entité propriétaire"),
     ).toBeInTheDocument();
   });
+
+  it("should display receipt prompt action when provided", () => {
+    const actions: ActionItem[] = [
+      {
+        id: "onboarding-download-receipts",
+        icon: "FileCheck",
+        title: "Envoyez les quittances de loyer",
+        description:
+          "Des paiements ont été enregistrés — téléchargez les quittances pour vos locataires",
+        href: "/rent-calls",
+        priority: "medium",
+      },
+    ];
+
+    renderWithProviders(<ActionFeed actions={actions} />);
+    expect(
+      screen.getByText("Envoyez les quittances de loyer"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Suggéré")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Commencer/i }),
+    ).toHaveAttribute("href", "/rent-calls");
+  });
+
+  it("should not display receipt prompt when no paid rent calls", () => {
+    renderWithProviders(<ActionFeed actions={[]} />);
+    expect(
+      screen.queryByText("Envoyez les quittances de loyer"),
+    ).not.toBeInTheDocument();
+  });
 });

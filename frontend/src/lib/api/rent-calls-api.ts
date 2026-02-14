@@ -52,9 +52,11 @@ export interface SendResult {
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
 
-export async function downloadRentCallPdf(
+async function downloadPdfFromEndpoint(
   entityId: string,
   rentCallId: string,
+  pathSuffix: string,
+  fallbackFilename: string,
   getToken: () => Promise<string | null>,
 ): Promise<{ blob: Blob; filename: string }> {
   const token = await getToken();
@@ -62,7 +64,7 @@ export async function downloadRentCallPdf(
     throw new Error("Authentication required");
   }
   const response = await fetch(
-    `${BACKEND_URL}/api/entities/${entityId}/rent-calls/${rentCallId}/pdf`,
+    `${BACKEND_URL}/api/entities/${entityId}/rent-calls/${rentCallId}/${pathSuffix}`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -83,9 +85,25 @@ export async function downloadRentCallPdf(
   }
   const disposition = response.headers.get("Content-Disposition") ?? "";
   const match = disposition.match(/filename="?([^";\n]+)"?/);
-  const filename = match?.[1] ?? `appel-loyer-${rentCallId}.pdf`;
+  const filename = match?.[1] ?? fallbackFilename;
   const blob = await response.blob();
   return { blob, filename };
+}
+
+export function downloadRentCallPdf(
+  entityId: string,
+  rentCallId: string,
+  getToken: () => Promise<string | null>,
+): Promise<{ blob: Blob; filename: string }> {
+  return downloadPdfFromEndpoint(entityId, rentCallId, "pdf", `appel-loyer-${rentCallId}.pdf`, getToken);
+}
+
+export function downloadReceiptPdf(
+  entityId: string,
+  rentCallId: string,
+  getToken: () => Promise<string | null>,
+): Promise<{ blob: Blob; filename: string }> {
+  return downloadPdfFromEndpoint(entityId, rentCallId, "receipt", `quittance-${rentCallId}.pdf`, getToken);
 }
 
 export function useRentCallsApi() {
