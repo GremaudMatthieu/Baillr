@@ -13,7 +13,7 @@ export function makeTestPdfData(overrides: Partial<RentCallPdfData> = {}): RentC
     dueDate: 5,
     rentAmountCents: 75000,
     billingLines: [
-      { label: 'Provisions sur charges', amountCents: 10000, type: 'provision' },
+      { categoryLabel: 'Provisions sur charges', amountCents: 10000 },
     ],
     totalAmountCents: 85000,
     isProRata: false,

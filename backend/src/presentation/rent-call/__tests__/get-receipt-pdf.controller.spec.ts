@@ -13,7 +13,7 @@ function makeRentCallWithRelations(overrides: Record<string, unknown> = {}) {
     month: '2026-02',
     rentAmountCents: 75000,
     billingLines: [
-      { label: 'Provisions sur charges', amountCents: 10000, type: 'provision' },
+      { chargeCategoryId: 'cat-1', categoryLabel: 'Provisions sur charges', amountCents: 10000 },
     ],
     totalAmountCents: 85000,
     isProRata: false,

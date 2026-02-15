@@ -18,7 +18,7 @@ const baseRentCall: RentCallData = {
   month: "2026-03",
   rentAmountCents: 80000,
   billingLines: [
-    { label: "Charges", amountCents: 5000, type: "provision" },
+    { chargeCategoryId: "cat-water", categoryLabel: "Charges", amountCents: 5000 },
   ],
   totalAmountCents: 85000,
   isProRata: false,

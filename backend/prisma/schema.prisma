@@ -23,12 +23,13 @@ model OwnershipEntity {
   createdAt              DateTime @default(now()) @map("created_at")
   updatedAt              DateTime @updatedAt @map("updated_at")
 
-  bankAccounts   BankAccount[]
-  properties     Property[]
-  tenants        Tenant[]
-  leases         Lease[]
-  rentCalls      RentCall[]
-  bankStatements BankStatement[]
+  bankAccounts     BankAccount[]
+  properties       Property[]
+  tenants          Tenant[]
+  leases           Lease[]
+  rentCalls        RentCall[]
+  bankStatements   BankStatement[]
+  chargeCategories ChargeCategory[]
 
   @@map("ownership_entities")
   @@index([userId])
@@ -138,8 +139,6 @@ model Lease {
   securityDepositCents Int      @map("security_deposit_cents")
   monthlyDueDate       Int      @map("monthly_due_date")
   revisionIndexType    String   @map("revision_index_type")
-  /// JSON array of { label: string, amountCents: int, type: "provision"|"option" }
-  billingLines         Json     @default("[]") @map("billing_lines")
   revisionDay          Int?     @map("revision_day")
   revisionMonth        Int?     @map("revision_month")
   referenceQuarter     String?  @map("reference_quarter")
@@ -149,10 +148,11 @@ model Lease {
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")
 
-  entity    OwnershipEntity @relation(fields: [entityId], references: [id])
-  tenant    Tenant          @relation(fields: [tenantId], references: [id])
-  unit      Unit            @relation(fields: [unitId], references: [id])
-  rentCalls RentCall[]
+  entity       OwnershipEntity  @relation(fields: [entityId], references: [id])
+  tenant       Tenant           @relation(fields: [tenantId], references: [id])
+  unit         Unit             @relation(fields: [unitId], references: [id])
+  rentCalls    RentCall[]
+  billingLineRows LeaseBillingLine[]
 
   @@map("leases")
   @@index([entityId])
@@ -341,6 +341,40 @@ model AnnualCharges {
   @@unique([entityId, fiscalYear])
   @@map("annual_charges")
   @@index([entityId])
+}
+
+model ChargeCategory {
+  id         String   @id @default(uuid())
+  entityId   String   @map("entity_id")
+  slug       String
+  label      String
+  isStandard Boolean  @default(false) @map("is_standard")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  entity             OwnershipEntity    @relation(fields: [entityId], references: [id])
+  leaseBillingLines  LeaseBillingLine[]
+
+  @@unique([entityId, slug])
+  @@map("charge_categories")
+  @@index([entityId])
+}
+
+model LeaseBillingLine {
+  id               String   @id @default(uuid())
+  leaseId          String   @map("lease_id")
+  chargeCategoryId String   @map("charge_category_id")
+  amountCents      Int      @map("amount_cents")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  lease          Lease          @relation(fields: [leaseId], references: [id])
+  chargeCategory ChargeCategory @relation(fields: [chargeCategoryId], references: [id], onDelete: Restrict)
+
+  @@unique([leaseId, chargeCategoryId])
+  @@map("lease_billing_lines")
+  @@index([leaseId])
+  @@index([chargeCategoryId])
 }
 
 model BankTransaction {

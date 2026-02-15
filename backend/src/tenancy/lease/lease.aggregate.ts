@@ -24,9 +24,8 @@ import { InvalidRevisionDayException } from './exceptions/invalid-revision-day.e
 import { LeaseEndDate } from './lease-end-date.js';
 
 export interface BillingLineState {
-  label: string;
+  chargeCategoryId: string;
   amountCents: number;
-  type: string;
 }
 
 export class LeaseAggregate extends AggregateRoot {
@@ -91,7 +90,7 @@ export class LeaseAggregate extends AggregateRoot {
   }
 
   configureBillingLines(
-    billingLines: { label: string; amountCents: number; type: string }[],
+    billingLines: { chargeCategoryId: string; amountCents: number }[],
   ): void {
     if (!this.created) {
       throw LeaseNotCreatedException.create();
@@ -202,9 +201,8 @@ export class LeaseAggregate extends AggregateRoot {
     for (let i = 0; i < event.data.billingLines.length; i++) {
       const line = event.data.billingLines[i];
       this.billingLines.set(i.toString(), {
-        label: line.label,
+        chargeCategoryId: line.chargeCategoryId,
         amountCents: line.amountCents,
-        type: line.type,
       });
     }
   }

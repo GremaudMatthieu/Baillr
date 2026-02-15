@@ -16,6 +16,18 @@ function formatCurrency(cents: number): string {
   }).format(cents / 100);
 }
 
+function findProvisionForCharge(
+  charge: ChargeEntryData,
+  details: ProvisionsData["details"],
+): ProvisionsData["details"][0] | undefined {
+  // Match by chargeCategoryId when available
+  if (charge.chargeCategoryId) {
+    return details.find((d) => d.chargeCategoryId === charge.chargeCategoryId);
+  }
+  // Fallback: match by label for legacy data
+  return details.find((d) => d.categoryLabel === charge.label);
+}
+
 export function ChargesSummary({
   charges,
   provisions,
@@ -32,11 +44,21 @@ export function ChargesSummary({
   const totalProvisionsCents = provisions?.totalProvisionsCents ?? 0;
   const differenceCents = totalChargesCents - totalProvisionsCents;
 
-  // Build comparison rows: match charges to provisions by label
+  // Build comparison rows: match charges to provisions by chargeCategoryId
+  const matchedProvisionKeys = new Set<string>();
+
   const rows = charges.map((charge) => {
-    const provisionDetail = provisions?.details.find(
-      (d) => d.label === charge.label,
-    );
+    const provisionDetail = provisions
+      ? findProvisionForCharge(charge, provisions.details)
+      : undefined;
+
+    if (provisionDetail) {
+      const key = provisionDetail.chargeCategoryId
+        ? `cat:${provisionDetail.chargeCategoryId}`
+        : `label:${provisionDetail.categoryLabel}`;
+      matchedProvisionKeys.add(key);
+    }
+
     return {
       label: charge.label,
       chargeCents: charge.amountCents,
@@ -47,10 +69,12 @@ export function ChargesSummary({
   // Add provisions not matched to any charge
   if (provisions) {
     for (const detail of provisions.details) {
-      const matched = charges.some((c) => c.label === detail.label);
-      if (!matched) {
+      const key = detail.chargeCategoryId
+        ? `cat:${detail.chargeCategoryId}`
+        : `label:${detail.categoryLabel}`;
+      if (!matchedProvisionKeys.has(key)) {
         rows.push({
-          label: detail.label,
+          label: detail.categoryLabel,
           chargeCents: 0,
           provisionCents: detail.totalCents,
         });

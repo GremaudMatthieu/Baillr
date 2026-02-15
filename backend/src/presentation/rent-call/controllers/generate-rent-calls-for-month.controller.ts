@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import { CurrentUser } from '@infrastructure/auth/user.decorator';
+import { PrismaService } from '@infrastructure/database/prisma.service';
 import { GenerateRentCallsForMonthDto } from '../dto/generate-rent-calls-for-month.dto.js';
 import {
   GenerateRentCallsForMonthCommand,
@@ -30,6 +31,7 @@ export class GenerateRentCallsForMonthController {
     private readonly entityFinder: EntityFinder,
     private readonly leaseFinder: LeaseFinder,
     private readonly rentCallFinder: RentCallFinder,
+    private readonly prisma: PrismaService,
   ) {}
 
   @Post('generate')
@@ -60,7 +62,7 @@ export class GenerateRentCallsForMonthController {
       throw new ConflictException('Appels de loyer déjà générés pour ce mois');
     }
 
-    // 3. Load active leases
+    // 3. Load active leases with billing line rows joined to charge categories
     const monthStart = new Date(Date.UTC(month.year, month.month - 1, 1));
     const leases = await this.leaseFinder.findAllActiveByEntityAndUser(
       entityId,
@@ -72,7 +74,28 @@ export class GenerateRentCallsForMonthController {
       throw new BadRequestException('Aucun bail actif');
     }
 
-    // 4. Map Prisma → domain format and dispatch
+    // 4. Load billing line rows with category labels for all active leases
+    const leaseIds = leases.map((l) => l.id);
+    const billingLineRows = await this.prisma.leaseBillingLine.findMany({
+      where: { leaseId: { in: leaseIds } },
+      include: { chargeCategory: true },
+    });
+
+    const billingLinesByLease = new Map<
+      string,
+      Array<{ chargeCategoryId: string; categoryLabel: string; amountCents: number }>
+    >();
+    for (const row of billingLineRows) {
+      const lines = billingLinesByLease.get(row.leaseId) ?? [];
+      lines.push({
+        chargeCategoryId: row.chargeCategoryId,
+        categoryLabel: row.chargeCategory?.label ?? 'Charge',
+        amountCents: row.amountCents,
+      });
+      billingLinesByLease.set(row.leaseId, lines);
+    }
+
+    // 5. Map Prisma → domain format and dispatch
     const activeLeases: ActiveLeaseData[] = leases.map((lease) => ({
       leaseId: lease.id,
       tenantId: lease.tenantId,
@@ -80,9 +103,7 @@ export class GenerateRentCallsForMonthController {
       rentAmountCents: lease.rentAmountCents,
       startDate: lease.startDate.toISOString(),
       endDate: lease.endDate ? lease.endDate.toISOString() : null,
-      billingLines: Array.isArray(lease.billingLines)
-        ? (lease.billingLines as Array<{ label: string; amountCents: number; type: string }>)
-        : [],
+      billingLines: billingLinesByLease.get(lease.id) ?? [],
     }));
 
     return this.commandBus.execute<GenerateRentCallsForMonthCommand, BatchHandlerResult>(

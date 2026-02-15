@@ -24,8 +24,8 @@ describe('RecordAnnualChargesHandler', () => {
     mockRepository.load.mockResolvedValue(aggregate);
 
     const charges = [
-      { category: 'water', label: 'Eau', amountCents: 45000 },
-      { category: 'electricity', label: 'Électricité', amountCents: 30000 },
+      { chargeCategoryId: 'cat-water', label: 'Eau', amountCents: 45000 },
+      { chargeCategoryId: 'cat-electricity', label: 'Électricité', amountCents: 30000 },
     ];
     const command = new RecordAnnualChargesCommand(
       'entity1-2025',
@@ -56,7 +56,7 @@ describe('RecordAnnualChargesHandler', () => {
     mockRepository.load.mockResolvedValue(aggregate);
 
     const charges = [
-      { category: 'invalid', label: 'Bad', amountCents: 100 },
+      { chargeCategoryId: '', label: 'Bad', amountCents: 100 },
     ];
     const command = new RecordAnnualChargesCommand(
       'test-id',
@@ -67,7 +67,7 @@ describe('RecordAnnualChargesHandler', () => {
     );
 
     await expect(handler.execute(command)).rejects.toThrow(
-      'Invalid charge category',
+      'Charge category ID is required',
     );
     expect(mockRepository.save).not.toHaveBeenCalled();
   });
@@ -75,7 +75,7 @@ describe('RecordAnnualChargesHandler', () => {
   it('should skip event emission when data is identical (no-op guard)', async () => {
     const aggregate = new AnnualChargesAggregate('entity1-2025');
     const charges = [
-      { category: 'water', label: 'Eau', amountCents: 45000 },
+      { chargeCategoryId: 'cat-water', label: 'Eau', amountCents: 45000 },
     ];
     // Simulate first recording (rehydrated state)
     aggregate.record('entity-1', 'user-1', 2025, charges);

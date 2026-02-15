@@ -46,8 +46,8 @@ describe("useAnnualCharges", () => {
       userId: "user_1",
       fiscalYear: 2025,
       charges: [
-        { category: "water", label: "Eau", amountCents: 50000 },
-        { category: "electricity", label: "Électricité", amountCents: 30000 },
+        { chargeCategoryId: "cat-water", label: "Eau", amountCents: 50000 },
+        { chargeCategoryId: "cat-electricity", label: "Électricité", amountCents: 30000 },
       ],
       totalAmountCents: 80000,
       createdAt: "2026-01-15T00:00:00Z",
@@ -105,7 +105,7 @@ describe("useRecordAnnualCharges", () => {
       id: "entity-1-2025",
       fiscalYear: 2025,
       charges: [
-        { category: "water", label: "Eau", amountCents: 50000 },
+        { chargeCategoryId: "cat-water", label: "Eau", amountCents: 50000 },
       ],
     };
 

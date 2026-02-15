@@ -83,6 +83,16 @@ vi.mock("@/hooks/use-units", () => ({
   }),
 }));
 
+vi.mock("@/hooks/use-charge-categories", () => ({
+  useChargeCategories: () => ({
+    data: [
+      { id: "cat-water", slug: "water", label: "Eau", isStandard: true },
+      { id: "cat-elec", slug: "electricity", label: "Électricité", isStandard: true },
+    ],
+    isLoading: false,
+  }),
+}));
+
 // Import LeaseDetailContent directly to avoid `use(Promise)` issues in jsdom
 import { LeaseDetailContent } from "@/components/features/leases/lease-detail-content";
 
@@ -145,26 +155,26 @@ describe("LeaseDetailPage — billing lines", () => {
     renderWithProviders(<LeaseDetailContent leaseId="lease-1" />);
 
     expect(
-      screen.getByText("Ajouter des provisions et options"),
+      screen.getByText("Ajouter des lignes de facturation"),
     ).toBeInTheDocument();
   });
 
-  it("should display billing lines when configured", () => {
+  it("should display billing lines with category labels when configured", () => {
     mockBillingLines = [
-      { label: "Charges locatives", amountCents: 5000, type: "provision" },
-      { label: "Parking", amountCents: 3000, type: "option" },
+      { chargeCategoryId: "cat-water", categoryLabel: "Eau", amountCents: 5000 },
+      { chargeCategoryId: "cat-elec", categoryLabel: "Électricité", amountCents: 3000 },
     ];
 
     renderWithProviders(<LeaseDetailContent leaseId="lease-1" />);
 
-    // Both mobile and desktop views render the billing line labels
-    expect(screen.getAllByText("Charges locatives").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("Parking").length).toBeGreaterThanOrEqual(1);
+    // Both mobile and desktop views render the category labels
+    expect(screen.getAllByText("Eau").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Électricité").length).toBeGreaterThanOrEqual(1);
   });
 
   it("should display total monthly amount", () => {
     mockBillingLines = [
-      { label: "Provisions", amountCents: 5000, type: "provision" },
+      { chargeCategoryId: "cat-water", categoryLabel: "Eau", amountCents: 5000 },
     ];
     mockRentAmountCents = 63000;
 
@@ -185,13 +195,13 @@ describe("LeaseDetailPage — billing lines", () => {
 
   it("should not show prompt when billing lines exist", () => {
     mockBillingLines = [
-      { label: "Provisions", amountCents: 5000, type: "provision" },
+      { chargeCategoryId: "cat-water", categoryLabel: "Eau", amountCents: 5000 },
     ];
 
     renderWithProviders(<LeaseDetailContent leaseId="lease-1" />);
 
     expect(
-      screen.queryByText("Ajouter des provisions et options"),
+      screen.queryByText("Ajouter des lignes de facturation"),
     ).not.toBeInTheDocument();
   });
 });

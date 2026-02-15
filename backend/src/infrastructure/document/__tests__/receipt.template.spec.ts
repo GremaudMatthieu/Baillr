@@ -156,8 +156,8 @@ describe('renderReceiptPdf — common', () => {
   it('should render billing lines', () => {
     const data = makeTestReceiptData({
       billingLines: [
-        { label: 'Provisions sur charges', amountCents: 10000, type: 'provision' },
-        { label: 'Ordures ménagères', amountCents: 3000, type: 'provision' },
+        { categoryLabel: 'Provisions sur charges', amountCents: 10000 },
+        { categoryLabel: 'Ordures ménagères', amountCents: 3000 },
       ],
     });
     const doc = createDocSpy();

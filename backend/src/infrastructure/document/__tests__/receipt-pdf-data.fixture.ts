@@ -13,7 +13,7 @@ export function makeTestReceiptData(overrides: Partial<ReceiptPdfData> = {}): Re
     billingPeriod: 'Février 2026',
     rentAmountCents: 75000,
     billingLines: [
-      { label: 'Provisions sur charges', amountCents: 10000, type: 'provision' },
+      { categoryLabel: 'Provisions sur charges', amountCents: 10000 },
     ],
     totalAmountCents: 85000,
     totalPaidCents: 85000,

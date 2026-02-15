@@ -5,17 +5,10 @@ export class InvalidBillingLineException extends DomainException {
     super(message, code, 400);
   }
 
-  static labelRequired(): InvalidBillingLineException {
+  static categoryRequired(): InvalidBillingLineException {
     return new InvalidBillingLineException(
-      'Billing line label is required',
-      'BILLING_LINE_LABEL_REQUIRED',
-    );
-  }
-
-  static labelTooLong(): InvalidBillingLineException {
-    return new InvalidBillingLineException(
-      'Billing line label exceeds 100 characters',
-      'BILLING_LINE_LABEL_TOO_LONG',
+      'Billing line charge category is required',
+      'BILLING_LINE_CATEGORY_REQUIRED',
     );
   }
 

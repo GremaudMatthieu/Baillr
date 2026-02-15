@@ -37,8 +37,8 @@ describe('RentCallCalculationService', () => {
       const month = RentCallMonth.fromString('2026-03');
       const lease = makeLease({
         billingLines: [
-          { label: 'Provisions', amountCents: 5000, type: 'provision' },
-          { label: 'Garage', amountCents: 3000, type: 'option' },
+          { chargeCategoryId: 'cat-water', categoryLabel: 'Eau', amountCents: 5000 },
+          { chargeCategoryId: 'cat-parking', categoryLabel: 'Parking', amountCents: 3000 },
         ],
       });
       const results = service.calculateForMonth([lease], month);
@@ -71,7 +71,7 @@ describe('RentCallCalculationService', () => {
       const month = RentCallMonth.fromString('2026-03');
       const lease = makeLease({
         startDate: '2026-03-16T00:00:00.000Z',
-        billingLines: [{ label: 'Charges', amountCents: 10000, type: 'provision' }],
+        billingLines: [{ chargeCategoryId: 'cat-water', categoryLabel: 'Eau', amountCents: 10000 }],
       });
       const results = service.calculateForMonth([lease], month);
 
@@ -142,8 +142,8 @@ describe('RentCallCalculationService', () => {
       const lease = makeLease({
         startDate: '2026-04-11T00:00:00.000Z',
         billingLines: [
-          { label: 'Provisions', amountCents: 6000, type: 'provision' },
-          { label: 'Garage', amountCents: 3000, type: 'option' },
+          { chargeCategoryId: 'cat-elec', categoryLabel: 'Électricité', amountCents: 6000 },
+          { chargeCategoryId: 'cat-parking', categoryLabel: 'Parking', amountCents: 3000 },
         ],
       });
       const results = service.calculateForMonth([lease], month);

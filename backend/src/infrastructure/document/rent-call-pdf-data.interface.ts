@@ -9,7 +9,7 @@ export interface RentCallPdfData {
   billingPeriod: string; // month label e.g. "Février 2026"
   dueDate: number; // day of month
   rentAmountCents: number;
-  billingLines: Array<{ label: string; amountCents: number; type: string }>;
+  billingLines: Array<{ categoryLabel: string; amountCents: number }>;
   totalAmountCents: number;
   isProRata: boolean;
   occupiedDays: number | null;

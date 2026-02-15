@@ -2,9 +2,9 @@ import { useAuth } from "@clerk/nextjs";
 import { fetchWithAuth } from "./fetch-with-auth";
 
 export interface RentCallBillingLine {
-  label: string;
+  chargeCategoryId: string;
+  categoryLabel: string;
   amountCents: number;
-  type: string;
 }
 
 export interface RentCallData {

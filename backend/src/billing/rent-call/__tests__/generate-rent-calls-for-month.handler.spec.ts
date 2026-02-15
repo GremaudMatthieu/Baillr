@@ -22,7 +22,7 @@ describe('GenerateRentCallsForMonthHandler', () => {
     rentAmountCents: 80000,
     startDate: '2026-01-01T00:00:00.000Z',
     endDate: null,
-    billingLines: [{ label: 'Charges', amountCents: 5000, type: 'provision' }],
+    billingLines: [{ chargeCategoryId: 'cat-water', categoryLabel: 'Eau', amountCents: 5000 }],
   };
 
   const defaultCalculation = {
@@ -30,7 +30,7 @@ describe('GenerateRentCallsForMonthHandler', () => {
     tenantId: 'tenant-1',
     unitId: 'unit-1',
     rentAmountCents: 80000,
-    billingLines: [{ label: 'Charges', amountCents: 5000, type: 'provision' }],
+    billingLines: [{ chargeCategoryId: 'cat-water', categoryLabel: 'Eau', amountCents: 5000 }],
     totalAmountCents: 85000,
     isProRata: false,
     occupiedDays: 31,

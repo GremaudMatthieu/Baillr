@@ -9,7 +9,7 @@ export interface ReceiptPdfData {
   leaseReference: string; // lease startDate formatted DD/MM/YYYY
   billingPeriod: string; // month label e.g. "Février 2026"
   rentAmountCents: number;
-  billingLines: Array<{ label: string; amountCents: number; type: string }>;
+  billingLines: Array<{ categoryLabel: string; amountCents: number }>;
   totalAmountCents: number;
   totalPaidCents: number;
   remainingBalanceCents: number;

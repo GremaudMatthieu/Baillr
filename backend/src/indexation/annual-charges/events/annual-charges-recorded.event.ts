@@ -6,7 +6,7 @@ export interface AnnualChargesRecordedData {
   userId: string;
   fiscalYear: number;
   charges: Array<{
-    category: string;
+    chargeCategoryId: string;
     label: string;
     amountCents: number;
   }>;

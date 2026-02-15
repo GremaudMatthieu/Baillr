@@ -14,7 +14,7 @@ describe('RentCallAggregate — Partial Payments', () => {
     unitId: 'unit-1',
     month: '2026-03',
     rentAmountCents: 80000,
-    billingLines: [{ label: 'Provisions', amountCents: 5000, type: 'provision' }],
+    billingLines: [{ chargeCategoryId: 'cat-water', categoryLabel: 'Eau', amountCents: 5000 }],
     totalAmountCents: 85000,
     isProRata: false,
     occupiedDays: 31,

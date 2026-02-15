@@ -12,7 +12,8 @@ import { EntityFinder } from '../../entity/finders/entity.finder.js';
 import { PrismaService } from '@infrastructure/database/prisma.service.js';
 
 interface ProvisionDetail {
-  label: string;
+  chargeCategoryId: string | null;
+  categoryLabel: string;
   totalCents: number;
 }
 
@@ -60,28 +61,55 @@ export class GetProvisionsCollectedController {
       },
     });
 
-    // Extract provision-type billing lines and aggregate by label
-    const detailMap = new Map<string, number>();
+    // Aggregate billing lines by chargeCategoryId
+    const detailMap = new Map<string, { chargeCategoryId: string | null; categoryLabel: string; totalCents: number }>();
 
     for (const rc of rentCalls) {
       const lines = rc.billingLines as Array<{
-        label: string;
+        chargeCategoryId?: string | null;
+        categoryLabel?: string;
         amountCents: number;
-        type: string;
+        // Legacy fields for backward compatibility
+        label?: string;
+        type?: string;
+        category?: string | null;
       }>;
       if (!Array.isArray(lines)) continue;
 
       for (const line of lines) {
-        if (line.type === 'provision') {
-          const current = detailMap.get(line.label) ?? 0;
-          detailMap.set(line.label, current + line.amountCents);
+        // New format: { chargeCategoryId, categoryLabel, amountCents }
+        if (line.chargeCategoryId) {
+          const key = `cat:${line.chargeCategoryId}`;
+          const existing = detailMap.get(key);
+          if (existing) {
+            existing.totalCents += line.amountCents;
+          } else {
+            detailMap.set(key, {
+              chargeCategoryId: line.chargeCategoryId,
+              categoryLabel: line.categoryLabel ?? 'Inconnu',
+              totalCents: line.amountCents,
+            });
+          }
+        } else if (line.type === 'provision') {
+          // Legacy format: { label, amountCents, type, category }
+          const category = line.category ?? null;
+          const key = category !== null ? `legacy-cat:${category}` : `legacy-label:${line.label}`;
+          const existing = detailMap.get(key);
+          if (existing) {
+            existing.totalCents += line.amountCents;
+          } else {
+            detailMap.set(key, {
+              chargeCategoryId: null,
+              categoryLabel: line.label ?? 'Inconnu',
+              totalCents: line.amountCents,
+            });
+          }
         }
+        // Legacy "option" type lines are skipped (no charge category, no provision)
       }
     }
 
-    const details: ProvisionDetail[] = Array.from(detailMap.entries()).map(
-      ([label, totalCents]) => ({ label, totalCents }),
-    );
+    const details: ProvisionDetail[] = Array.from(detailMap.values());
 
     const totalProvisionsCents = details.reduce(
       (sum, d) => sum + d.totalCents,

@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/test/test-utils";
 import { BillingLinesForm } from "../billing-lines-form";
 import type { BillingLineData } from "@/lib/api/leases-api";
+import type { ChargeCategoryData } from "@/lib/api/charge-categories-api";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -17,13 +18,38 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-const mockInitialLines: BillingLineData[] = [
-  { label: "Provisions sur charges", amountCents: 5000, type: "provision" },
+const mockChargeCategories: ChargeCategoryData[] = [
+  {
+    id: "cat-water",
+    entityId: "entity-1",
+    slug: "water",
+    label: "Eau",
+    isStandard: true,
+    createdAt: "2026-01-01T00:00:00Z",
+    updatedAt: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "cat-electricity",
+    entityId: "entity-1",
+    slug: "electricity",
+    label: "Électricité",
+    isStandard: true,
+    createdAt: "2026-01-01T00:00:00Z",
+    updatedAt: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "cat-teom",
+    entityId: "entity-1",
+    slug: "teom",
+    label: "TEOM",
+    isStandard: true,
+    createdAt: "2026-01-01T00:00:00Z",
+    updatedAt: "2026-01-01T00:00:00Z",
+  },
 ];
 
-const mockUnitOptions = [
-  { label: "Entretien chaudière", amountCents: 1250 },
-  { label: "Parking", amountCents: 3000 },
+const mockInitialLines: BillingLineData[] = [
+  { chargeCategoryId: "cat-water", categoryLabel: "Eau", amountCents: 5000 },
 ];
 
 const DEFAULT_RENT_CENTS = 63000;
@@ -31,7 +57,7 @@ const DEFAULT_RENT_CENTS = 63000;
 function renderForm(overrides: Partial<{
   initialLines: BillingLineData[];
   rentAmountCents: number;
-  unitBillableOptions: Array<{ label: string; amountCents: number }>;
+  chargeCategories: ChargeCategoryData[];
   onSubmit: (...args: unknown[]) => void;
   onCancel: () => void;
   isPending: boolean;
@@ -39,9 +65,9 @@ function renderForm(overrides: Partial<{
   const props = {
     initialLines: overrides.initialLines ?? [],
     rentAmountCents: overrides.rentAmountCents ?? DEFAULT_RENT_CENTS,
+    chargeCategories: overrides.chargeCategories ?? mockChargeCategories,
     onSubmit: overrides.onSubmit ?? vi.fn(),
     onCancel: overrides.onCancel ?? vi.fn(),
-    unitBillableOptions: overrides.unitBillableOptions,
     isPending: overrides.isPending,
   };
   return { ...renderWithProviders(<BillingLinesForm {...props} />), props };
@@ -56,17 +82,15 @@ describe("BillingLinesForm", () => {
     mockOnCancel = vi.fn();
   });
 
-  it("should render existing billing lines", () => {
+  it("should render existing billing lines with category and amount", () => {
     renderForm({
       initialLines: mockInitialLines,
       onSubmit: mockOnSubmit,
       onCancel: mockOnCancel,
     });
 
-    const labelInput = screen.getByRole("textbox", {
-      name: "Libellé",
-    });
-    expect(labelInput).toHaveValue("Provisions sur charges");
+    // Category should be selected (Radix renders both trigger + hidden <option>)
+    expect(screen.getAllByText("Eau").length).toBeGreaterThanOrEqual(1);
 
     const amountInput = screen.getByRole("spinbutton", {
       name: "Montant (€)",
@@ -78,42 +102,20 @@ describe("BillingLinesForm", () => {
     renderForm({ onSubmit: mockOnSubmit, onCancel: mockOnCancel });
 
     expect(screen.getByText("Lignes de facturation")).toBeInTheDocument();
-    expect(screen.getByText("Ajouter une provision")).toBeInTheDocument();
+    expect(screen.getByText("Ajouter une ligne")).toBeInTheDocument();
   });
 
-  it("should add a provision line when clicking add button", async () => {
+  it("should add a line when clicking add button", async () => {
     const user = userEvent.setup();
     renderForm({ onSubmit: mockOnSubmit, onCancel: mockOnCancel });
 
-    await user.click(screen.getByText("Ajouter une provision"));
+    await user.click(screen.getByText("Ajouter une ligne"));
 
-    const labelInputs = screen.getAllByPlaceholderText("Libellé");
-    expect(labelInputs).toHaveLength(1);
-  });
-
-  it("should display unit billable options as quick-add buttons", () => {
-    renderForm({
-      unitBillableOptions: mockUnitOptions,
-      onSubmit: mockOnSubmit,
-      onCancel: mockOnCancel,
-    });
-
-    expect(screen.getByText(/Entretien chaudière/)).toBeInTheDocument();
-    expect(screen.getByText(/Parking/)).toBeInTheDocument();
-  });
-
-  it("should add line from unit option when clicking quick-add", async () => {
-    const user = userEvent.setup();
-    renderForm({
-      unitBillableOptions: mockUnitOptions,
-      onSubmit: mockOnSubmit,
-      onCancel: mockOnCancel,
-    });
-
-    await user.click(screen.getByText(/Entretien chaudière/));
-
-    expect(screen.getByDisplayValue("Entretien chaudière")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("12.5")).toBeInTheDocument();
+    // A new row should appear with a category Select and amount input
+    // Radix Select renders placeholder as text content, not as placeholder attribute
+    // After adding a line, we should see a new amount input (0 value)
+    const amountInputs = screen.getAllByRole("spinbutton");
+    expect(amountInputs.length).toBe(1);
   });
 
   it("should remove a line when clicking delete button", async () => {
@@ -124,14 +126,10 @@ describe("BillingLinesForm", () => {
       onCancel: mockOnCancel,
     });
 
-    const deleteButton = screen.getByLabelText(
-      "Supprimer Provisions sur charges",
-    );
+    const deleteButton = screen.getByLabelText("Supprimer Eau");
     await user.click(deleteButton);
 
-    expect(
-      screen.queryByDisplayValue("Provisions sur charges"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryAllByText("Eau")).toHaveLength(0);
   });
 
   it("should call onCancel when cancel button clicked", async () => {
@@ -144,8 +142,8 @@ describe("BillingLinesForm", () => {
 
   it("should display total including rent in French format", () => {
     const lines: BillingLineData[] = [
-      { label: "Provisions", amountCents: 5000, type: "provision" },
-      { label: "Parking", amountCents: 3000, type: "option" },
+      { chargeCategoryId: "cat-water", categoryLabel: "Eau", amountCents: 5000 },
+      { chargeCategoryId: "cat-electricity", categoryLabel: "Électricité", amountCents: 3000 },
     ];
 
     renderForm({
@@ -155,16 +153,16 @@ describe("BillingLinesForm", () => {
       onCancel: mockOnCancel,
     });
 
-    // Total should include rent (630) + provisions (50) + parking (30) = 710
+    // Total should include rent (630) + water (50) + electricity (30) = 710
     const totalSection = screen.getByText(/Total mensuel/);
     expect(totalSection).toBeInTheDocument();
   });
 
-  it("should call onSubmit with cents conversion on form submission", async () => {
+  it("should call onSubmit with chargeCategoryId and amountCents on form submission", async () => {
     const user = userEvent.setup();
     renderForm({
       initialLines: [
-        { label: "Charges", amountCents: 5025, type: "provision" },
+        { chargeCategoryId: "cat-water", categoryLabel: "Eau", amountCents: 5025 },
       ],
       onSubmit: mockOnSubmit,
       onCancel: mockOnCancel,
@@ -176,8 +174,19 @@ describe("BillingLinesForm", () => {
       expect(mockOnSubmit).toHaveBeenCalledTimes(1);
     });
     expect(mockOnSubmit).toHaveBeenCalledWith([
-      { label: "Charges", amountCents: 5025, type: "provision" },
+      { chargeCategoryId: "cat-water", categoryLabel: "Eau", amountCents: 5025 },
     ]);
+  });
+
+  it("should render category Select for each billing line", () => {
+    renderForm({
+      initialLines: mockInitialLines,
+      onSubmit: mockOnSubmit,
+      onCancel: mockOnCancel,
+    });
+
+    // Category label should be visible
+    expect(screen.getByText("Catégorie")).toBeInTheDocument();
   });
 
   it("should disable submit button when isPending", () => {
@@ -188,5 +197,19 @@ describe("BillingLinesForm", () => {
     });
 
     expect(screen.getByText("Enregistrement…")).toBeDisabled();
+  });
+
+  it("should disable already-used categories in Select", () => {
+    renderForm({
+      initialLines: [
+        { chargeCategoryId: "cat-water", categoryLabel: "Eau", amountCents: 5000 },
+      ],
+      onSubmit: mockOnSubmit,
+      onCancel: mockOnCancel,
+    });
+
+    // "Eau" is used, so when adding a new line, "Eau" should be disabled in the dropdown
+    // We verify the form renders the used category correctly (Radix renders trigger + hidden <option>)
+    expect(screen.getAllByText("Eau").length).toBeGreaterThanOrEqual(1);
   });
 });

@@ -105,19 +105,33 @@ export class LeaseProjection implements OnModuleInit {
   private async onLeaseBillingLinesConfigured(
     data: LeaseBillingLinesConfiguredData,
   ): Promise<void> {
-    const updated = await this.prisma.lease.updateMany({
+    const leaseExists = await this.prisma.lease.findUnique({
       where: { id: data.leaseId },
-      data: {
-        billingLines:
-          data.billingLines as unknown as import('@prisma/client').Prisma.InputJsonValue,
-      },
+      select: { id: true },
     });
-    if (updated.count === 0) {
+    if (!leaseExists) {
       this.logger.warn(
         `Lease ${data.leaseId} not found for LeaseBillingLinesConfigured — skipping projection`,
       );
       return;
     }
+
+    // Replace all billing line rows (delete + create in transaction)
+    await this.prisma.$transaction([
+      this.prisma.leaseBillingLine.deleteMany({
+        where: { leaseId: data.leaseId },
+      }),
+      ...data.billingLines.map((line) =>
+        this.prisma.leaseBillingLine.create({
+          data: {
+            leaseId: data.leaseId,
+            chargeCategoryId: line.chargeCategoryId,
+            amountCents: line.amountCents,
+          },
+        }),
+      ),
+    ]);
+
     this.logger.log(`Projected LeaseBillingLinesConfigured for ${data.leaseId}`);
   }
 

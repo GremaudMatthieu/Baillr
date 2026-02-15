@@ -9,7 +9,7 @@ export interface RentCallGeneratedData {
   unitId: string;
   month: string;
   rentAmountCents: number;
-  billingLines: Array<{ label: string; amountCents: number; type: string }>;
+  billingLines: Array<{ chargeCategoryId: string; categoryLabel: string; amountCents: number }>;
   totalAmountCents: number;
   isProRata: boolean;
   occupiedDays: number;

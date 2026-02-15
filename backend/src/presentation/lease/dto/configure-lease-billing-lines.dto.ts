@@ -3,30 +3,25 @@ import {
   IsArray,
   IsInt,
   IsString,
-  IsIn,
-  MaxLength,
+  IsUUID,
+  IsNotEmpty,
   Min,
   Max,
   ValidateNested,
   ArrayMinSize,
   ArrayMaxSize,
-  MinLength,
 } from 'class-validator';
 
 export class BillingLineDto {
   @IsString()
-  @MinLength(1)
-  @MaxLength(100)
-  label!: string;
+  @IsNotEmpty()
+  @IsUUID()
+  chargeCategoryId!: string;
 
   @IsInt()
   @Min(0)
   @Max(99999999)
   amountCents!: number;
-
-  @IsString()
-  @IsIn(['provision', 'option'])
-  type!: string;
 }
 
 export class ConfigureLeaseBillingLinesDto {

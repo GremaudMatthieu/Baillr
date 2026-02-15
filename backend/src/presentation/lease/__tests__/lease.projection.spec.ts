@@ -6,7 +6,13 @@ describe('LeaseProjection', () => {
     lease: {
       upsert: jest.Mock;
       updateMany: jest.Mock;
+      findUnique: jest.Mock;
     };
+    leaseBillingLine: {
+      deleteMany: jest.Mock;
+      create: jest.Mock;
+    };
+    $transaction: jest.Mock;
   };
   let mockKurrentDb: {
     client: {
@@ -20,7 +26,13 @@ describe('LeaseProjection', () => {
       lease: {
         upsert: jest.fn().mockResolvedValue({}),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        findUnique: jest.fn().mockResolvedValue({ id: 'lease-1' }),
       },
+      leaseBillingLine: {
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+        create: jest.fn().mockResolvedValue({ id: 'line-1' }),
+      },
+      $transaction: jest.fn().mockResolvedValue([]),
     };
 
     const mockSubscription = {
@@ -140,7 +152,7 @@ describe('LeaseProjection', () => {
     expect(mockPrisma.lease.upsert).not.toHaveBeenCalled();
   });
 
-  it('should update billing lines on LeaseBillingLinesConfigured event', async () => {
+  it('should write billing line rows via $transaction on LeaseBillingLinesConfigured event', async () => {
     projection.onModuleInit();
 
     dataHandler({
@@ -149,8 +161,8 @@ describe('LeaseProjection', () => {
         data: {
           leaseId: 'lease-1',
           billingLines: [
-            { label: 'Provisions sur charges', amountCents: 5000, type: 'provision' },
-            { label: 'Parking', amountCents: 3000, type: 'option' },
+            { chargeCategoryId: 'cat-water', amountCents: 5000 },
+            { chargeCategoryId: 'cat-elec', amountCents: 3000 },
           ],
         },
       },
@@ -158,19 +170,25 @@ describe('LeaseProjection', () => {
 
     await new Promise((r) => setTimeout(r, 10));
 
-    expect(mockPrisma.lease.updateMany).toHaveBeenCalledWith({
+    expect(mockPrisma.lease.findUnique).toHaveBeenCalledWith({
       where: { id: 'lease-1' },
-      data: {
-        billingLines: [
-          { label: 'Provisions sur charges', amountCents: 5000, type: 'provision' },
-          { label: 'Parking', amountCents: 3000, type: 'option' },
-        ],
-      },
+      select: { id: true },
+    });
+    expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.leaseBillingLine.deleteMany).toHaveBeenCalledWith({
+      where: { leaseId: 'lease-1' },
+    });
+    expect(mockPrisma.leaseBillingLine.create).toHaveBeenCalledTimes(2);
+    expect(mockPrisma.leaseBillingLine.create).toHaveBeenCalledWith({
+      data: { leaseId: 'lease-1', chargeCategoryId: 'cat-water', amountCents: 5000 },
+    });
+    expect(mockPrisma.leaseBillingLine.create).toHaveBeenCalledWith({
+      data: { leaseId: 'lease-1', chargeCategoryId: 'cat-elec', amountCents: 3000 },
     });
   });
 
   it('should skip LeaseBillingLinesConfigured when lease not found', async () => {
-    mockPrisma.lease.updateMany.mockResolvedValue({ count: 0 });
+    mockPrisma.lease.findUnique.mockResolvedValue(null);
     projection.onModuleInit();
 
     dataHandler({
@@ -178,19 +196,14 @@ describe('LeaseProjection', () => {
         type: 'LeaseBillingLinesConfigured',
         data: {
           leaseId: 'nonexistent',
-          billingLines: [{ label: 'Test', amountCents: 1000, type: 'provision' }],
+          billingLines: [{ chargeCategoryId: 'cat-1', amountCents: 1000 }],
         },
       },
     });
 
     await new Promise((r) => setTimeout(r, 10));
 
-    expect(mockPrisma.lease.updateMany).toHaveBeenCalledWith({
-      where: { id: 'nonexistent' },
-      data: {
-        billingLines: [{ label: 'Test', amountCents: 1000, type: 'provision' }],
-      },
-    });
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
   });
 
   it('should handle empty billing lines in LeaseBillingLinesConfigured', async () => {
@@ -208,10 +221,12 @@ describe('LeaseProjection', () => {
 
     await new Promise((r) => setTimeout(r, 10));
 
-    expect(mockPrisma.lease.updateMany).toHaveBeenCalledWith({
-      where: { id: 'lease-1' },
-      data: { billingLines: [] },
+    expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.leaseBillingLine.deleteMany).toHaveBeenCalledWith({
+      where: { leaseId: 'lease-1' },
     });
+    // Only deleteMany, no create calls for empty lines
+    expect(mockPrisma.leaseBillingLine.create).not.toHaveBeenCalled();
   });
 
   it('should update revision parameters on LeaseRevisionParametersConfigured event', async () => {

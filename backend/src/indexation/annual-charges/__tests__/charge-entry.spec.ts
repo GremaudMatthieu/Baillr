@@ -2,7 +2,7 @@ import { ChargeEntry } from '../charge-entry';
 
 describe('ChargeEntry', () => {
   const validEntry = {
-    category: 'water',
+    chargeCategoryId: 'cat-water-uuid',
     label: 'Eau',
     amountCents: 45000,
   };
@@ -10,7 +10,7 @@ describe('ChargeEntry', () => {
   it('should create from valid primitives', () => {
     const entry = ChargeEntry.fromPrimitives(validEntry);
     const primitives = entry.toPrimitives();
-    expect(primitives.category).toBe('water');
+    expect(primitives.chargeCategoryId).toBe('cat-water-uuid');
     expect(primitives.label).toBe('Eau');
     expect(primitives.amountCents).toBe(45000);
   });
@@ -92,10 +92,16 @@ describe('ChargeEntry', () => {
     ).toThrow('must be an integer');
   });
 
-  it('should throw for invalid category', () => {
+  it('should throw for empty chargeCategoryId', () => {
     expect(() =>
-      ChargeEntry.fromPrimitives({ ...validEntry, category: 'gas' }),
-    ).toThrow('Invalid charge category');
+      ChargeEntry.fromPrimitives({ ...validEntry, chargeCategoryId: '' }),
+    ).toThrow('Charge category ID is required');
+  });
+
+  it('should throw for whitespace-only chargeCategoryId', () => {
+    expect(() =>
+      ChargeEntry.fromPrimitives({ ...validEntry, chargeCategoryId: '   ' }),
+    ).toThrow('Charge category ID is required');
   });
 
   it('should compare equality', () => {

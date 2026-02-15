@@ -18,6 +18,7 @@ import {
   useRecordAnnualCharges,
   useProvisionsCollected,
 } from "@/hooks/use-annual-charges";
+import { useChargeCategories, useCreateChargeCategory } from "@/hooks/use-charge-categories";
 import { AnnualChargesForm } from "@/components/features/charges/annual-charges-form";
 import { ChargesSummary } from "@/components/features/charges/charges-summary";
 import type { ChargeEntryData } from "@/lib/api/annual-charges-api";
@@ -78,6 +79,8 @@ function ChargesPageContent({ entityId }: { entityId: string }) {
   } = useAnnualCharges(entityId, fiscalYear);
 
   const { data: provisions } = useProvisionsCollected(entityId, fiscalYear);
+  const { data: chargeCategories } = useChargeCategories(entityId);
+  const createCategoryMutation = useCreateChargeCategory(entityId);
 
   const recordMutation = useRecordAnnualCharges(entityId);
 
@@ -132,6 +135,8 @@ function ChargesPageContent({ entityId }: { entityId: string }) {
                 onSubmit={handleSubmit}
                 isSubmitting={recordMutation.isPending}
                 initialCharges={annualCharges?.charges}
+                chargeCategories={chargeCategories ?? []}
+                onCreateCategory={(label) => createCategoryMutation.mutateAsync(label)}
               />
             )}
             {recordMutation.isError && (

@@ -50,6 +50,22 @@ vi.mock("@/hooks/use-annual-charges", () => ({
   }),
 }));
 
+vi.mock("@/hooks/use-charge-categories", () => ({
+  useChargeCategories: () => ({
+    data: [
+      { id: "cat-water", entityId: "entity-1", slug: "water", label: "Eau", isStandard: true, createdAt: "", updatedAt: "" },
+      { id: "cat-electricity", entityId: "entity-1", slug: "electricity", label: "Électricité", isStandard: true, createdAt: "", updatedAt: "" },
+      { id: "cat-teom", entityId: "entity-1", slug: "teom", label: "TEOM", isStandard: true, createdAt: "", updatedAt: "" },
+      { id: "cat-cleaning", entityId: "entity-1", slug: "cleaning", label: "Nettoyage", isStandard: true, createdAt: "", updatedAt: "" },
+    ],
+    isLoading: false,
+  }),
+  useCreateChargeCategory: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
+}));
+
 describe("ChargesPage", () => {
   beforeEach(() => {
     mockEntityId = "entity-1";

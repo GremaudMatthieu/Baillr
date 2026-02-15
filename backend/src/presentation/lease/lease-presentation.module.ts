@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { EntityPresentationModule } from '../entity/entity-presentation.module.js';
+import { ChargeCategoryPresentationModule } from '../charge-category/charge-category-presentation.module.js';
 import { TenantPresentationModule } from '../tenant/tenant-presentation.module.js';
 import { PropertyPresentationModule } from '../property/property-presentation.module.js';
 import { CreateALeaseController } from './controllers/create-a-lease.controller.js';
@@ -21,6 +22,7 @@ import { LeaseFinder } from './finders/lease.finder.js';
     EntityPresentationModule,
     TenantPresentationModule,
     PropertyPresentationModule,
+    ChargeCategoryPresentationModule,
   ],
   controllers: [
     CreateALeaseController,

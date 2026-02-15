@@ -16,6 +16,11 @@ export class LeaseFinder {
   async findByIdAndUser(id: string, userId: string): Promise<Lease | null> {
     return this.prisma.lease.findFirst({
       where: { id, userId },
+      include: {
+        billingLineRows: {
+          include: { chargeCategory: true },
+        },
+      },
     });
   }
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, X } from "lucide-react";
@@ -7,27 +8,38 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  CHARGE_CATEGORY_LABELS,
-  FIXED_CATEGORIES,
-} from "@/lib/constants/charge-categories";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   annualChargesSchema,
   type AnnualChargesFormData,
 } from "./annual-charges-schema";
 import type { ChargeEntryData } from "@/lib/api/annual-charges-api";
+import type { ChargeCategoryData } from "@/lib/api/charge-categories-api";
 
 interface AnnualChargesFormProps {
   onSubmit: (charges: ChargeEntryData[]) => void;
   isSubmitting: boolean;
   initialCharges?: ChargeEntryData[];
+  chargeCategories: ChargeCategoryData[];
+  onCreateCategory?: (label: string) => Promise<ChargeCategoryData>;
 }
 
 export function AnnualChargesForm({
   onSubmit,
   isSubmitting,
   initialCharges,
+  chargeCategories,
+  onCreateCategory,
 }: AnnualChargesFormProps) {
-  const defaultValues = buildDefaults(initialCharges);
+  const [newCategoryLabel, setNewCategoryLabel] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+
+  const defaultValues = buildDefaults(initialCharges, chargeCategories);
 
   const form = useForm<AnnualChargesFormData>({
     resolver: zodResolver(annualChargesSchema),
@@ -36,29 +48,29 @@ export function AnnualChargesForm({
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "customCategories",
+    name: "charges",
   });
 
+  const watchedCharges = form.watch("charges");
+  const usedCategoryIds = new Set(
+    watchedCharges?.map((c) => c.chargeCategoryId).filter(Boolean) ?? [],
+  );
+
+  const availableCategories = chargeCategories.filter(
+    (cat) => !usedCategoryIds.has(cat.id),
+  );
+
   function handleSubmit(data: AnnualChargesFormData) {
-    const charges: ChargeEntryData[] = [];
-
-    for (const cat of FIXED_CATEGORIES) {
-      const key = `${cat}Amount` as keyof AnnualChargesFormData;
-      const amount = data[key] as number;
-      charges.push({
-        category: cat,
-        label: CHARGE_CATEGORY_LABELS[cat],
-        amountCents: Math.round(amount * 100),
+    const charges: ChargeEntryData[] = data.charges
+      .filter((c) => c.chargeCategoryId)
+      .map((c) => {
+        const cat = chargeCategories.find((cc) => cc.id === c.chargeCategoryId);
+        return {
+          chargeCategoryId: c.chargeCategoryId,
+          label: cat?.label ?? "",
+          amountCents: Math.round(c.amount * 100),
+        };
       });
-    }
-
-    for (const custom of data.customCategories) {
-      charges.push({
-        category: "custom",
-        label: custom.label.trim(),
-        amountCents: Math.round(custom.amount * 100),
-      });
-    }
 
     onSubmit(charges);
   }
@@ -71,63 +83,64 @@ export function AnnualChargesForm({
     >
       <fieldset className="space-y-4">
         <legend className="text-sm font-medium text-foreground">
-          Catégories de charges
-        </legend>
-
-        {FIXED_CATEGORIES.map((cat) => {
-          const key = `${cat}Amount` as keyof AnnualChargesFormData;
-          const label = CHARGE_CATEGORY_LABELS[cat];
-          const error = form.formState.errors[key];
-          return (
-            <div key={cat} className="flex items-center gap-4">
-              <Label htmlFor={key} className="w-32 text-sm shrink-0">
-                {label}
-              </Label>
-              <div className="flex-1">
-                <Input
-                  id={key}
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0,00"
-                  {...form.register(key, { valueAsNumber: true })}
-                  className="text-right"
-                  aria-invalid={!!error}
-                />
-                {error && (
-                  <p className="mt-1 text-xs text-destructive">
-                    {error.message as string}
-                  </p>
-                )}
-              </div>
-              <span className="text-sm text-muted-foreground">€</span>
-            </div>
-          );
-        })}
-      </fieldset>
-
-      <fieldset className="space-y-4">
-        <legend className="text-sm font-medium text-foreground">
-          Catégories personnalisées
+          Charges par catégorie
         </legend>
 
         {fields.map((field, index) => {
-          const labelError =
-            form.formState.errors.customCategories?.[index]?.label;
+          const categoryError =
+            form.formState.errors.charges?.[index]?.chargeCategoryId;
           const amountError =
-            form.formState.errors.customCategories?.[index]?.amount;
+            form.formState.errors.charges?.[index]?.amount;
+
+          const currentCategoryId = watchedCharges?.[index]?.chargeCategoryId;
+          const currentCategory = chargeCategories.find(
+            (cc) => cc.id === currentCategoryId,
+          );
+
           return (
             <div key={field.id} className="flex items-start gap-2">
               <div className="flex-1">
-                <Input
-                  placeholder="Libellé"
-                  {...form.register(`customCategories.${index}.label`)}
-                  aria-label={`Libellé catégorie personnalisée ${index + 1}`}
-                  aria-invalid={!!labelError}
-                />
-                {labelError && (
+                <Label
+                  htmlFor={`charges.${index}.chargeCategoryId`}
+                  className="sr-only"
+                >
+                  Catégorie
+                </Label>
+                <Select
+                  value={currentCategoryId || ""}
+                  onValueChange={(value) => {
+                    form.setValue(
+                      `charges.${index}.chargeCategoryId`,
+                      value,
+                      { shouldValidate: true },
+                    );
+                  }}
+                >
+                  <SelectTrigger
+                    id={`charges.${index}.chargeCategoryId`}
+                    aria-invalid={!!categoryError}
+                    aria-label={`Catégorie ligne ${index + 1}`}
+                  >
+                    <SelectValue placeholder="Catégorie" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {chargeCategories.map((cat) => (
+                      <SelectItem
+                        key={cat.id}
+                        value={cat.id}
+                        disabled={
+                          usedCategoryIds.has(cat.id) &&
+                          cat.id !== currentCategoryId
+                        }
+                      >
+                        {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {categoryError && (
                   <p className="mt-1 text-xs text-destructive">
-                    {labelError.message as string}
+                    {categoryError.message as string}
                   </p>
                 )}
               </div>
@@ -136,12 +149,11 @@ export function AnnualChargesForm({
                   type="number"
                   step="0.01"
                   min="0"
-                  placeholder="0,00"
-                  {...form.register(`customCategories.${index}.amount`, {
+                  {...form.register(`charges.${index}.amount`, {
                     valueAsNumber: true,
                   })}
                   className="text-right"
-                  aria-label={`Montant catégorie personnalisée ${index + 1}`}
+                  aria-label={`Montant ligne ${index + 1}`}
                   aria-invalid={!!amountError}
                 />
                 {amountError && (
@@ -156,7 +168,7 @@ export function AnnualChargesForm({
                 variant="ghost"
                 size="icon"
                 onClick={() => remove(index)}
-                aria-label={`Supprimer catégorie personnalisée ${index + 1}`}
+                aria-label={`Supprimer ${currentCategory?.label ?? `ligne ${index + 1}`}`}
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -164,22 +176,74 @@ export function AnnualChargesForm({
           );
         })}
 
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => append({ label: "", amount: 0 })}
-          className="w-full"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Ajouter une catégorie
-        </Button>
+        <div className="flex flex-col gap-2 border-t pt-3 sm:flex-row sm:items-end">
+          {availableCategories.length > 0 && (
+            <div className="flex-1">
+              <Label className="mb-1 text-xs text-muted-foreground">
+                Catégorie existante
+              </Label>
+              <Select
+                value=""
+                onValueChange={(categoryId) => {
+                  append({ chargeCategoryId: categoryId, amount: 0 });
+                }}
+              >
+                <SelectTrigger aria-label="Ajouter une catégorie existante">
+                  <SelectValue placeholder="Ajouter une catégorie…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableCategories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {onCreateCategory && (
+            <div className="flex flex-1 items-end gap-2">
+              <div className="flex-1">
+                <Label className="mb-1 text-xs text-muted-foreground">
+                  Nouvelle catégorie
+                </Label>
+                <Input
+                  value={newCategoryLabel}
+                  onChange={(e) => setNewCategoryLabel(e.target.value)}
+                  placeholder="Nom…"
+                  aria-label="Nom de la nouvelle catégorie"
+                  disabled={isCreating}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={isCreating || !newCategoryLabel.trim()}
+                onClick={async () => {
+                  const label = newCategoryLabel.trim();
+                  if (!label || !onCreateCategory) return;
+                  setIsCreating(true);
+                  try {
+                    const created = await onCreateCategory(label);
+                    setNewCategoryLabel("");
+                    append({ chargeCategoryId: created.id, amount: 0 });
+                  } finally {
+                    setIsCreating(false);
+                  }
+                }}
+              >
+                <Plus className="mr-1 h-4 w-4" />
+                {isCreating ? "Création…" : "Créer"}
+              </Button>
+            </div>
+          )}
+        </div>
       </fieldset>
 
       <Button type="submit" disabled={isSubmitting} className="w-full">
-        {isSubmitting
-          ? "Enregistrement…"
-          : "Enregistrer les charges"}
+        {isSubmitting ? "Enregistrement…" : "Enregistrer les charges"}
       </Button>
     </form>
   );
@@ -187,48 +251,16 @@ export function AnnualChargesForm({
 
 function buildDefaults(
   initialCharges?: ChargeEntryData[],
+  chargeCategories?: ChargeCategoryData[],
 ): AnnualChargesFormData {
   if (!initialCharges || initialCharges.length === 0) {
-    return {
-      waterAmount: 0,
-      electricityAmount: 0,
-      teomAmount: 0,
-      cleaningAmount: 0,
-      customCategories: [],
-    };
+    return { charges: [] };
   }
 
-  const defaults: AnnualChargesFormData = {
-    waterAmount: 0,
-    electricityAmount: 0,
-    teomAmount: 0,
-    cleaningAmount: 0,
-    customCategories: [],
+  return {
+    charges: initialCharges.map((charge) => ({
+      chargeCategoryId: charge.chargeCategoryId,
+      amount: charge.amountCents / 100,
+    })),
   };
-
-  for (const charge of initialCharges) {
-    const amountEuros = charge.amountCents / 100;
-    switch (charge.category) {
-      case "water":
-        defaults.waterAmount = amountEuros;
-        break;
-      case "electricity":
-        defaults.electricityAmount = amountEuros;
-        break;
-      case "teom":
-        defaults.teomAmount = amountEuros;
-        break;
-      case "cleaning":
-        defaults.cleaningAmount = amountEuros;
-        break;
-      case "custom":
-        defaults.customCategories.push({
-          label: charge.label,
-          amount: amountEuros,
-        });
-        break;
-    }
-  }
-
-  return defaults;
 }

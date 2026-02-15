@@ -8,10 +8,10 @@ import { AnnualChargesRecorded } from '../events/annual-charges-recorded.event';
 
 describe('AnnualChargesAggregate', () => {
   const validCharges = [
-    { category: 'water', label: 'Eau', amountCents: 45000 },
-    { category: 'electricity', label: 'Électricité', amountCents: 30000 },
-    { category: 'teom', label: 'TEOM', amountCents: 25000 },
-    { category: 'cleaning', label: 'Nettoyage', amountCents: 20000 },
+    { chargeCategoryId: 'cat-water', label: 'Eau', amountCents: 45000 },
+    { chargeCategoryId: 'cat-electricity', label: 'Électricité', amountCents: 30000 },
+    { chargeCategoryId: 'cat-teom', label: 'TEOM', amountCents: 25000 },
+    { chargeCategoryId: 'cat-cleaning', label: 'Nettoyage', amountCents: 20000 },
   ];
 
   describe('record', () => {
@@ -36,8 +36,8 @@ describe('AnnualChargesAggregate', () => {
     it('should calculate total from all charge entries', () => {
       const aggregate = new AnnualChargesAggregate('test-id');
       const charges = [
-        { category: 'water', label: 'Eau', amountCents: 10000 },
-        { category: 'custom', label: 'Gardiennage', amountCents: 5000 },
+        { chargeCategoryId: 'cat-water', label: 'Eau', amountCents: 10000 },
+        { chargeCategoryId: 'cat-custom-1', label: 'Gardiennage', amountCents: 5000 },
       ];
       aggregate.record('entity-1', 'user-1', 2025, charges);
 
@@ -51,7 +51,7 @@ describe('AnnualChargesAggregate', () => {
       aggregate.commit();
 
       const updatedCharges = [
-        { category: 'water', label: 'Eau', amountCents: 50000 },
+        { chargeCategoryId: 'cat-water', label: 'Eau', amountCents: 50000 },
       ];
       aggregate.record('entity-1', 'user-1', 2025, updatedCharges);
 
@@ -73,12 +73,12 @@ describe('AnnualChargesAggregate', () => {
       expect(events).toHaveLength(0);
     });
 
-    it('should throw for invalid charge category', () => {
+    it('should throw for empty chargeCategoryId', () => {
       const aggregate = new AnnualChargesAggregate('test-id');
-      const charges = [{ category: 'gas', label: 'Gaz', amountCents: 5000 }];
+      const charges = [{ chargeCategoryId: '', label: 'Gaz', amountCents: 5000 }];
       expect(() =>
         aggregate.record('entity-1', 'user-1', 2025, charges),
-      ).toThrow('Invalid charge category');
+      ).toThrow('Charge category ID is required');
     });
 
     it('should throw for invalid fiscal year', () => {
@@ -90,7 +90,7 @@ describe('AnnualChargesAggregate', () => {
 
     it('should throw for empty label', () => {
       const aggregate = new AnnualChargesAggregate('test-id');
-      const charges = [{ category: 'water', label: '', amountCents: 5000 }];
+      const charges = [{ chargeCategoryId: 'cat-water', label: '', amountCents: 5000 }];
       expect(() =>
         aggregate.record('entity-1', 'user-1', 2025, charges),
       ).toThrow('Charge label cannot be empty');
@@ -98,7 +98,7 @@ describe('AnnualChargesAggregate', () => {
 
     it('should throw for negative amount', () => {
       const aggregate = new AnnualChargesAggregate('test-id');
-      const charges = [{ category: 'water', label: 'Eau', amountCents: -100 }];
+      const charges = [{ chargeCategoryId: 'cat-water', label: 'Eau', amountCents: -100 }];
       expect(() =>
         aggregate.record('entity-1', 'user-1', 2025, charges),
       ).toThrow('non-negative');
@@ -107,8 +107,8 @@ describe('AnnualChargesAggregate', () => {
     it('should accept custom categories with labels', () => {
       const aggregate = new AnnualChargesAggregate('test-id');
       const charges = [
-        { category: 'custom', label: 'Gardiennage', amountCents: 15000 },
-        { category: 'custom', label: 'Ascenseur', amountCents: 8000 },
+        { chargeCategoryId: 'cat-custom-1', label: 'Gardiennage', amountCents: 15000 },
+        { chargeCategoryId: 'cat-custom-2', label: 'Ascenseur', amountCents: 8000 },
       ];
       aggregate.record('entity-1', 'user-1', 2025, charges);
 

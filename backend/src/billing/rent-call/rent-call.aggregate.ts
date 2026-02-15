@@ -23,7 +23,7 @@ export class RentCallAggregate extends AggregateRoot {
   private unitId!: string;
   private month!: string;
   private rentAmountCents!: number;
-  private billingLines: Array<{ label: string; amountCents: number; type: string }> = [];
+  private billingLines: Array<{ chargeCategoryId: string; categoryLabel: string; amountCents: number }> = [];
   private totalAmountCents!: number;
   private isProRata = false;
   private occupiedDays!: number;
@@ -45,7 +45,7 @@ export class RentCallAggregate extends AggregateRoot {
     unitId: string,
     month: string,
     rentAmountCents: number,
-    billingLines: Array<{ label: string; amountCents: number; type: string }>,
+    billingLines: Array<{ chargeCategoryId: string; categoryLabel: string; amountCents: number }>,
     totalAmountCents: number,
     isProRata: boolean,
     occupiedDays: number,

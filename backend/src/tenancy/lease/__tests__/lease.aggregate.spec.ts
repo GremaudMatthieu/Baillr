@@ -211,8 +211,8 @@ describe('LeaseAggregate', () => {
     it('should configure billing lines on existing lease', () => {
       const aggregate = createExistingLease();
       aggregate.configureBillingLines([
-        { label: 'Provisions sur charges', amountCents: 5000, type: 'provision' },
-        { label: 'Parking', amountCents: 3000, type: 'option' },
+        { chargeCategoryId: 'cat-water', amountCents: 5000 },
+        { chargeCategoryId: 'cat-elec', amountCents: 3000 },
       ]);
 
       const events = aggregate.getUncommittedEvents();
@@ -223,14 +223,12 @@ describe('LeaseAggregate', () => {
       expect(event.data.leaseId).toBe('lease-123');
       expect(event.data.billingLines).toHaveLength(2);
       expect(event.data.billingLines[0]).toEqual({
-        label: 'Provisions sur charges',
+        chargeCategoryId: 'cat-water',
         amountCents: 5000,
-        type: 'provision',
       });
       expect(event.data.billingLines[1]).toEqual({
-        label: 'Parking',
+        chargeCategoryId: 'cat-elec',
         amountCents: 3000,
-        type: 'option',
       });
     });
 
@@ -245,12 +243,12 @@ describe('LeaseAggregate', () => {
     it('should skip event when billing lines unchanged (no-op)', () => {
       const aggregate = createExistingLease();
       aggregate.configureBillingLines([
-        { label: 'Provisions', amountCents: 5000, type: 'provision' },
+        { chargeCategoryId: 'cat-water', amountCents: 5000 },
       ]);
       aggregate.commit();
 
       aggregate.configureBillingLines([
-        { label: 'Provisions', amountCents: 5000, type: 'provision' },
+        { chargeCategoryId: 'cat-water', amountCents: 5000 },
       ]);
 
       const events = aggregate.getUncommittedEvents();
@@ -260,31 +258,31 @@ describe('LeaseAggregate', () => {
     it('should reject configuring billing lines before lease creation', () => {
       const aggregate = createAggregate();
       expect(() =>
-        aggregate.configureBillingLines([{ label: 'Test', amountCents: 5000, type: 'provision' }]),
+        aggregate.configureBillingLines([{ chargeCategoryId: 'cat-1', amountCents: 5000 }]),
       ).toThrow(DomainException);
     });
 
     it('should reject invalid billing line data', () => {
       const aggregate = createExistingLease();
       expect(() =>
-        aggregate.configureBillingLines([{ label: '', amountCents: 5000, type: 'provision' }]),
+        aggregate.configureBillingLines([{ chargeCategoryId: '', amountCents: 5000 }]),
       ).toThrow(DomainException);
     });
 
     it('should allow reconfiguring billing lines (idempotent update)', () => {
       const aggregate = createExistingLease();
 
-      aggregate.configureBillingLines([{ label: 'First', amountCents: 1000, type: 'provision' }]);
+      aggregate.configureBillingLines([{ chargeCategoryId: 'cat-elec', amountCents: 1000 }]);
       aggregate.commit();
 
-      aggregate.configureBillingLines([{ label: 'Second', amountCents: 2000, type: 'option' }]);
+      aggregate.configureBillingLines([{ chargeCategoryId: 'cat-water', amountCents: 2000 }]);
 
       const events = aggregate.getUncommittedEvents();
       expect(events).toHaveLength(1);
 
       const event = events[0] as LeaseBillingLinesConfigured;
       expect(event.data.billingLines).toHaveLength(1);
-      expect(event.data.billingLines[0].label).toBe('Second');
+      expect(event.data.billingLines[0].chargeCategoryId).toBe('cat-water');
     });
   });
 

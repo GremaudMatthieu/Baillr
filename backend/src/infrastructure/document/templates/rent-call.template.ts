@@ -86,7 +86,7 @@ export function renderRentCallPdf(
 
   // Additional billing lines
   for (const line of data.billingLines) {
-    doc.text(line.label, tableX, tableY, { width: labelColWidth });
+    doc.text(line.categoryLabel, tableX, tableY, { width: labelColWidth });
     doc.text(formatEuroCents(line.amountCents), tableX + labelColWidth, tableY, {
       width: amountColWidth,
       align: 'right',

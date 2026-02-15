@@ -20,8 +20,8 @@ describe('RecordAnnualChargesController', () => {
     id: 'entity1-2025',
     fiscalYear: 2025,
     charges: [
-      { category: 'water', label: 'Eau', amountCents: 45000 },
-      { category: 'electricity', label: 'Électricité', amountCents: 30000 },
+      { chargeCategoryId: 'cat-water', label: 'Eau', amountCents: 45000 },
+      { chargeCategoryId: 'cat-electricity', label: 'Électricité', amountCents: 30000 },
     ],
   };
 

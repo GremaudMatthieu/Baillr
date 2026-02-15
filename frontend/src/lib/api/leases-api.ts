@@ -2,9 +2,10 @@ import { useAuth } from "@clerk/nextjs";
 import { fetchWithAuth } from "./fetch-with-auth";
 
 export interface BillingLineData {
-  label: string;
+  chargeCategoryId: string;
+  categoryLabel: string;
+  categorySlug?: string;
   amountCents: number;
-  type: string;
 }
 
 export interface LeaseData {

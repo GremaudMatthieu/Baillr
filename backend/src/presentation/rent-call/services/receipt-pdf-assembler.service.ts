@@ -13,7 +13,7 @@ import { formatTenantDisplayName } from '@infrastructure/shared/format-tenant-na
 export interface ReceiptRentCallData {
   month: string;
   rentAmountCents: number;
-  billingLines: Array<{ label: string; amountCents: number; type: string }> | unknown;
+  billingLines: Array<{ categoryLabel: string; amountCents: number }> | unknown;
   totalAmountCents: number;
   isProRata: boolean;
   occupiedDays: number | null;
@@ -59,11 +59,10 @@ export class ReceiptPdfAssembler {
     const leaseReference = `${String(startDate.getDate()).padStart(2, '0')}/${String(startDate.getMonth() + 1).padStart(2, '0')}/${startDate.getFullYear()}`;
 
     const billingLines = Array.isArray(rentCall.billingLines)
-      ? (rentCall.billingLines as Array<{
-          label: string;
-          amountCents: number;
-          type: string;
-        }>)
+      ? (rentCall.billingLines as Array<Record<string, unknown>>).map((line) => ({
+          categoryLabel: typeof line.categoryLabel === 'string' ? line.categoryLabel : 'Charge',
+          amountCents: typeof line.amountCents === 'number' ? line.amountCents : 0,
+        }))
       : [];
 
     const receiptType =

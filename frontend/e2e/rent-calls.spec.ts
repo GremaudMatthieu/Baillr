@@ -61,9 +61,14 @@ test.describe('Rent call generation', () => {
     });
     await api.waitForLeaseCount(entityId, 1);
 
-    // Configure billing lines
+    // Fetch charge categories (triggers standard category seeding)
+    const { data: categories } = await api.getChargeCategories(entityId);
+    expect(categories.length).toBeGreaterThan(0);
+
+    // Configure billing lines with the first standard category
+    const waterCategory = categories.find((c) => c.slug === 'water') ?? categories[0];
     await api.configureBillingLines(leaseId, [
-      { label: 'Charges', amountCents: 5000, type: 'provision' },
+      { chargeCategoryId: waterCategory.id as string, amountCents: 5000 },
     ]);
   });
 

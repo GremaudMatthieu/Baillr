@@ -46,8 +46,8 @@ describe('ConfigureLeaseBillingLinesHandler', () => {
     mockRepository.load.mockResolvedValue(lease);
 
     const command = new ConfigureLeaseBillingLinesCommand('lease-1', [
-      { label: 'Provisions sur charges', amountCents: 5000, type: 'provision' },
-      { label: 'Parking', amountCents: 3000, type: 'option' },
+      { chargeCategoryId: 'cat-water', amountCents: 5000 },
+      { chargeCategoryId: 'cat-elec', amountCents: 3000 },
     ]);
 
     await handler.execute(command);
@@ -63,7 +63,7 @@ describe('ConfigureLeaseBillingLinesHandler', () => {
     mockRepository.load.mockRejectedValue(new Error('Aggregate not found'));
 
     const command = new ConfigureLeaseBillingLinesCommand('nonexistent', [
-      { label: 'Test', amountCents: 5000, type: 'provision' },
+      { chargeCategoryId: 'cat-1', amountCents: 5000 },
     ]);
 
     await expect(handler.execute(command)).rejects.toThrow('Aggregate not found');

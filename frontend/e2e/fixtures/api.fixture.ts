@@ -387,9 +387,36 @@ export class ApiHelper {
     return id;
   }
 
+  async getChargeCategories(entityId: string) {
+    const response = await this.request.get(
+      `${API_BASE}/api/entities/${entityId}/charge-categories`,
+      { headers: this.headers() },
+    );
+    if (!response.ok()) {
+      throw new Error(`Failed to get charge categories: ${response.status()}`);
+    }
+    return (await response.json()) as { data: Record<string, unknown>[] };
+  }
+
+  async createChargeCategory(entityId: string, label: string) {
+    const response = await this.request.post(
+      `${API_BASE}/api/entities/${entityId}/charge-categories`,
+      {
+        headers: this.headers(),
+        data: { label },
+      },
+    );
+    if (!response.ok()) {
+      throw new Error(
+        `Failed to create charge category: ${response.status()} ${await response.text()}`,
+      );
+    }
+    return (await response.json()) as { data: Record<string, unknown> };
+  }
+
   async configureBillingLines(
     leaseId: string,
-    billingLines: { label: string; amountCents: number; type: string }[],
+    billingLines: { chargeCategoryId: string; amountCents: number }[],
   ) {
     const response = await this.request.put(
       `${API_BASE}/api/leases/${leaseId}/billing-lines`,

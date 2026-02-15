@@ -9,6 +9,7 @@ describe('GenerateRentCallsForMonthController', () => {
   let mockEntityFinder: { findByIdAndUserId: jest.Mock };
   let mockLeaseFinder: { findAllActiveByEntityAndUser: jest.Mock };
   let mockRentCallFinder: { existsByEntityAndMonth: jest.Mock };
+  let mockPrisma: { leaseBillingLine: { findMany: jest.Mock } };
 
   const entityId = 'entity-1';
   const userId = 'user_123';
@@ -20,20 +21,30 @@ describe('GenerateRentCallsForMonthController', () => {
     rentAmountCents: 80000,
     startDate: new Date('2026-01-01'),
     endDate: null,
-    billingLines: [{ label: 'Charges', amountCents: 5000, type: 'provision' }],
   };
+
+  const defaultBillingLineRows = [
+    {
+      leaseId: 'lease-1',
+      chargeCategoryId: 'cat-water',
+      amountCents: 5000,
+      chargeCategory: { label: 'Eau', slug: 'water' },
+    },
+  ];
 
   beforeEach(() => {
     mockCommandBus = { execute: jest.fn() };
     mockEntityFinder = { findByIdAndUserId: jest.fn() };
     mockLeaseFinder = { findAllActiveByEntityAndUser: jest.fn() };
     mockRentCallFinder = { existsByEntityAndMonth: jest.fn() };
+    mockPrisma = { leaseBillingLine: { findMany: jest.fn().mockResolvedValue(defaultBillingLineRows) } };
 
     controller = new GenerateRentCallsForMonthController(
       mockCommandBus as any,
       mockEntityFinder as any,
       mockLeaseFinder as any,
       mockRentCallFinder as any,
+      mockPrisma as any,
     );
   });
 
@@ -57,6 +68,12 @@ describe('GenerateRentCallsForMonthController', () => {
       entityId, userId, new Date(Date.UTC(2026, 2, 1)),
     );
 
+    // Verify billing line rows loaded from Prisma
+    expect(mockPrisma.leaseBillingLine.findMany).toHaveBeenCalledWith({
+      where: { leaseId: { in: ['lease-1'] } },
+      include: { chargeCategory: true },
+    });
+
     const command = mockCommandBus.execute.mock.calls[0][0];
     expect(command).toBeInstanceOf(GenerateRentCallsForMonthCommand);
     expect(command.entityId).toBe(entityId);
@@ -70,7 +87,7 @@ describe('GenerateRentCallsForMonthController', () => {
       rentAmountCents: 80000,
       startDate: '2026-01-01T00:00:00.000Z',
       endDate: null,
-      billingLines: [{ label: 'Charges', amountCents: 5000, type: 'provision' }],
+      billingLines: [{ chargeCategoryId: 'cat-water', categoryLabel: 'Eau', amountCents: 5000 }],
     });
   });
 

@@ -2,7 +2,7 @@ import { useAuth } from "@clerk/nextjs";
 import { fetchWithAuth } from "./fetch-with-auth";
 
 export interface ChargeEntryData {
-  category: string;
+  chargeCategoryId: string;
   label: string;
   amountCents: number;
 }
@@ -25,7 +25,8 @@ export interface RecordAnnualChargesPayload {
 }
 
 export interface ProvisionDetail {
-  label: string;
+  chargeCategoryId: string | null;
+  categoryLabel: string;
   totalCents: number;
 }
 

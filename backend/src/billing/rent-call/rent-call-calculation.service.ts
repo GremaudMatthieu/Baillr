@@ -13,7 +13,7 @@ export interface ActiveLeaseData {
   rentAmountCents: number;
   startDate: string;
   endDate: string | null;
-  billingLines: Array<{ label: string; amountCents: number; type: string }>;
+  billingLines: Array<{ chargeCategoryId: string; categoryLabel: string; amountCents: number }>;
 }
 
 export interface RentCallCalculation {
@@ -21,7 +21,7 @@ export interface RentCallCalculation {
   tenantId: string;
   unitId: string;
   rentAmountCents: number;
-  billingLines: Array<{ label: string; amountCents: number; type: string }>;
+  billingLines: Array<{ chargeCategoryId: string; categoryLabel: string; amountCents: number }>;
   totalAmountCents: number;
   isProRata: boolean;
   occupiedDays: number;
@@ -68,7 +68,7 @@ export class RentCallCalculationService implements IRentCallCalculationService {
       const isProRata = occupied !== totalDays;
 
       let rentAmountCents: number;
-      let billingLines: Array<{ label: string; amountCents: number; type: string }>;
+      let billingLines: Array<{ chargeCategoryId: string; categoryLabel: string; amountCents: number }>;
 
       if (isProRata) {
         rentAmountCents = calculateProRataAmountCents(
@@ -77,20 +77,20 @@ export class RentCallCalculationService implements IRentCallCalculationService {
           totalDays,
         );
         billingLines = lease.billingLines.map((line) => ({
-          label: line.label,
+          chargeCategoryId: line.chargeCategoryId,
+          categoryLabel: line.categoryLabel,
           amountCents: calculateProRataAmountCents(
             line.amountCents,
             occupied,
             totalDays,
           ),
-          type: line.type,
         }));
       } else {
         rentAmountCents = lease.rentAmountCents;
         billingLines = lease.billingLines.map((line) => ({
-          label: line.label,
+          chargeCategoryId: line.chargeCategoryId,
+          categoryLabel: line.categoryLabel,
           amountCents: line.amountCents,
-          type: line.type,
         }));
       }
 

@@ -96,7 +96,7 @@ export function RentCallList({
                   </p>
                   {rc.billingLines.map((line, i) => (
                     <p key={i} className="text-xs text-muted-foreground">
-                      {line.label} : {formatAmount(line.amountCents)}
+                      {line.categoryLabel} : {formatAmount(line.amountCents)}
                     </p>
                   ))}
                 </div>

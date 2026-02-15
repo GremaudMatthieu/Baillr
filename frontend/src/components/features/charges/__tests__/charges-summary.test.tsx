@@ -20,14 +20,14 @@ describe("ChargesSummary", () => {
 
   it("renders table with charges and provisions", () => {
     const charges = [
-      { category: "water", label: "Eau", amountCents: 50000 },
-      { category: "electricity", label: "Électricité", amountCents: 30000 },
+      { chargeCategoryId: "cat-water", label: "Eau", amountCents: 50000 },
+      { chargeCategoryId: "cat-elec", label: "Électricité", amountCents: 30000 },
     ];
     const provisions = {
       totalProvisionsCents: 60000,
       details: [
-        { label: "Eau", totalCents: 40000 },
-        { label: "Électricité", totalCents: 20000 },
+        { chargeCategoryId: "cat-water", categoryLabel: "Eau", totalCents: 40000 },
+        { chargeCategoryId: "cat-elec", categoryLabel: "Électricité", totalCents: 20000 },
       ],
     };
 
@@ -53,11 +53,11 @@ describe("ChargesSummary", () => {
 
   it("shows positive difference message when charges exceed provisions", () => {
     const charges = [
-      { category: "water", label: "Eau", amountCents: 50000 },
+      { chargeCategoryId: "cat-water", label: "Eau", amountCents: 50000 },
     ];
     const provisions = {
       totalProvisionsCents: 30000,
-      details: [{ label: "Eau", totalCents: 30000 }],
+      details: [{ chargeCategoryId: "cat-water", categoryLabel: "Eau", totalCents: 30000 }],
     };
 
     renderWithProviders(
@@ -77,11 +77,11 @@ describe("ChargesSummary", () => {
 
   it("shows negative difference message when provisions exceed charges", () => {
     const charges = [
-      { category: "water", label: "Eau", amountCents: 30000 },
+      { chargeCategoryId: "cat-water", label: "Eau", amountCents: 30000 },
     ];
     const provisions = {
       totalProvisionsCents: 50000,
-      details: [{ label: "Eau", totalCents: 50000 }],
+      details: [{ chargeCategoryId: "cat-water", categoryLabel: "Eau", totalCents: 50000 }],
     };
 
     renderWithProviders(
@@ -101,11 +101,11 @@ describe("ChargesSummary", () => {
 
   it("shows equilibrium message when charges equal provisions", () => {
     const charges = [
-      { category: "water", label: "Eau", amountCents: 50000 },
+      { chargeCategoryId: "cat-water", label: "Eau", amountCents: 50000 },
     ];
     const provisions = {
       totalProvisionsCents: 50000,
-      details: [{ label: "Eau", totalCents: 50000 }],
+      details: [{ chargeCategoryId: "cat-water", categoryLabel: "Eau", totalCents: 50000 }],
     };
 
     renderWithProviders(
@@ -123,13 +123,13 @@ describe("ChargesSummary", () => {
 
   it("renders unmatched provisions as extra rows", () => {
     const charges = [
-      { category: "water", label: "Eau", amountCents: 50000 },
+      { chargeCategoryId: "cat-water", label: "Eau", amountCents: 50000 },
     ];
     const provisions = {
       totalProvisionsCents: 80000,
       details: [
-        { label: "Eau", totalCents: 40000 },
-        { label: "Entretien espaces verts", totalCents: 40000 },
+        { chargeCategoryId: "cat-water", categoryLabel: "Eau", totalCents: 40000 },
+        { chargeCategoryId: null, categoryLabel: "Entretien espaces verts", totalCents: 40000 },
       ],
     };
 
@@ -145,9 +145,64 @@ describe("ChargesSummary", () => {
     expect(screen.getByText("Entretien espaces verts")).toBeInTheDocument();
   });
 
+  it("matches charges to provisions by chargeCategoryId", () => {
+    const charges = [
+      { chargeCategoryId: "cat-water", label: "Eau froide", amountCents: 50000 },
+      { chargeCategoryId: "cat-elec", label: "Électricité parties communes", amountCents: 30000 },
+    ];
+    const provisions = {
+      totalProvisionsCents: 60000,
+      details: [
+        { chargeCategoryId: "cat-water", categoryLabel: "Eau (provisions)", totalCents: 40000 },
+        { chargeCategoryId: "cat-elec", categoryLabel: "Élec (provisions)", totalCents: 20000 },
+      ],
+    };
+
+    renderWithProviders(
+      <ChargesSummary
+        charges={charges}
+        provisions={provisions}
+        totalChargesCents={80000}
+      />,
+    );
+
+    // Charge labels should be displayed (not provision labels)
+    expect(screen.getByText("Eau froide")).toBeInTheDocument();
+    expect(screen.getByText("Électricité parties communes")).toBeInTheDocument();
+    // Provision-only labels should NOT appear since they matched by chargeCategoryId
+    expect(screen.queryByText("Eau (provisions)")).not.toBeInTheDocument();
+    expect(screen.queryByText("Élec (provisions)")).not.toBeInTheDocument();
+  });
+
+  it("falls back to label matching for legacy data without chargeCategoryId", () => {
+    const charges = [
+      { chargeCategoryId: "", label: "Gardiennage", amountCents: 20000 },
+    ];
+    const provisions = {
+      totalProvisionsCents: 35000,
+      details: [
+        { chargeCategoryId: null, categoryLabel: "Gardiennage", totalCents: 15000 },
+        { chargeCategoryId: null, categoryLabel: "Jardin", totalCents: 20000 },
+      ],
+    };
+
+    renderWithProviders(
+      <ChargesSummary
+        charges={charges}
+        provisions={provisions}
+        totalChargesCents={20000}
+      />,
+    );
+
+    // Both labels should appear since null category matching falls back to label
+    expect(screen.getByText("Gardiennage")).toBeInTheDocument();
+    // "Jardin" is unmatched provision → should appear as extra row
+    expect(screen.getByText("Jardin")).toBeInTheDocument();
+  });
+
   it("renders with null provisions", () => {
     const charges = [
-      { category: "water", label: "Eau", amountCents: 50000 },
+      { chargeCategoryId: "cat-water", label: "Eau", amountCents: 50000 },
     ];
 
     renderWithProviders(

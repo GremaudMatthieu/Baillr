@@ -55,7 +55,7 @@ export class AnnualChargesAggregate extends AggregateRoot {
     if (this.charges.length !== charges.length) return false;
     return this.charges.every(
       (existing, i) =>
-        existing.category === charges[i].category &&
+        existing.chargeCategoryId === charges[i].chargeCategoryId &&
         existing.label === charges[i].label &&
         existing.amountCents === charges[i].amountCents,
     );

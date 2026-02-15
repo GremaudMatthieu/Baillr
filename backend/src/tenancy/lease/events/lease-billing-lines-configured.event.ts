@@ -1,5 +1,5 @@
 import { Event } from 'nestjs-cqrx';
-import { BillingLinePrimitives } from '../billing-line.js';
+import type { BillingLinePrimitives } from '../billing-line.js';
 
 export interface LeaseBillingLinesConfiguredData {
   leaseId: string;

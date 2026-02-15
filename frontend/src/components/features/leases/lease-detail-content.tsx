@@ -29,8 +29,8 @@ import {
 } from "@/hooks/use-leases";
 import { useUnit } from "@/hooks/use-units";
 import { useTenant } from "@/hooks/use-tenants";
+import { useChargeCategories } from "@/hooks/use-charge-categories";
 import { REVISION_INDEX_TYPE_LABELS } from "@/lib/constants/revision-index-types";
-import { BILLING_LINE_TYPE_LABELS } from "@/lib/constants/billing-line-types";
 import { BillingLinesForm } from "./billing-lines-form";
 import { RevisionParametersForm } from "./revision-parameters-form";
 import { TerminateLeaseDialog } from "./terminate-lease-dialog";
@@ -50,17 +50,12 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("fr-FR");
 }
 
-const TYPE_BADGE_VARIANT: Record<string, "default" | "secondary" | "outline"> = {
-  rent: "default",
-  provision: "secondary",
-  option: "outline",
-};
-
 export function LeaseDetailContent({ leaseId }: { leaseId: string }) {
   const router = useRouter();
   const { data: lease, isLoading, isError } = useLease(leaseId);
   const { data: tenant } = useTenant(lease?.tenantId ?? "");
   const { data: unit } = useUnit(lease?.unitId ?? "");
+  const { data: chargeCategories } = useChargeCategories(lease?.entityId ?? "");
   const [isEditingBillingLines, setIsEditingBillingLines] = useState(false);
   const [isEditingRevisionParameters, setIsEditingRevisionParameters] =
     useState(false);
@@ -364,7 +359,7 @@ export function LeaseDetailContent({ leaseId }: { leaseId: string }) {
               <BillingLinesForm
                 initialLines={billingLines}
                 rentAmountCents={rentCents}
-                unitBillableOptions={unit?.billableOptions}
+                chargeCategories={chargeCategories ?? []}
                 onSubmit={handleBillingLinesSave}
                 onCancel={() => setIsEditingBillingLines(false)}
                 isPending={configureBillingLines.isPending}
@@ -374,22 +369,12 @@ export function LeaseDetailContent({ leaseId }: { leaseId: string }) {
                 {/* Mobile: stacked cards */}
                 <div className="space-y-3 sm:hidden">
                   <div className="flex items-center justify-between rounded-md border border-border p-3">
-                    <div>
-                      <p className="font-medium">Loyer</p>
-                      <Badge variant={TYPE_BADGE_VARIANT.rent} className="mt-1">
-                        {BILLING_LINE_TYPE_LABELS.rent}
-                      </Badge>
-                    </div>
+                    <p className="font-medium">Loyer</p>
                     <p className="text-right font-medium">{formatCurrency(rentCents)}</p>
                   </div>
                   {billingLines.map((line, idx) => (
                     <div key={idx} className="flex items-center justify-between rounded-md border border-border p-3">
-                      <div>
-                        <p className="font-medium">{line.label}</p>
-                        <Badge variant={TYPE_BADGE_VARIANT[line.type] ?? "outline"} className="mt-1">
-                          {BILLING_LINE_TYPE_LABELS[line.type] ?? line.type}
-                        </Badge>
-                      </div>
+                      <p className="font-medium">{line.categoryLabel ?? line.chargeCategoryId}</p>
                       <p className="text-right font-medium">{formatCurrency(line.amountCents)}</p>
                     </div>
                   ))}
@@ -404,31 +389,20 @@ export function LeaseDetailContent({ leaseId }: { leaseId: string }) {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b text-left text-muted-foreground">
-                        <th className="pb-2 font-medium">Libellé</th>
-                        <th className="pb-2 font-medium">Type</th>
+                        <th className="pb-2 font-medium">Catégorie</th>
                         <th className="pb-2 text-right font-medium">Montant</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr className="border-b">
                         <td className="py-2">Loyer</td>
-                        <td className="py-2">
-                          <Badge variant={TYPE_BADGE_VARIANT.rent}>
-                            {BILLING_LINE_TYPE_LABELS.rent}
-                          </Badge>
-                        </td>
                         <td className="py-2 text-right">
                           {formatCurrency(rentCents)}
                         </td>
                       </tr>
                       {billingLines.map((line, idx) => (
                         <tr key={idx} className="border-b">
-                          <td className="py-2">{line.label}</td>
-                          <td className="py-2">
-                            <Badge variant={TYPE_BADGE_VARIANT[line.type] ?? "outline"}>
-                              {BILLING_LINE_TYPE_LABELS[line.type] ?? line.type}
-                            </Badge>
-                          </td>
+                          <td className="py-2">{line.categoryLabel ?? line.chargeCategoryId}</td>
                           <td className="py-2 text-right">
                             {formatCurrency(line.amountCents)}
                           </td>
@@ -437,7 +411,7 @@ export function LeaseDetailContent({ leaseId }: { leaseId: string }) {
                     </tbody>
                     <tfoot>
                       <tr className="font-medium">
-                        <td className="pt-2" colSpan={2}>
+                        <td className="pt-2">
                           Total mensuel
                         </td>
                         <td className="pt-2 text-right">
@@ -450,7 +424,7 @@ export function LeaseDetailContent({ leaseId }: { leaseId: string }) {
 
                 {billingLines.length === 0 && (
                   <p className="text-sm text-muted-foreground">
-                    Ajouter des provisions et options
+                    Ajouter des lignes de facturation
                   </p>
                 )}
               </div>

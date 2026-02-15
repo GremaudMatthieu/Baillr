@@ -2,7 +2,7 @@ import {
   IsString,
   IsNotEmpty,
   IsInt,
-  IsIn,
+  IsUUID,
   IsArray,
   Min,
   Max,
@@ -14,10 +14,8 @@ import {
 import { Type } from 'class-transformer';
 
 export class ChargeEntryDto {
-  @IsString()
-  @IsNotEmpty()
-  @IsIn(['water', 'electricity', 'teom', 'cleaning', 'custom'])
-  category!: string;
+  @IsUUID()
+  chargeCategoryId!: string;
 
   @IsString()
   @IsNotEmpty()

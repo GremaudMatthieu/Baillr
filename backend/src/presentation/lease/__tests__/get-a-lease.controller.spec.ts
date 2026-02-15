@@ -1,48 +1,91 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { QueryBus } from '@nestjs/cqrs';
+import { NotFoundException } from '@nestjs/common';
 import { GetALeaseController } from '../controllers/get-a-lease.controller';
-import { GetALeaseQuery } from '../queries/get-a-lease.query';
 
 describe('GetALeaseController', () => {
   let controller: GetALeaseController;
-  let queryBus: { execute: jest.Mock<Promise<unknown>, [unknown]> };
+  let mockLeaseFinder: { findByIdAndUser: jest.Mock };
 
-  beforeEach(async () => {
-    queryBus = { execute: jest.fn<Promise<unknown>, [unknown]>() };
-
-    const module: TestingModule = await Test.createTestingModule({
-      controllers: [GetALeaseController],
-      providers: [{ provide: QueryBus, useValue: queryBus }],
-    }).compile();
-
-    controller = module.get<GetALeaseController>(GetALeaseController);
+  beforeEach(() => {
+    mockLeaseFinder = { findByIdAndUser: jest.fn() };
+    controller = new GetALeaseController(mockLeaseFinder as any);
   });
 
-  it('should dispatch GetALeaseQuery with correct id and userId', async () => {
-    const mockLease = { id: 'lease-1', tenantId: 't1', unitId: 'u1', rentAmountCents: 63000 };
-    queryBus.execute.mockResolvedValue(mockLease);
-
-    await controller.handle('lease-1', 'user_clerk_123');
-
-    expect(queryBus.execute).toHaveBeenCalledTimes(1);
-    const query = queryBus.execute.mock.calls[0]?.[0] as GetALeaseQuery;
-    expect(query).toBeInstanceOf(GetALeaseQuery);
-    expect(query.id).toBe('lease-1');
-    expect(query.userId).toBe('user_clerk_123');
-  });
-
-  it('should return wrapped data with lease', async () => {
-    const mockLease = { id: 'lease-1', tenantId: 't1', unitId: 'u1', rentAmountCents: 63000 };
-    queryBus.execute.mockResolvedValue(mockLease);
+  it('should return wrapped lease data with billing lines mapped', async () => {
+    const mockLease = {
+      id: 'lease-1',
+      entityId: 'entity-1',
+      userId: 'user_clerk_123',
+      tenantId: 't1',
+      unitId: 'u1',
+      startDate: new Date('2026-03-01'),
+      rentAmountCents: 63000,
+      securityDepositCents: 63000,
+      monthlyDueDate: 5,
+      revisionIndexType: 'IRL',
+      revisionDay: null,
+      revisionMonth: null,
+      referenceQuarter: null,
+      referenceYear: null,
+      baseIndexValue: null,
+      endDate: null,
+      createdAt: new Date('2026-02-01'),
+      updatedAt: new Date('2026-02-01'),
+      billingLineRows: [
+        {
+          chargeCategoryId: 'cat-water',
+          amountCents: 5000,
+          chargeCategory: { label: 'Eau', slug: 'water' },
+        },
+      ],
+    };
+    mockLeaseFinder.findByIdAndUser.mockResolvedValue(mockLease);
 
     const result = await controller.handle('lease-1', 'user_clerk_123');
 
-    expect(result).toEqual({ data: mockLease });
+    expect(mockLeaseFinder.findByIdAndUser).toHaveBeenCalledWith('lease-1', 'user_clerk_123');
+    expect(result.data.billingLines).toEqual([
+      {
+        chargeCategoryId: 'cat-water',
+        categoryLabel: 'Eau',
+        categorySlug: 'water',
+        amountCents: 5000,
+      },
+    ]);
   });
 
-  it('should propagate exceptions from queryBus', async () => {
-    queryBus.execute.mockRejectedValue(new Error('Not found'));
+  it('should throw NotFoundException when lease not found', async () => {
+    mockLeaseFinder.findByIdAndUser.mockResolvedValue(null);
 
-    await expect(controller.handle('missing-id', 'user_clerk_123')).rejects.toThrow('Not found');
+    await expect(controller.handle('missing-id', 'user_clerk_123')).rejects.toThrow(
+      NotFoundException,
+    );
+  });
+
+  it('should return empty billing lines when no billingLineRows', async () => {
+    const mockLease = {
+      id: 'lease-1',
+      entityId: 'entity-1',
+      userId: 'user_clerk_123',
+      tenantId: 't1',
+      unitId: 'u1',
+      startDate: new Date('2026-03-01'),
+      rentAmountCents: 63000,
+      securityDepositCents: 63000,
+      monthlyDueDate: 5,
+      revisionIndexType: 'IRL',
+      revisionDay: null,
+      revisionMonth: null,
+      referenceQuarter: null,
+      referenceYear: null,
+      baseIndexValue: null,
+      endDate: null,
+      createdAt: new Date('2026-02-01'),
+      updatedAt: new Date('2026-02-01'),
+    };
+    mockLeaseFinder.findByIdAndUser.mockResolvedValue(mockLease);
+
+    const result = await controller.handle('lease-1', 'user_clerk_123');
+
+    expect(result.data.billingLines).toEqual([]);
   });
 });

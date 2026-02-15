@@ -1,22 +1,25 @@
-import { ChargeCategory } from './charge-category.js';
 import { EmptyChargeLabelException } from './exceptions/empty-charge-label.exception.js';
 import { InvalidChargeAmountException } from './exceptions/negative-charge-amount.exception.js';
+import { MissingChargeCategoryIdException } from './exceptions/missing-charge-category-id.exception.js';
 
 export interface ChargeEntryPrimitives {
-  category: string;
+  chargeCategoryId: string;
   label: string;
   amountCents: number;
 }
 
 export class ChargeEntry {
   private constructor(
-    private readonly _category: ChargeCategory,
+    private readonly _chargeCategoryId: string,
     private readonly _label: string,
     private readonly _amountCents: number,
   ) {}
 
   static fromPrimitives(data: ChargeEntryPrimitives): ChargeEntry {
-    const category = ChargeCategory.fromString(data.category);
+    const chargeCategoryId = data.chargeCategoryId?.trim() ?? '';
+    if (!chargeCategoryId) {
+      throw MissingChargeCategoryIdException.create();
+    }
 
     const label = data.label?.trim() ?? '';
     if (!label) {
@@ -40,12 +43,12 @@ export class ChargeEntry {
       throw InvalidChargeAmountException.tooLarge();
     }
 
-    return new ChargeEntry(category, label, data.amountCents);
+    return new ChargeEntry(chargeCategoryId, label, data.amountCents);
   }
 
   toPrimitives(): ChargeEntryPrimitives {
     return {
-      category: this._category.value,
+      chargeCategoryId: this._chargeCategoryId,
       label: this._label,
       amountCents: this._amountCents,
     };
@@ -57,7 +60,7 @@ export class ChargeEntry {
 
   equals(other: ChargeEntry): boolean {
     return (
-      this._category.value === other._category.value &&
+      this._chargeCategoryId === other._chargeCategoryId &&
       this._label === other._label &&
       this._amountCents === other._amountCents
     );
