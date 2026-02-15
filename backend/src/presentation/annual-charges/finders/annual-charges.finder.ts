@@ -36,4 +36,20 @@ export class AnnualChargesFinder {
       },
     });
   }
+
+  async findPaidBillingLinesByLeaseAndYear(
+    leaseId: string,
+    fiscalYear: number,
+  ): Promise<Array<{ billingLines: unknown }>> {
+    return this.prisma.rentCall.findMany({
+      where: {
+        leaseId,
+        month: { startsWith: `${fiscalYear}-` },
+        paidAt: { not: null },
+      },
+      select: {
+        billingLines: true,
+      },
+    });
+  }
 }

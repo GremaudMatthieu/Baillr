@@ -45,6 +45,26 @@ export class LeaseFinder {
     });
   }
 
+  async findAllByEntityAndFiscalYear(
+    entityId: string,
+    userId: string,
+    fiscalYear: number,
+  ): Promise<(Lease & { tenant: Tenant; unit: Unit })[]> {
+    return this.prisma.lease.findMany({
+      where: {
+        entityId,
+        userId,
+        startDate: { lte: new Date(`${fiscalYear}-12-31`) },
+        OR: [
+          { endDate: null },
+          { endDate: { gte: new Date(`${fiscalYear}-01-01`) } },
+        ],
+      },
+      include: { tenant: true, unit: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async findAllActiveWithRevisionParams(
     entityId: string,
     userId: string,

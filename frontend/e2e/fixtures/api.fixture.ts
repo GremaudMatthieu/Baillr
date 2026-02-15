@@ -855,6 +855,57 @@ export class ApiHelper {
     return (await response.json()) as { sent: boolean };
   }
 
+  async recordAnnualCharges(
+    entityId: string,
+    payload: {
+      id: string;
+      fiscalYear: number;
+      charges: { chargeCategoryId: string; label: string; amountCents: number }[];
+    },
+  ) {
+    const response = await this.request.post(
+      `${API_BASE}/api/entities/${entityId}/annual-charges`,
+      {
+        headers: this.headers(),
+        data: payload,
+      },
+    );
+    if (!response.ok()) {
+      throw new Error(
+        `Failed to record annual charges: ${response.status()} ${await response.text()}`,
+      );
+    }
+  }
+
+  async getChargeRegularization(entityId: string, fiscalYear: number) {
+    const response = await this.request.get(
+      `${API_BASE}/api/entities/${entityId}/charge-regularization?fiscalYear=${fiscalYear}`,
+      { headers: this.headers() },
+    );
+    if (!response.ok()) {
+      throw new Error(
+        `Failed to get charge regularization: ${response.status()}`,
+      );
+    }
+    return (await response.json()) as { data: Record<string, unknown> | null };
+  }
+
+  async waitForChargeRegularization(
+    entityId: string,
+    fiscalYear: number,
+    timeoutMs = 5000,
+  ) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      const { data } = await this.getChargeRegularization(entityId, fiscalYear);
+      if (data) return data;
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    throw new Error(
+      `Timed out waiting for charge regularization (${timeoutMs}ms)`,
+    );
+  }
+
   getCreatedEntityIds() {
     return [...this.createdEntityIds];
   }

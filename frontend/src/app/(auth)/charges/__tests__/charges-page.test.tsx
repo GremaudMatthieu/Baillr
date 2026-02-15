@@ -89,6 +89,28 @@ vi.mock("@/hooks/use-water-meter-readings", () => ({
   }),
 }));
 
+vi.mock("@/hooks/use-charge-regularization", () => ({
+  useChargeRegularization: () => ({
+    data: null,
+    isLoading: false,
+  }),
+  useCalculateChargeRegularization: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+    isError: false,
+    isSuccess: false,
+  }),
+}));
+
+vi.mock("@/hooks/use-download-regularization-pdf", () => ({
+  useDownloadRegularizationPdf: () => ({
+    downloadPdf: vi.fn(),
+    isDownloading: false,
+    downloadingLeaseId: null,
+    error: null,
+  }),
+}));
+
 describe("ChargesPage", () => {
   beforeEach(() => {
     mockEntityId = "entity-1";

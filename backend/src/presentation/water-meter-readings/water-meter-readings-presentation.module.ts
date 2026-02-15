@@ -34,6 +34,6 @@ import { WaterDistributionService } from './services/water-distribution.service.
     WaterMeterReadingsFinder,
     WaterDistributionService,
   ],
-  exports: [WaterMeterReadingsFinder],
+  exports: [WaterMeterReadingsFinder, WaterDistributionService],
 })
 export class WaterMeterReadingsPresentationModule {}

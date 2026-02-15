@@ -29,6 +29,7 @@ import { AnnualChargesForm } from "@/components/features/charges/annual-charges-
 import { ChargesSummary } from "@/components/features/charges/charges-summary";
 import { WaterMeterReadingsForm } from "@/components/features/charges/water-meter-readings-form";
 import { WaterDistributionSummary } from "@/components/features/charges/water-distribution-summary";
+import { ChargeRegularizationSection } from "@/components/features/charges/charge-regularization-section";
 import type { ChargeEntryData } from "@/lib/api/annual-charges-api";
 import type { MeterReadingData } from "@/lib/api/water-meter-api";
 
@@ -232,6 +233,11 @@ function ChargesPageContent({ entityId }: { entityId: string }) {
             </CardContent>
           </Card>
         )}
+
+        <ChargeRegularizationSection
+          entityId={entityId}
+          fiscalYear={fiscalYear}
+        />
 
         <Card>
           <CardHeader>

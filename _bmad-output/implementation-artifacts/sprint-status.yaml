@@ -111,7 +111,7 @@ development_status:
   7-5b-add-charge-category-to-billing-lines: done # reviewed 2026-02-14, 10 findings (1H/5M/4L), 7 fixes — duplicate BillingLineCategory→ChargeCategory cross-BC import (H1), Zod enum validation (M2), File List sync (M1), type safety casts
   7-5c-normalize-billing-lines-with-charge-category-table: done # reviewed 2026-02-15, 10 findings (1H/5M/4L), 11 fixes — H1: 5 test fixtures stale format, M1: unscoped findByIds removed, M4: debug.png cleaned, M5: onDelete Restrict FK, L1: File List count 10→12, L2: use-charge-categories hook tests (4 tests), L3: seeder sequential→createMany batch, L4: E2E api fixture methods
   7-6-enter-individual-water-meter-readings-per-unit: done # reviewed 2026-02-15, 10 findings (3H/4M/3L), 8 fixes — type mismatch H1, null-guard chargeCategoryId H2, DTO deviation doc H3, role="status" M2, File List count M4, consumption null-guards in 2 components + 2 tests
-  7-7-calculate-and-generate-charge-regularization-statements: ready-for-dev
+  7-7-calculate-and-generate-charge-regularization-statements: review
   7-8-apply-regularization-credits-debits-to-tenant-accounts: backlog
   epic-7-retrospective: optional
 

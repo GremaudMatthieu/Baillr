@@ -1,10 +1,20 @@
 import { Injectable } from '@nestjs/common';
-import type { Unit } from '@prisma/client';
+import type { Unit, Property } from '@prisma/client';
 import { PrismaService } from '@infrastructure/database/prisma.service.js';
 
 @Injectable()
 export class UnitFinder {
   constructor(private readonly prisma: PrismaService) {}
+
+  async findByIdWithProperty(
+    id: string,
+    userId: string,
+  ): Promise<(Unit & { property: Property }) | null> {
+    return this.prisma.unit.findFirst({
+      where: { id, userId },
+      include: { property: true },
+    });
+  }
 
   async findAllByPropertyAndUser(propertyId: string, userId: string): Promise<Unit[]> {
     return this.prisma.unit.findMany({

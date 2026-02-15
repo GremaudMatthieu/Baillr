@@ -22,6 +22,7 @@ import { RevisionPresentationModule } from './presentation/revision/revision-pre
 import { AnnualChargesPresentationModule } from './presentation/annual-charges/annual-charges-presentation.module';
 import { ChargeCategoryPresentationModule } from './presentation/charge-category/charge-category-presentation.module';
 import { WaterMeterReadingsPresentationModule } from './presentation/water-meter-readings/water-meter-readings-presentation.module';
+import { ChargeRegularizationPresentationModule } from './presentation/charge-regularization/charge-regularization-presentation.module';
 import { DocumentModule } from './infrastructure/document/document.module';
 import { EmailModule } from './infrastructure/email/email.module';
 import { BankImportModule } from './infrastructure/bank-import/bank-import.module';
@@ -56,6 +57,7 @@ import { AppService } from './app.service';
     AnnualChargesPresentationModule,
     ChargeCategoryPresentationModule,
     WaterMeterReadingsPresentationModule,
+    ChargeRegularizationPresentationModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ClerkAuthGuard }],

@@ -5,11 +5,13 @@ import type { ReceiptPdfData } from './receipt-pdf-data.interface.js';
 import type { FormalNoticePdfData } from './formal-notice-pdf-data.interface.js';
 import type { StakeholderLetterPdfData } from './stakeholder-letter-pdf-data.interface.js';
 import type { RevisionLetterPdfData } from './revision-letter-pdf-data.interface.js';
+import type { ChargeRegularizationPdfData } from './charge-regularization-pdf-data.interface.js';
 import { renderRentCallPdf } from './templates/rent-call.template.js';
 import { renderReceiptPdf } from './templates/receipt.template.js';
 import { renderFormalNoticePdf } from './templates/formal-notice.template.js';
 import { renderStakeholderLetterPdf } from './templates/stakeholder-letter.template.js';
 import { renderRevisionLetterPdf } from './templates/revision-letter.template.js';
+import { renderChargeRegularizationPdf } from './templates/charge-regularization.template.js';
 
 @Injectable()
 export class PdfGeneratorService {
@@ -126,6 +128,28 @@ export class PdfGeneratorService {
       doc.on('error', (err: Error) => reject(err));
 
       renderRevisionLetterPdf(doc, data);
+      doc.end();
+    });
+  }
+
+  async generateChargeRegularizationPdf(data: ChargeRegularizationPdfData): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margin: 50,
+        info: {
+          Title: `Régularisation des charges - ${data.tenantName} - ${data.fiscalYear}`,
+          Author: data.entityName,
+          Subject: 'Décompte de régularisation des charges',
+        },
+      });
+
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', (err: Error) => reject(err));
+
+      renderChargeRegularizationPdf(doc, data);
       doc.end();
     });
   }
