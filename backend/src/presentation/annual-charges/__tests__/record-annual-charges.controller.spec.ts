@@ -30,11 +30,8 @@ describe('RecordAnnualChargesController', () => {
 
     await controller.handle('entity-1', validDto as never, 'user-1');
 
-    expect(mockCommandBus.execute).toHaveBeenCalledWith(
-      expect.any(RecordAnnualChargesCommand),
-    );
-    const command = mockCommandBus.execute.mock
-      .calls[0][0] as RecordAnnualChargesCommand;
+    expect(mockCommandBus.execute).toHaveBeenCalledWith(expect.any(RecordAnnualChargesCommand));
+    const command = mockCommandBus.execute.mock.calls[0][0] as RecordAnnualChargesCommand;
     expect(command.id).toBe('entity1-2025');
     expect(command.entityId).toBe('entity-1');
     expect(command.userId).toBe('user-1');
@@ -45,9 +42,9 @@ describe('RecordAnnualChargesController', () => {
   it('should throw UnauthorizedException if entity not found', async () => {
     mockEntityFinder.findByIdAndUserId.mockResolvedValue(null);
 
-    await expect(
-      controller.handle('entity-1', validDto as never, 'user-1'),
-    ).rejects.toThrow(UnauthorizedException);
+    await expect(controller.handle('entity-1', validDto as never, 'user-1')).rejects.toThrow(
+      UnauthorizedException,
+    );
   });
 
   it('should check entity ownership with userId', async () => {
@@ -55,9 +52,6 @@ describe('RecordAnnualChargesController', () => {
 
     await controller.handle('entity-1', validDto as never, 'user-1');
 
-    expect(mockEntityFinder.findByIdAndUserId).toHaveBeenCalledWith(
-      'entity-1',
-      'user-1',
-    );
+    expect(mockEntityFinder.findByIdAndUserId).toHaveBeenCalledWith('entity-1', 'user-1');
   });
 });

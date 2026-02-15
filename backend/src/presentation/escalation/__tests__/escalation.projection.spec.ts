@@ -36,10 +36,7 @@ describe('EscalationProjection', () => {
         }),
       },
     };
-    projection = new EscalationProjection(
-      mockKurrentDb as never,
-      mockPrisma as never,
-    );
+    projection = new EscalationProjection(mockKurrentDb as never, mockPrisma as never);
   });
 
   describe('onEscalationInitiated', () => {

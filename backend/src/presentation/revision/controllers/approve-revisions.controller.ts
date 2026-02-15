@@ -33,8 +33,6 @@ export class ApproveRevisionsController {
       throw new UnauthorizedException();
     }
 
-    await this.commandBus.execute(
-      new ApproveRevisionsCommand(dto.revisionIds, entityId, userId),
-    );
+    await this.commandBus.execute(new ApproveRevisionsCommand(dto.revisionIds, entityId, userId));
   }
 }

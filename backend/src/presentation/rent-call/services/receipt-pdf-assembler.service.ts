@@ -77,9 +77,7 @@ export class ReceiptPdfAssembler {
     );
 
     const lastPayment = sortedPayments[sortedPayments.length - 1];
-    const paymentDate = lastPayment
-      ? this.formatDate(new Date(lastPayment.paymentDate))
-      : '';
+    const paymentDate = lastPayment ? this.formatDate(new Date(lastPayment.paymentDate)) : '';
 
     return {
       receiptType,

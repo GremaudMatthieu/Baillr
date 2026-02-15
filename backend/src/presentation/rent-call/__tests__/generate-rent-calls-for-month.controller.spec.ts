@@ -37,7 +37,9 @@ describe('GenerateRentCallsForMonthController', () => {
     mockEntityFinder = { findByIdAndUserId: jest.fn() };
     mockLeaseFinder = { findAllActiveByEntityAndUser: jest.fn() };
     mockRentCallFinder = { existsByEntityAndMonth: jest.fn() };
-    mockPrisma = { leaseBillingLine: { findMany: jest.fn().mockResolvedValue(defaultBillingLineRows) } };
+    mockPrisma = {
+      leaseBillingLine: { findMany: jest.fn().mockResolvedValue(defaultBillingLineRows) },
+    };
 
     controller = new GenerateRentCallsForMonthController(
       mockCommandBus as any,
@@ -56,16 +58,26 @@ describe('GenerateRentCallsForMonthController', () => {
 
   it('should call finders and dispatch command with mapped activeLeases', async () => {
     setupSuccess();
-    const handlerResult: BatchHandlerResult = { generated: 1, totalAmountCents: 85000, exceptions: [] };
+    const handlerResult: BatchHandlerResult = {
+      generated: 1,
+      totalAmountCents: 85000,
+      exceptions: [],
+    };
     mockCommandBus.execute.mockResolvedValue(handlerResult);
 
     const result = await controller.handle(entityId, { month: '2026-03' }, userId);
 
     expect(result).toEqual(handlerResult);
     expect(mockEntityFinder.findByIdAndUserId).toHaveBeenCalledWith(entityId, userId);
-    expect(mockRentCallFinder.existsByEntityAndMonth).toHaveBeenCalledWith(entityId, '2026-03', userId);
+    expect(mockRentCallFinder.existsByEntityAndMonth).toHaveBeenCalledWith(
+      entityId,
+      '2026-03',
+      userId,
+    );
     expect(mockLeaseFinder.findAllActiveByEntityAndUser).toHaveBeenCalledWith(
-      entityId, userId, new Date(Date.UTC(2026, 2, 1)),
+      entityId,
+      userId,
+      new Date(Date.UTC(2026, 2, 1)),
     );
 
     // Verify billing line rows loaded from Prisma
@@ -95,24 +107,24 @@ describe('GenerateRentCallsForMonthController', () => {
     mockEntityFinder.findByIdAndUserId.mockResolvedValue(null);
     mockRentCallFinder.existsByEntityAndMonth.mockResolvedValue(false);
 
-    await expect(
-      controller.handle(entityId, { month: '2026-03' }, userId),
-    ).rejects.toThrow(UnauthorizedException);
+    await expect(controller.handle(entityId, { month: '2026-03' }, userId)).rejects.toThrow(
+      UnauthorizedException,
+    );
   });
 
   it('should throw ConflictException when already generated', async () => {
     mockEntityFinder.findByIdAndUserId.mockResolvedValue({ id: entityId });
     mockRentCallFinder.existsByEntityAndMonth.mockResolvedValue(true);
 
-    await expect(
-      controller.handle(entityId, { month: '2026-03' }, userId),
-    ).rejects.toThrow(ConflictException);
+    await expect(controller.handle(entityId, { month: '2026-03' }, userId)).rejects.toThrow(
+      ConflictException,
+    );
   });
 
   it('should throw BadRequestException for invalid month format', async () => {
-    await expect(
-      controller.handle(entityId, { month: 'invalid' }, userId),
-    ).rejects.toThrow(BadRequestException);
+    await expect(controller.handle(entityId, { month: 'invalid' }, userId)).rejects.toThrow(
+      BadRequestException,
+    );
   });
 
   it('should throw BadRequestException when no active leases', async () => {
@@ -120,17 +132,17 @@ describe('GenerateRentCallsForMonthController', () => {
     mockRentCallFinder.existsByEntityAndMonth.mockResolvedValue(false);
     mockLeaseFinder.findAllActiveByEntityAndUser.mockResolvedValue([]);
 
-    await expect(
-      controller.handle(entityId, { month: '2026-03' }, userId),
-    ).rejects.toThrow(BadRequestException);
+    await expect(controller.handle(entityId, { month: '2026-03' }, userId)).rejects.toThrow(
+      BadRequestException,
+    );
   });
 
   it('should propagate handler errors', async () => {
     setupSuccess();
     mockCommandBus.execute.mockRejectedValue(new Error('Handler error'));
 
-    await expect(
-      controller.handle(entityId, { month: '2026-03' }, userId),
-    ).rejects.toThrow('Handler error');
+    await expect(controller.handle(entityId, { month: '2026-03' }, userId)).rejects.toThrow(
+      'Handler error',
+    );
   });
 });

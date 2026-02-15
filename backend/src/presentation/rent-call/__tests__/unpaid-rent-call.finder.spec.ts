@@ -70,9 +70,9 @@ describe('UnpaidRentCallFinder', () => {
     const result = await finder.findAllByEntity('entity-1', 'user_123');
 
     expect(result).toHaveLength(1);
-    expect(result[0]!.daysLate).toBe(36);
-    expect(result[0]!.tenantLastName).toBe('Dupont');
-    expect(result[0]!.unitIdentifier).toBe('A1');
+    expect(result[0].daysLate).toBe(36);
+    expect(result[0].tenantLastName).toBe('Dupont');
+    expect(result[0].unitIdentifier).toBe('A1');
   });
 
   it('should exclude rent calls within delay threshold', async () => {
@@ -107,7 +107,7 @@ describe('UnpaidRentCallFinder', () => {
     const result = await finder.findAllByEntity('entity-1', 'user_123');
 
     expect(result).toHaveLength(1);
-    expect(result[0]!.daysLate).toBe(1);
+    expect(result[0].daysLate).toBe(1);
   });
 
   it('should include partially paid rent calls', async () => {
@@ -126,7 +126,7 @@ describe('UnpaidRentCallFinder', () => {
     const result = await finder.findAllByEntity('entity-1', 'user_123');
 
     expect(result).toHaveLength(1);
-    expect(result[0]!.paymentStatus).toBe('partial');
+    expect(result[0].paymentStatus).toBe('partial');
   });
 
   it('should sort by daysLate descending', async () => {
@@ -142,8 +142,8 @@ describe('UnpaidRentCallFinder', () => {
     const result = await finder.findAllByEntity('entity-1', 'user_123');
 
     expect(result).toHaveLength(2);
-    expect(result[0]!.id).toBe('rc-old');
-    expect(result[1]!.id).toBe('rc-recent');
-    expect(result[0]!.daysLate).toBeGreaterThan(result[1]!.daysLate);
+    expect(result[0].id).toBe('rc-old');
+    expect(result[1].id).toBe('rc-recent');
+    expect(result[0].daysLate).toBeGreaterThan(result[1].daysLate);
   });
 });

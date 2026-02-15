@@ -1,90 +1,49 @@
 import { GetBatchEscalationStatusController } from '../controllers/get-batch-escalation-status.controller';
+import { GetBatchEscalationStatusQuery } from '../queries/get-batch-escalation-status.query';
 
 describe('GetBatchEscalationStatusController', () => {
   let controller: GetBatchEscalationStatusController;
-  let mockEntityFinder: { findByIdAndUserId: jest.Mock };
-  let mockEscalationFinder: { findAllByRentCallIds: jest.Mock };
+  let queryBus: { execute: jest.Mock<Promise<unknown>, unknown[]> };
 
   beforeEach(() => {
-    mockEntityFinder = { findByIdAndUserId: jest.fn() };
-    mockEscalationFinder = { findAllByRentCallIds: jest.fn() };
-    controller = new GetBatchEscalationStatusController(
-      mockEntityFinder as never,
-      mockEscalationFinder as never,
-    );
-  });
-
-  it('should return null-state for rent calls with no escalation', async () => {
-    mockEntityFinder.findByIdAndUserId.mockResolvedValue({ id: 'entity-1' });
-    mockEscalationFinder.findAllByRentCallIds.mockResolvedValue([]);
-
-    const result = await controller.handle('entity-1', 'rc-1,rc-2', 'user-1');
-
-    expect(result).toEqual([
-      {
-        rentCallId: 'rc-1',
-        tier1SentAt: null,
-        tier1RecipientEmail: null,
-        tier2SentAt: null,
-        tier3SentAt: null,
-      },
-      {
-        rentCallId: 'rc-2',
-        tier1SentAt: null,
-        tier1RecipientEmail: null,
-        tier2SentAt: null,
-        tier3SentAt: null,
-      },
-    ]);
-    expect(mockEscalationFinder.findAllByRentCallIds).toHaveBeenCalledWith(
-      ['rc-1', 'rc-2'],
-      'user-1',
-    );
-  });
-
-  it('should return escalation status for matching rent calls', async () => {
-    mockEntityFinder.findByIdAndUserId.mockResolvedValue({ id: 'entity-1' });
-    mockEscalationFinder.findAllByRentCallIds.mockResolvedValue([
-      {
-        rentCallId: 'rc-1',
-        tier1SentAt: new Date('2026-02-10T10:00:00.000Z'),
-        tier1RecipientEmail: 'tenant@test.com',
-        tier2SentAt: null,
-        tier3SentAt: null,
-      },
-    ]);
-
-    const result = await controller.handle('entity-1', 'rc-1,rc-2', 'user-1');
-
-    expect(result).toEqual([
-      {
-        rentCallId: 'rc-1',
-        tier1SentAt: '2026-02-10T10:00:00.000Z',
-        tier1RecipientEmail: 'tenant@test.com',
-        tier2SentAt: null,
-        tier3SentAt: null,
-      },
-      {
-        rentCallId: 'rc-2',
-        tier1SentAt: null,
-        tier1RecipientEmail: null,
-        tier2SentAt: null,
-        tier3SentAt: null,
-      },
-    ]);
+    queryBus = { execute: jest.fn<Promise<unknown>, unknown[]>() };
+    controller = new GetBatchEscalationStatusController(queryBus as never);
   });
 
   it('should return empty array when no rentCallIds provided', async () => {
-    mockEntityFinder.findByIdAndUserId.mockResolvedValue({ id: 'entity-1' });
-
     const result = await controller.handle('entity-1', '', 'user-1');
 
     expect(result).toEqual([]);
+    expect(queryBus.execute).not.toHaveBeenCalled();
   });
 
-  it('should throw UnauthorizedException when entity not found', async () => {
-    mockEntityFinder.findByIdAndUserId.mockResolvedValue(null);
+  it('should parse comma-separated ids and dispatch query', async () => {
+    const statuses = [
+      {
+        rentCallId: 'rc-1',
+        tier1SentAt: null,
+        tier1RecipientEmail: null,
+        tier2SentAt: null,
+        tier3SentAt: null,
+      },
+      {
+        rentCallId: 'rc-2',
+        tier1SentAt: null,
+        tier1RecipientEmail: null,
+        tier2SentAt: null,
+        tier3SentAt: null,
+      },
+    ];
+    queryBus.execute.mockResolvedValue(statuses);
 
-    await expect(controller.handle('entity-1', 'rc-1', 'user-1')).rejects.toThrow();
+    const result = await controller.handle('entity-1', 'rc-1,rc-2', 'user-1');
+
+    expect(queryBus.execute).toHaveBeenCalledTimes(1);
+    const query = queryBus.execute.mock.calls[0]?.[0] as GetBatchEscalationStatusQuery;
+    expect(query).toBeInstanceOf(GetBatchEscalationStatusQuery);
+    expect(query.entityId).toBe('entity-1');
+    expect(query.rentCallIds).toEqual(['rc-1', 'rc-2']);
+    expect(query.userId).toBe('user-1');
+    expect(result).toEqual(statuses);
   });
 });

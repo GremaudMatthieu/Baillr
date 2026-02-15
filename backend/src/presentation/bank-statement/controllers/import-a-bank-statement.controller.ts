@@ -69,9 +69,7 @@ export class ImportABankStatementController {
     @CurrentUser() userId: string,
   ): Promise<ImportResult> {
     if (!file) {
-      throw new BadRequestException(
-        'Fichier requis (.csv, .xlsx, .xls uniquement)',
-      );
+      throw new BadRequestException('Fichier requis (.csv, .xlsx, .xls uniquement)');
     }
 
     // Entity ownership check
@@ -110,10 +108,7 @@ export class ImportABankStatementController {
       select: { date: true, amountCents: true, reference: true },
     });
     const existingKeys = new Set(
-      existingTransactions.map(
-        (t) =>
-          `${t.date.toISOString()}|${t.amountCents}|${t.reference}`,
-      ),
+      existingTransactions.map((t) => `${t.date.toISOString()}|${t.amountCents}|${t.reference}`),
     );
     for (const t of transactions) {
       if (existingKeys.has(`${t.date}|${t.amountCents}|${t.reference}`)) {

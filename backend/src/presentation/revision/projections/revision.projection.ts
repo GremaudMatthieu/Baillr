@@ -37,13 +37,8 @@ export class RevisionProjection implements OnModuleInit {
 
     subscription.on('error', (error: Error) => {
       this.reconnectAttempts++;
-      const delay = Math.min(
-        1000 * Math.pow(2, this.reconnectAttempts),
-        30_000,
-      );
-      this.logger.error(
-        `Revision projection subscription error: ${error.message}`,
-      );
+      const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30_000);
+      this.logger.error(`Revision projection subscription error: ${error.message}`);
       this.logger.log(
         `Reconnecting revision projection in ${delay}ms (attempt ${this.reconnectAttempts})...`,
       );
@@ -51,9 +46,7 @@ export class RevisionProjection implements OnModuleInit {
     });
   }
 
-  private isValidRentRevisionCalculatedData(
-    data: Record<string, unknown>,
-  ): boolean {
+  private isValidRentRevisionCalculatedData(data: Record<string, unknown>): boolean {
     return (
       typeof data.revisionId === 'string' &&
       typeof data.leaseId === 'string' &&
@@ -76,10 +69,7 @@ export class RevisionProjection implements OnModuleInit {
     );
   }
 
-  private async handleEvent(
-    eventType: string,
-    data: Record<string, unknown>,
-  ): Promise<void> {
+  private async handleEvent(eventType: string, data: Record<string, unknown>): Promise<void> {
     try {
       switch (eventType) {
         case 'RentRevisionCalculated':
@@ -89,9 +79,7 @@ export class RevisionProjection implements OnModuleInit {
             );
             return;
           }
-          await this.onRentRevisionCalculated(
-            data as unknown as RentRevisionCalculatedData,
-          );
+          await this.onRentRevisionCalculated(data as unknown as RentRevisionCalculatedData);
           break;
         case 'RevisionApproved':
           if (!this.isValidRevisionApprovedData(data)) {
@@ -100,9 +88,7 @@ export class RevisionProjection implements OnModuleInit {
             );
             return;
           }
-          await this.onRevisionApproved(
-            data as unknown as RevisionApprovedData,
-          );
+          await this.onRevisionApproved(data as unknown as RevisionApprovedData);
           break;
         default:
           break;
@@ -115,9 +101,7 @@ export class RevisionProjection implements OnModuleInit {
     }
   }
 
-  private async onRentRevisionCalculated(
-    data: RentRevisionCalculatedData,
-  ): Promise<void> {
+  private async onRentRevisionCalculated(data: RentRevisionCalculatedData): Promise<void> {
     const existing = await this.prisma.revision.findUnique({
       where: { id: data.revisionId },
     });
@@ -143,7 +127,8 @@ export class RevisionProjection implements OnModuleInit {
         differenceCents: data.differenceCents,
         baseIndexValue: data.baseIndexValue,
         baseIndexQuarter: data.baseIndexQuarter,
-        baseIndexYear: typeof data.baseIndexYear === 'number' ? data.baseIndexYear : data.newIndexYear,
+        baseIndexYear:
+          typeof data.baseIndexYear === 'number' ? data.baseIndexYear : data.newIndexYear,
         newIndexValue: data.newIndexValue,
         newIndexQuarter: data.newIndexQuarter,
         newIndexYear: data.newIndexYear,
@@ -154,18 +139,11 @@ export class RevisionProjection implements OnModuleInit {
     this.logger.log(`Projected RentRevisionCalculated for ${data.revisionId}`);
   }
 
-  private isValidRevisionApprovedData(
-    data: Record<string, unknown>,
-  ): boolean {
-    return (
-      typeof data.revisionId === 'string' &&
-      typeof data.approvedAt === 'string'
-    );
+  private isValidRevisionApprovedData(data: Record<string, unknown>): boolean {
+    return typeof data.revisionId === 'string' && typeof data.approvedAt === 'string';
   }
 
-  private async onRevisionApproved(
-    data: RevisionApprovedData,
-  ): Promise<void> {
+  private async onRevisionApproved(data: RevisionApprovedData): Promise<void> {
     const updated = await this.prisma.revision.updateMany({
       where: { id: data.revisionId },
       data: {

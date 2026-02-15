@@ -26,10 +26,7 @@ describe('RevisionProjection', () => {
         updateMany: jest.fn(),
       },
     };
-    projection = new RevisionProjection(
-      mockKurrentDb as never,
-      mockPrisma as never,
-    );
+    projection = new RevisionProjection(mockKurrentDb as never, mockPrisma as never);
   });
 
   describe('onModuleInit', () => {
@@ -68,15 +65,9 @@ describe('RevisionProjection', () => {
 
       await (
         projection as unknown as {
-          handleEvent: (
-            t: string,
-            d: Record<string, unknown>,
-          ) => Promise<void>;
+          handleEvent: (t: string, d: Record<string, unknown>) => Promise<void>;
         }
-      ).handleEvent(
-        'RentRevisionCalculated',
-        validData as unknown as Record<string, unknown>,
-      );
+      ).handleEvent('RentRevisionCalculated', validData as unknown as Record<string, unknown>);
 
       expect(mockPrisma.revision.create).toHaveBeenCalledWith({
         data: {
@@ -108,15 +99,9 @@ describe('RevisionProjection', () => {
 
       await (
         projection as unknown as {
-          handleEvent: (
-            t: string,
-            d: Record<string, unknown>,
-          ) => Promise<void>;
+          handleEvent: (t: string, d: Record<string, unknown>) => Promise<void>;
         }
-      ).handleEvent(
-        'RentRevisionCalculated',
-        validData as unknown as Record<string, unknown>,
-      );
+      ).handleEvent('RentRevisionCalculated', validData as unknown as Record<string, unknown>);
 
       expect(mockPrisma.revision.create).not.toHaveBeenCalled();
     });
@@ -126,10 +111,7 @@ describe('RevisionProjection', () => {
 
       await (
         projection as unknown as {
-          handleEvent: (
-            t: string,
-            d: Record<string, unknown>,
-          ) => Promise<void>;
+          handleEvent: (t: string, d: Record<string, unknown>) => Promise<void>;
         }
       ).handleEvent('RentRevisionCalculated', invalidData);
 
@@ -141,10 +123,7 @@ describe('RevisionProjection', () => {
 
       await (
         projection as unknown as {
-          handleEvent: (
-            t: string,
-            d: Record<string, unknown>,
-          ) => Promise<void>;
+          handleEvent: (t: string, d: Record<string, unknown>) => Promise<void>;
         }
       ).handleEvent('RevisionApproved', {
         revisionId: 'rev-1',
@@ -173,10 +152,7 @@ describe('RevisionProjection', () => {
 
       await (
         projection as unknown as {
-          handleEvent: (
-            t: string,
-            d: Record<string, unknown>,
-          ) => Promise<void>;
+          handleEvent: (t: string, d: Record<string, unknown>) => Promise<void>;
         }
       ).handleEvent('RevisionApproved', {
         revisionId: 'rev-missing',
@@ -189,10 +165,7 @@ describe('RevisionProjection', () => {
     it('should skip RevisionApproved with invalid data', async () => {
       await (
         projection as unknown as {
-          handleEvent: (
-            t: string,
-            d: Record<string, unknown>,
-          ) => Promise<void>;
+          handleEvent: (t: string, d: Record<string, unknown>) => Promise<void>;
         }
       ).handleEvent('RevisionApproved', { revisionId: 123 });
 
@@ -202,10 +175,7 @@ describe('RevisionProjection', () => {
     it('should ignore unknown event types', async () => {
       await (
         projection as unknown as {
-          handleEvent: (
-            t: string,
-            d: Record<string, unknown>,
-          ) => Promise<void>;
+          handleEvent: (t: string, d: Record<string, unknown>) => Promise<void>;
         }
       ).handleEvent('UnknownEvent', {});
 

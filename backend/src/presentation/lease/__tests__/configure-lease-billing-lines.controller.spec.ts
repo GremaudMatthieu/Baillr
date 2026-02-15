@@ -94,9 +94,7 @@ describe('ConfigureLeaseBillingLinesController', () => {
       // cat-elec missing — only 1 found out of 2 requested
     ]);
 
-    await expect(controller.handle(leaseId, validDto, userId)).rejects.toThrow(
-      BadRequestException,
-    );
+    await expect(controller.handle(leaseId, validDto, userId)).rejects.toThrow(BadRequestException);
     expect(commandBus.execute).not.toHaveBeenCalled();
   });
 });

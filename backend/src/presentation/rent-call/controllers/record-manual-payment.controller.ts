@@ -36,11 +36,7 @@ export class RecordManualPaymentController {
     const entity = await this.entityFinder.findByIdAndUserId(entityId, userId);
     if (!entity) throw new UnauthorizedException();
 
-    const rentCall = await this.rentCallFinder.findByIdAndEntity(
-      rentCallId,
-      entityId,
-      userId,
-    );
+    const rentCall = await this.rentCallFinder.findByIdAndEntity(rentCallId, entityId, userId);
     if (!rentCall) throw new NotFoundException('Rent call not found');
 
     const transactionId = randomUUID();

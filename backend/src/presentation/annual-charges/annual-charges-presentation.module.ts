@@ -7,15 +7,13 @@ import { RecordAnnualChargesHandler } from '@indexation/annual-charges/commands/
 import { RecordAnnualChargesController } from './controllers/record-annual-charges.controller.js';
 import { GetAnnualChargesController } from './controllers/get-annual-charges.controller.js';
 import { GetProvisionsCollectedController } from './controllers/get-provisions-collected.controller.js';
+import { GetAnnualChargesHandler } from './queries/get-annual-charges.handler.js';
+import { GetProvisionsCollectedHandler } from './queries/get-provisions-collected.handler.js';
 import { AnnualChargesProjection } from './projections/annual-charges.projection.js';
 import { AnnualChargesFinder } from './finders/annual-charges.finder.js';
 
 @Module({
-  imports: [
-    CqrsModule,
-    CqrxModule.forFeature([AnnualChargesAggregate]),
-    EntityPresentationModule,
-  ],
+  imports: [CqrsModule, CqrxModule.forFeature([AnnualChargesAggregate]), EntityPresentationModule],
   controllers: [
     RecordAnnualChargesController,
     GetAnnualChargesController,
@@ -23,6 +21,8 @@ import { AnnualChargesFinder } from './finders/annual-charges.finder.js';
   ],
   providers: [
     RecordAnnualChargesHandler,
+    GetAnnualChargesHandler,
+    GetProvisionsCollectedHandler,
     AnnualChargesProjection,
     AnnualChargesFinder,
   ],

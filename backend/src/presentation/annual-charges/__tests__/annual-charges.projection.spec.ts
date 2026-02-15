@@ -22,10 +22,7 @@ describe('AnnualChargesProjection', () => {
         upsert: jest.fn().mockResolvedValue({}),
       },
     };
-    projection = new AnnualChargesProjection(
-      mockKurrentDb as never,
-      mockPrisma as never,
-    );
+    projection = new AnnualChargesProjection(mockKurrentDb as never, mockPrisma as never);
   });
 
   describe('onModuleInit', () => {
@@ -37,8 +34,9 @@ describe('AnnualChargesProjection', () => {
 
   describe('handleEvent (via private method access)', () => {
     const handle = (p: AnnualChargesProjection, type: string, data: Record<string, unknown>) =>
-      (p as unknown as { handleEvent: (t: string, d: Record<string, unknown>) => Promise<void> })
-        .handleEvent(type, data);
+      (
+        p as unknown as { handleEvent: (t: string, d: Record<string, unknown>) => Promise<void> }
+      ).handleEvent(type, data);
 
     const validData = {
       annualChargesId: 'entity1-2025',

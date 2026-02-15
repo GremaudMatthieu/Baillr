@@ -13,10 +13,7 @@ describe('ChargeCategoryFinder', () => {
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
-      providers: [
-        ChargeCategoryFinder,
-        { provide: PrismaService, useValue: mockPrisma },
-      ],
+      providers: [ChargeCategoryFinder, { provide: PrismaService, useValue: mockPrisma }],
     }).compile();
 
     finder = module.get(ChargeCategoryFinder);

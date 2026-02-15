@@ -63,19 +63,14 @@ export class RevisionLetterPdfAssembler {
 
     const leaseStartDate = this.formatDate(new Date(lease.startDate));
 
-    const approvedAt = revision.approvedAt
-      ? new Date(revision.approvedAt)
-      : new Date();
+    const approvedAt = revision.approvedAt ? new Date(revision.approvedAt) : new Date();
     const revisionDate = this.formatDate(approvedAt);
     const effectiveDate = revisionDate;
 
     const now = new Date();
     const documentDate = this.formatDate(now);
 
-    const quarterLabel = this.formatQuarterLabel(
-      revision.newIndexQuarter,
-      revision.newIndexYear,
-    );
+    const quarterLabel = this.formatQuarterLabel(revision.newIndexQuarter, revision.newIndexYear);
     const baseQuarterLabel = this.formatQuarterLabel(
       revision.baseIndexQuarter,
       revision.baseIndexYear ?? revision.newIndexYear,

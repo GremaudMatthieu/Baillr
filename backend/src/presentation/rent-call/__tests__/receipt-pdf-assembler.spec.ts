@@ -1,5 +1,8 @@
 import { ReceiptPdfAssembler } from '../services/receipt-pdf-assembler.service';
-import type { ReceiptRentCallData, ReceiptPaymentData } from '../services/receipt-pdf-assembler.service';
+import type {
+  ReceiptRentCallData,
+  ReceiptPaymentData,
+} from '../services/receipt-pdf-assembler.service';
 
 function makeRentCall(overrides: Partial<ReceiptRentCallData> = {}): ReceiptRentCallData {
   return {

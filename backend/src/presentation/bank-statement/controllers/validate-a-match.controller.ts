@@ -34,11 +34,7 @@ export class ValidateAMatchController {
     const entity = await this.entityFinder.findByIdAndUserId(entityId, userId);
     if (!entity) throw new UnauthorizedException();
 
-    const rentCall = await this.rentCallFinder.findByIdAndEntity(
-      dto.rentCallId,
-      entityId,
-      userId,
-    );
+    const rentCall = await this.rentCallFinder.findByIdAndEntity(dto.rentCallId, entityId, userId);
     if (!rentCall) throw new NotFoundException('Rent call not found');
 
     await this.commandBus.execute(

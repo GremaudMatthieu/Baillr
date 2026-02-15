@@ -31,10 +31,7 @@ describe('AccountEntryProjection', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    projection = new AccountEntryProjection(
-      mockKurrentDb as any,
-      mockPrisma as any,
-    );
+    projection = new AccountEntryProjection(mockKurrentDb as any, mockPrisma as any);
   });
 
   describe('onRentCallGenerated (debit entry)', () => {
@@ -114,7 +111,11 @@ describe('AccountEntryProjection', () => {
 
     it('should create a credit AccountEntry on payment', async () => {
       mockPrisma.accountEntry.findFirst.mockResolvedValueOnce(null); // no existing credit
-      mockPrisma.rentCall.findUnique.mockResolvedValue({ tenantId: 'tenant-1', month: '2026-03', totalAmountCents: 85000 });
+      mockPrisma.rentCall.findUnique.mockResolvedValue({
+        tenantId: 'tenant-1',
+        month: '2026-03',
+        totalAmountCents: 85000,
+      });
       mockPrisma.accountEntry.findFirst.mockResolvedValueOnce({ balanceCents: -85000 }); // previous balance
       mockPrisma.accountEntry.create.mockResolvedValue({});
       mockPrisma.payment.findMany.mockResolvedValue([{ amountCents: 85000 }]);
@@ -156,7 +157,11 @@ describe('AccountEntryProjection', () => {
       const overpaidEvent = { ...paymentEvent, amountCents: 90000 };
 
       mockPrisma.accountEntry.findFirst.mockResolvedValueOnce(null); // no existing credit for payment
-      mockPrisma.rentCall.findUnique.mockResolvedValue({ tenantId: 'tenant-1', month: '2026-03', totalAmountCents: 85000 });
+      mockPrisma.rentCall.findUnique.mockResolvedValue({
+        tenantId: 'tenant-1',
+        month: '2026-03',
+        totalAmountCents: 85000,
+      });
       mockPrisma.accountEntry.findFirst.mockResolvedValueOnce({ balanceCents: -85000 }); // previous balance
       mockPrisma.accountEntry.create.mockResolvedValue({});
       mockPrisma.payment.findMany.mockResolvedValue([{ amountCents: 90000 }]);
@@ -180,7 +185,11 @@ describe('AccountEntryProjection', () => {
 
     it('should NOT create overpayment entry when payment is exact', async () => {
       mockPrisma.accountEntry.findFirst.mockResolvedValueOnce(null);
-      mockPrisma.rentCall.findUnique.mockResolvedValue({ tenantId: 'tenant-1', month: '2026-03', totalAmountCents: 85000 });
+      mockPrisma.rentCall.findUnique.mockResolvedValue({
+        tenantId: 'tenant-1',
+        month: '2026-03',
+        totalAmountCents: 85000,
+      });
       mockPrisma.accountEntry.findFirst.mockResolvedValueOnce({ balanceCents: -85000 });
       mockPrisma.accountEntry.create.mockResolvedValue({});
       mockPrisma.payment.findMany.mockResolvedValue([{ amountCents: 85000 }]);

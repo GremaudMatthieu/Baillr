@@ -1,22 +1,12 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Query,
-  ParseUUIDPipe,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Controller, Get, Param, Query, ParseUUIDPipe } from '@nestjs/common';
+import { QueryBus } from '@nestjs/cqrs';
 import type { AnnualCharges } from '@prisma/client';
 import { CurrentUser } from '@infrastructure/auth/user.decorator.js';
-import { EntityFinder } from '../../entity/finders/entity.finder.js';
-import { AnnualChargesFinder } from '../finders/annual-charges.finder.js';
+import { GetAnnualChargesQuery } from '../queries/get-annual-charges.query.js';
 
 @Controller('entities/:entityId/annual-charges')
 export class GetAnnualChargesController {
-  constructor(
-    private readonly entityFinder: EntityFinder,
-    private readonly annualChargesFinder: AnnualChargesFinder,
-  ) {}
+  constructor(private readonly queryBus: QueryBus) {}
 
   @Get()
   async handle(
@@ -24,24 +14,19 @@ export class GetAnnualChargesController {
     @Query('fiscalYear') fiscalYearStr: string | undefined,
     @CurrentUser() userId: string,
   ): Promise<{ data: AnnualCharges | AnnualCharges[] | null }> {
-    const entity = await this.entityFinder.findByIdAndUserId(entityId, userId);
-    if (!entity) {
-      throw new UnauthorizedException();
-    }
-
+    let fiscalYear: number | undefined;
     if (fiscalYearStr) {
-      const fiscalYear = parseInt(fiscalYearStr, 10);
-      if (isNaN(fiscalYear)) {
+      const parsed = parseInt(fiscalYearStr, 10);
+      if (isNaN(parsed)) {
         return { data: null };
       }
-      const data = await this.annualChargesFinder.findByEntityAndYear(
-        entityId,
-        fiscalYear,
-      );
-      return { data };
+      fiscalYear = parsed;
     }
 
-    const data = await this.annualChargesFinder.findAllByEntity(entityId);
+    const data = await this.queryBus.execute<
+      GetAnnualChargesQuery,
+      AnnualCharges | AnnualCharges[] | null
+    >(new GetAnnualChargesQuery(entityId, userId, fiscalYear));
     return { data };
   }
 }

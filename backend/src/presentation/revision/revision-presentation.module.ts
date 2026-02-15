@@ -12,6 +12,7 @@ import { CalculateRevisionsController } from './controllers/calculate-revisions.
 import { GetRevisionsController } from './controllers/get-revisions.controller.js';
 import { ApproveRevisionsController } from './controllers/approve-revisions.controller.js';
 import { DownloadRevisionLetterController } from './controllers/download-revision-letter.controller.js';
+import { GetRevisionsHandler } from './queries/get-revisions.handler.js';
 import { RevisionProjection } from './projections/revision.projection.js';
 import { RevisionFinder } from './finders/revision.finder.js';
 import { RevisionLetterPdfAssembler } from './services/revision-letter-pdf-assembler.service.js';
@@ -34,6 +35,7 @@ import { RevisionLetterPdfAssembler } from './services/revision-letter-pdf-assem
   providers: [
     CalculateARevisionHandler,
     ApproveRevisionsHandler,
+    GetRevisionsHandler,
     RevisionProjection,
     RevisionFinder,
     RevisionLetterPdfAssembler,

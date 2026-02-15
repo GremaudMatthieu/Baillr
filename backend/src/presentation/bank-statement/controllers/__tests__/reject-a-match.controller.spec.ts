@@ -19,10 +19,7 @@ describe('RejectAMatchController', () => {
     });
 
     expect(result).toEqual({ status: 'rejected' });
-    expect(entityFinder.findByIdAndUserId).toHaveBeenCalledWith(
-      'entity-1',
-      'user_123',
-    );
+    expect(entityFinder.findByIdAndUserId).toHaveBeenCalledWith('entity-1', 'user_123');
   });
 
   it('should throw UnauthorizedException when entity not found', async () => {

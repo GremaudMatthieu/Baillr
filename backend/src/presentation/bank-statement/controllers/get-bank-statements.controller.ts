@@ -1,31 +1,18 @@
-import {
-  Controller,
-  Get,
-  Param,
-  ParseUUIDPipe,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
+import { QueryBus } from '@nestjs/cqrs';
+import type { BankStatement } from '@prisma/client';
 import { CurrentUser } from '@infrastructure/auth/user.decorator';
-import { EntityFinder } from '../../entity/finders/entity.finder.js';
-import { BankStatementFinder } from '../finders/bank-statement.finder.js';
+import { GetBankStatementsQuery } from '../queries/get-bank-statements.query.js';
 
 @Controller('entities/:entityId/bank-statements')
 export class GetBankStatementsController {
-  constructor(
-    private readonly entityFinder: EntityFinder,
-    private readonly bankStatementFinder: BankStatementFinder,
-  ) {}
+  constructor(private readonly queryBus: QueryBus) {}
 
   @Get()
   async handle(
     @Param('entityId', ParseUUIDPipe) entityId: string,
     @CurrentUser() userId: string,
-  ) {
-    const entity = await this.entityFinder.findByIdAndUserId(entityId, userId);
-    if (!entity) {
-      throw new UnauthorizedException();
-    }
-
-    return this.bankStatementFinder.findAllByEntity(entityId, userId);
+  ): Promise<BankStatement[]> {
+    return this.queryBus.execute(new GetBankStatementsQuery(entityId, userId));
   }
 }

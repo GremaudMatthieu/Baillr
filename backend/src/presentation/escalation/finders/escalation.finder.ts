@@ -19,10 +19,7 @@ export class EscalationFinder {
     });
   }
 
-  async findAllByRentCallIds(
-    rentCallIds: string[],
-    userId: string,
-  ): Promise<Escalation[]> {
+  async findAllByRentCallIds(rentCallIds: string[], userId: string): Promise<Escalation[]> {
     if (rentCallIds.length === 0) return [];
     return this.prisma.escalation.findMany({
       where: { rentCallId: { in: rentCallIds }, userId },

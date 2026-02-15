@@ -43,23 +43,23 @@ describe('MatchPaymentsController', () => {
   });
 
   it('should reject invalid month format', async () => {
-    await expect(
-      controller.handle('user-1', 'entity-1', 'bs-1', 'invalid'),
-    ).rejects.toThrow(BadRequestException);
+    await expect(controller.handle('user-1', 'entity-1', 'bs-1', 'invalid')).rejects.toThrow(
+      BadRequestException,
+    );
   });
 
   it('should reject missing month', async () => {
-    await expect(
-      controller.handle('user-1', 'entity-1', 'bs-1', ''),
-    ).rejects.toThrow(BadRequestException);
+    await expect(controller.handle('user-1', 'entity-1', 'bs-1', '')).rejects.toThrow(
+      BadRequestException,
+    );
   });
 
   it('should reject when entity not found (ownership check)', async () => {
     entityFinder.findByIdAndUserId.mockResolvedValue(null);
 
-    await expect(
-      controller.handle('user-1', 'entity-1', 'bs-1', '2026-02'),
-    ).rejects.toThrow(UnauthorizedException);
+    await expect(controller.handle('user-1', 'entity-1', 'bs-1', '2026-02')).rejects.toThrow(
+      UnauthorizedException,
+    );
   });
 
   it('should load data via finders and call matching service', async () => {
@@ -84,9 +84,7 @@ describe('MatchPaymentsController', () => {
     ];
 
     bankStatementFinder.findTransactions.mockResolvedValue(transactions);
-    rentCallFinder.findAllWithRelationsByEntityAndMonth.mockResolvedValue(
-      rentCalls,
-    );
+    rentCallFinder.findAllWithRelationsByEntityAndMonth.mockResolvedValue(rentCalls);
 
     const customResult: MatchingResult = {
       matches: [
@@ -120,25 +118,15 @@ describe('MatchPaymentsController', () => {
     };
     matchingService.match.mockReturnValue(customResult);
 
-    const result = await controller.handle(
-      'user-1',
+    const result = await controller.handle('user-1', 'entity-1', 'bs-1', '2026-02');
+
+    expect(entityFinder.findByIdAndUserId).toHaveBeenCalledWith('entity-1', 'user-1');
+    expect(bankStatementFinder.findTransactions).toHaveBeenCalledWith('bs-1', 'entity-1', 'user-1');
+    expect(rentCallFinder.findAllWithRelationsByEntityAndMonth).toHaveBeenCalledWith(
       'entity-1',
-      'bs-1',
+      'user-1',
       '2026-02',
     );
-
-    expect(entityFinder.findByIdAndUserId).toHaveBeenCalledWith(
-      'entity-1',
-      'user-1',
-    );
-    expect(bankStatementFinder.findTransactions).toHaveBeenCalledWith(
-      'bs-1',
-      'entity-1',
-      'user-1',
-    );
-    expect(
-      rentCallFinder.findAllWithRelationsByEntityAndMonth,
-    ).toHaveBeenCalledWith('entity-1', 'user-1', '2026-02');
     expect(matchingService.match).toHaveBeenCalledWith(
       [
         {
@@ -179,12 +167,7 @@ describe('MatchPaymentsController', () => {
   });
 
   it('should return empty result when no transactions', async () => {
-    const result = await controller.handle(
-      'user-1',
-      'entity-1',
-      'bs-1',
-      '2026-02',
-    );
+    const result = await controller.handle('user-1', 'entity-1', 'bs-1', '2026-02');
 
     expect(matchingService.match).toHaveBeenCalledWith([], [], new Set());
     expect(result).toMatchObject(mockResult);
@@ -201,10 +184,6 @@ describe('MatchPaymentsController', () => {
       'user-1',
       '2026-02',
     );
-    expect(matchingService.match).toHaveBeenCalledWith(
-      [],
-      [],
-      new Set(['rc-2', 'rc-4']),
-    );
+    expect(matchingService.match).toHaveBeenCalledWith([], [], new Set(['rc-2', 'rc-4']));
   });
 });

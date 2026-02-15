@@ -15,6 +15,8 @@ import { RejectAMatchController } from './controllers/reject-a-match.controller.
 import { ManualAssignAMatchController } from './controllers/manual-assign-a-match.controller.js';
 import { ImportABankStatementHandler } from '@billing/bank-statement/commands/import-a-bank-statement.handler';
 import { RecordAPaymentHandler } from '@billing/rent-call/commands/record-a-payment.handler';
+import { GetBankStatementsHandler } from './queries/get-bank-statements.handler.js';
+import { GetBankTransactionsHandler } from './queries/get-bank-transactions.handler.js';
 import { BankStatementProjection } from './projections/bank-statement.projection.js';
 import { BankStatementFinder } from './finders/bank-statement.finder.js';
 
@@ -38,6 +40,8 @@ import { BankStatementFinder } from './finders/bank-statement.finder.js';
   providers: [
     ImportABankStatementHandler,
     RecordAPaymentHandler,
+    GetBankStatementsHandler,
+    GetBankTransactionsHandler,
     BankStatementProjection,
     BankStatementFinder,
   ],

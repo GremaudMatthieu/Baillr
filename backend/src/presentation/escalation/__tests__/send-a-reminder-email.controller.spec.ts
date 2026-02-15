@@ -25,9 +25,7 @@ describe('SendAReminderEmailController', () => {
     entity: {
       name: 'SCI Les Oliviers',
       email: 'sci@test.com',
-      bankAccounts: [
-        { isDefault: true, iban: 'FR76123', bic: 'ABCDEFGH' },
-      ],
+      bankAccounts: [{ isDefault: true, iban: 'FR76123', bic: 'ABCDEFGH' }],
     },
   };
 
@@ -35,7 +33,10 @@ describe('SendAReminderEmailController', () => {
     mockCommandBus = { execute: jest.fn().mockResolvedValue(undefined) };
     mockEntityFinder = { findByIdAndUserId: jest.fn() };
     mockRentCallFinder = { findByIdAndEntity: jest.fn() };
-    mockEmailService = { sendWithAttachment: jest.fn().mockResolvedValue(undefined), from: 'noreply@baillr.fr' };
+    mockEmailService = {
+      sendWithAttachment: jest.fn().mockResolvedValue(undefined),
+      from: 'noreply@baillr.fr',
+    };
     controller = new SendAReminderEmailController(
       mockCommandBus as never,
       mockEntityFinder as never,
@@ -45,7 +46,11 @@ describe('SendAReminderEmailController', () => {
   });
 
   it('should dispatch command and send email', async () => {
-    mockEntityFinder.findByIdAndUserId.mockResolvedValue({ id: 'entity-1', name: 'SCI Les Oliviers', email: 'sci@test.com' });
+    mockEntityFinder.findByIdAndUserId.mockResolvedValue({
+      id: 'entity-1',
+      name: 'SCI Les Oliviers',
+      email: 'sci@test.com',
+    });
     mockRentCallFinder.findByIdAndEntity.mockResolvedValue(baseRentCall);
 
     const result = await controller.handle('entity-1', 'rc-1', 'user-1');

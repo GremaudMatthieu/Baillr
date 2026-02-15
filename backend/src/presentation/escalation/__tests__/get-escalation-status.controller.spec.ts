@@ -1,58 +1,33 @@
 import { GetEscalationStatusController } from '../controllers/get-escalation-status.controller';
+import { GetEscalationStatusQuery } from '../queries/get-escalation-status.query';
 
 describe('GetEscalationStatusController', () => {
   let controller: GetEscalationStatusController;
-  let mockEntityFinder: { findByIdAndUserId: jest.Mock };
-  let mockEscalationFinder: { findByRentCallId: jest.Mock };
+  let queryBus: { execute: jest.Mock<Promise<unknown>, unknown[]> };
 
   beforeEach(() => {
-    mockEntityFinder = { findByIdAndUserId: jest.fn() };
-    mockEscalationFinder = { findByRentCallId: jest.fn() };
-    controller = new GetEscalationStatusController(
-      mockEntityFinder as never,
-      mockEscalationFinder as never,
-    );
+    queryBus = { execute: jest.fn<Promise<unknown>, unknown[]>() };
+    controller = new GetEscalationStatusController(queryBus as never);
   });
 
-  it('should return null-state when no escalation exists', async () => {
-    mockEntityFinder.findByIdAndUserId.mockResolvedValue({ id: 'entity-1' });
-    mockEscalationFinder.findByRentCallId.mockResolvedValue(null);
-
-    const result = await controller.handle('entity-1', 'rc-1', 'user-1');
-
-    expect(result).toEqual({
-      rentCallId: 'rc-1',
-      tier1SentAt: null,
-      tier1RecipientEmail: null,
-      tier2SentAt: null,
-      tier3SentAt: null,
-    });
-  });
-
-  it('should return escalation status when it exists', async () => {
-    mockEntityFinder.findByIdAndUserId.mockResolvedValue({ id: 'entity-1' });
-    mockEscalationFinder.findByRentCallId.mockResolvedValue({
-      rentCallId: 'rc-1',
-      tier1SentAt: new Date('2026-02-10T10:00:00.000Z'),
-      tier1RecipientEmail: 'tenant@test.com',
-      tier2SentAt: new Date('2026-02-15T10:00:00.000Z'),
-      tier3SentAt: null,
-    });
-
-    const result = await controller.handle('entity-1', 'rc-1', 'user-1');
-
-    expect(result).toEqual({
+  it('should dispatch GetEscalationStatusQuery and return result', async () => {
+    const status = {
       rentCallId: 'rc-1',
       tier1SentAt: '2026-02-10T10:00:00.000Z',
       tier1RecipientEmail: 'tenant@test.com',
-      tier2SentAt: '2026-02-15T10:00:00.000Z',
+      tier2SentAt: null,
       tier3SentAt: null,
-    });
-  });
+    };
+    queryBus.execute.mockResolvedValue(status);
 
-  it('should throw UnauthorizedException when entity not found', async () => {
-    mockEntityFinder.findByIdAndUserId.mockResolvedValue(null);
+    const result = await controller.handle('entity-1', 'rc-1', 'user-1');
 
-    await expect(controller.handle('entity-1', 'rc-1', 'user-1')).rejects.toThrow();
+    expect(queryBus.execute).toHaveBeenCalledTimes(1);
+    const query = queryBus.execute.mock.calls[0]?.[0] as GetEscalationStatusQuery;
+    expect(query).toBeInstanceOf(GetEscalationStatusQuery);
+    expect(query.entityId).toBe('entity-1');
+    expect(query.rentCallId).toBe('rc-1');
+    expect(query.userId).toBe('user-1');
+    expect(result).toEqual(status);
   });
 });

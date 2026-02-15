@@ -30,9 +30,9 @@ describe('CreateChargeCategoryController', () => {
   it('should throw UnauthorizedException when entity not found', async () => {
     mockEntityFinder.findByIdAndUserId.mockResolvedValue(null);
 
-    await expect(
-      controller.handle('entity-1', { label: 'Parking' }, 'user-1'),
-    ).rejects.toThrow(UnauthorizedException);
+    await expect(controller.handle('entity-1', { label: 'Parking' }, 'user-1')).rejects.toThrow(
+      UnauthorizedException,
+    );
   });
 
   it('should throw ConflictException when slug already exists', async () => {
@@ -42,9 +42,9 @@ describe('CreateChargeCategoryController', () => {
       slug: 'parking',
     });
 
-    await expect(
-      controller.handle('entity-1', { label: 'Parking' }, 'user-1'),
-    ).rejects.toThrow(ConflictException);
+    await expect(controller.handle('entity-1', { label: 'Parking' }, 'user-1')).rejects.toThrow(
+      ConflictException,
+    );
   });
 
   it('should create a custom category with auto-generated slug', async () => {
@@ -59,11 +59,7 @@ describe('CreateChargeCategoryController', () => {
     };
     mockPrisma.chargeCategory.create.mockResolvedValue(created);
 
-    const result = await controller.handle(
-      'entity-1',
-      { label: 'Parking' },
-      'user-1',
-    );
+    const result = await controller.handle('entity-1', { label: 'Parking' }, 'user-1');
 
     expect(result).toEqual({ data: created });
     expect(mockPrisma.chargeCategory.create).toHaveBeenCalledWith({
@@ -84,11 +80,7 @@ describe('CreateChargeCategoryController', () => {
       slug: 'electricite_commune',
     });
 
-    await controller.handle(
-      'entity-1',
-      { label: 'Électricité commune' },
-      'user-1',
-    );
+    await controller.handle('entity-1', { label: 'Électricité commune' }, 'user-1');
 
     expect(mockPrisma.chargeCategory.findUnique).toHaveBeenCalledWith({
       where: {

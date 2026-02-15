@@ -1,65 +1,27 @@
-import { UnauthorizedException } from '@nestjs/common';
 import { GetRentCallPaymentsController } from '../controllers/get-rent-call-payments.controller';
-
-const mockEntityFinder = {
-  findByIdAndUserId: jest.fn(),
-};
-
-const mockPaymentFinder = {
-  findByRentCallId: jest.fn(),
-};
+import { GetRentCallPaymentsQuery } from '../queries/get-rent-call-payments.query';
 
 describe('GetRentCallPaymentsController', () => {
   let controller: GetRentCallPaymentsController;
+  let queryBus: { execute: jest.Mock<Promise<unknown>, unknown[]> };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    controller = new GetRentCallPaymentsController(
-      mockEntityFinder as any,
-      mockPaymentFinder as any,
-    );
+    queryBus = { execute: jest.fn<Promise<unknown>, unknown[]>() };
+    controller = new GetRentCallPaymentsController(queryBus as never);
   });
 
-  it('should return payments for a valid rent call', async () => {
-    mockEntityFinder.findByIdAndUserId.mockResolvedValue({ id: 'entity-1' });
-    const payments = [
-      { id: 'p-1', amountCents: 50000, payerName: 'DOS SANTOS' },
-      { id: 'p-2', amountCents: 35000, payerName: 'DOS SANTOS' },
-    ];
-    mockPaymentFinder.findByRentCallId.mockResolvedValue(payments);
+  it('should dispatch GetRentCallPaymentsQuery and return result', async () => {
+    const paymentsData = { data: [{ id: 'p-1', amountCents: 50000 }] };
+    queryBus.execute.mockResolvedValue(paymentsData);
 
-    const result = await controller.handle('entity-1', 'rc-1', 'user_123');
+    const result = await controller.handle('entity-1', 'rc-1', 'user-1');
 
-    expect(result).toEqual({ data: payments });
-    expect(mockPaymentFinder.findByRentCallId).toHaveBeenCalledWith('rc-1', 'entity-1');
-  });
-
-  it('should throw UnauthorizedException for invalid entity', async () => {
-    mockEntityFinder.findByIdAndUserId.mockResolvedValue(null);
-
-    await expect(controller.handle('entity-1', 'rc-1', 'user_123'))
-      .rejects.toThrow(UnauthorizedException);
-  });
-
-  it('should return empty array for rent call with no payments', async () => {
-    mockEntityFinder.findByIdAndUserId.mockResolvedValue({ id: 'entity-1' });
-    mockPaymentFinder.findByRentCallId.mockResolvedValue([]);
-
-    const result = await controller.handle('entity-1', 'rc-1', 'user_123');
-
-    expect(result).toEqual({ data: [] });
-  });
-
-  it('should return multiple payments in correct order', async () => {
-    mockEntityFinder.findByIdAndUserId.mockResolvedValue({ id: 'entity-1' });
-    const payments = [
-      { id: 'p-2', amountCents: 35000, recordedAt: '2026-02-15T10:00:00Z' },
-      { id: 'p-1', amountCents: 50000, recordedAt: '2026-02-10T10:00:00Z' },
-    ];
-    mockPaymentFinder.findByRentCallId.mockResolvedValue(payments);
-
-    const result = await controller.handle('entity-1', 'rc-1', 'user_123');
-
-    expect(result.data).toHaveLength(2);
+    expect(queryBus.execute).toHaveBeenCalledTimes(1);
+    const query = queryBus.execute.mock.calls[0]?.[0] as GetRentCallPaymentsQuery;
+    expect(query).toBeInstanceOf(GetRentCallPaymentsQuery);
+    expect(query.entityId).toBe('entity-1');
+    expect(query.rentCallId).toBe('rc-1');
+    expect(query.userId).toBe('user-1');
+    expect(result).toEqual(paymentsData);
   });
 });

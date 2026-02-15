@@ -73,9 +73,7 @@ export class StakeholderLetterPdfAssembler {
       leaseReference,
       unitIdentifier: unit.identifier,
       totalDebtCents: debtCents,
-      unpaidPeriods: [
-        { period: formatMonthLabel(rentCall.month), amountCents: debtCents },
-      ],
+      unpaidPeriods: [{ period: formatMonthLabel(rentCall.month), amountCents: debtCents }],
       tier1SentAt: escalation?.tier1SentAt ? this.formatDate(escalation.tier1SentAt) : null,
       tier2SentAt: escalation?.tier2SentAt ? this.formatDate(escalation.tier2SentAt) : null,
       date,

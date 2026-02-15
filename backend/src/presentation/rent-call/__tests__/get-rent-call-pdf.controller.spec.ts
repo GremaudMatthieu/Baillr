@@ -96,9 +96,7 @@ describe('GetRentCallPdfController', () => {
 
   it('should return PDF buffer with correct headers', async () => {
     mockEntityFinder.findByIdAndUserId.mockResolvedValue({ id: entityId });
-    mockRentCallFinder.findByIdAndEntity.mockResolvedValue(
-      makeRentCallWithRelations(),
-    );
+    mockRentCallFinder.findByIdAndEntity.mockResolvedValue(makeRentCallWithRelations());
 
     await controller.handle(entityId, rentCallId, userId, mockRes as any);
 
@@ -115,17 +113,17 @@ describe('GetRentCallPdfController', () => {
     mockEntityFinder.findByIdAndUserId.mockResolvedValue({ id: entityId });
     mockRentCallFinder.findByIdAndEntity.mockResolvedValue(null);
 
-    await expect(
-      controller.handle(entityId, rentCallId, userId, mockRes as any),
-    ).rejects.toThrow(NotFoundException);
+    await expect(controller.handle(entityId, rentCallId, userId, mockRes as any)).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   it('should throw UnauthorizedException when entity not found', async () => {
     mockEntityFinder.findByIdAndUserId.mockResolvedValue(null);
 
-    await expect(
-      controller.handle(entityId, rentCallId, userId, mockRes as any),
-    ).rejects.toThrow(UnauthorizedException);
+    await expect(controller.handle(entityId, rentCallId, userId, mockRes as any)).rejects.toThrow(
+      UnauthorizedException,
+    );
   });
 
   it('should handle pro-rata rent call', async () => {
@@ -189,7 +187,8 @@ describe('GetRentCallPdfController', () => {
 
     expect(mockRes.set).toHaveBeenCalledWith(
       expect.objectContaining({
-        'Content-Disposition': 'attachment; filename="appel-loyer-SCI__La_Maison_Bleue_-2026-02.pdf"',
+        'Content-Disposition':
+          'attachment; filename="appel-loyer-SCI__La_Maison_Bleue_-2026-02.pdf"',
       }),
     );
   });

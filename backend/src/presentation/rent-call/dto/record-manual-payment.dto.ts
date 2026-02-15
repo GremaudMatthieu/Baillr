@@ -1,4 +1,15 @@
-import { IsInt, Min, Max, IsDateString, IsNotEmpty, IsString, MaxLength, IsEnum, IsOptional, ValidateIf } from 'class-validator';
+import {
+  IsInt,
+  Min,
+  Max,
+  IsDateString,
+  IsNotEmpty,
+  IsString,
+  MaxLength,
+  IsEnum,
+  IsOptional,
+  ValidateIf,
+} from 'class-validator';
 
 export class RecordManualPaymentDto {
   @IsInt()

@@ -6,10 +6,7 @@ import { PrismaService } from '@infrastructure/database/prisma.service.js';
 export class InseeIndexFinder {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAllByEntity(
-    entityId: string,
-    type?: string,
-  ): Promise<InseeIndex[]> {
+  async findAllByEntity(entityId: string, type?: string): Promise<InseeIndex[]> {
     return this.prisma.inseeIndex.findMany({
       where: {
         entityId,

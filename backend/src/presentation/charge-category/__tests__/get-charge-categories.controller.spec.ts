@@ -1,51 +1,26 @@
-import { Test } from '@nestjs/testing';
-import { UnauthorizedException } from '@nestjs/common';
 import { GetChargeCategoriesController } from '../controllers/get-charge-categories.controller';
-import { EntityFinder } from '../../entity/finders/entity.finder';
-import { ChargeCategoryFinder } from '../finders/charge-category.finder';
-import { ChargeCategorySeeder } from '../charge-category-seeder';
+import { GetChargeCategoriesQuery } from '../queries/get-charge-categories.query';
 
 describe('GetChargeCategoriesController', () => {
   let controller: GetChargeCategoriesController;
-  const mockEntityFinder = { findByIdAndUserId: jest.fn() };
-  const mockFinder = { findByEntityId: jest.fn() };
-  const mockSeeder = { ensureStandardCategories: jest.fn() };
+  let queryBus: { execute: jest.Mock<Promise<unknown>, unknown[]> };
 
-  beforeEach(async () => {
-    const module = await Test.createTestingModule({
-      controllers: [GetChargeCategoriesController],
-      providers: [
-        { provide: EntityFinder, useValue: mockEntityFinder },
-        { provide: ChargeCategoryFinder, useValue: mockFinder },
-        { provide: ChargeCategorySeeder, useValue: mockSeeder },
-      ],
-    }).compile();
-
-    controller = module.get(GetChargeCategoriesController);
-    jest.clearAllMocks();
+  beforeEach(() => {
+    queryBus = { execute: jest.fn<Promise<unknown>, unknown[]>() };
+    controller = new GetChargeCategoriesController(queryBus as never);
   });
 
-  it('should throw UnauthorizedException when entity not found', async () => {
-    mockEntityFinder.findByIdAndUserId.mockResolvedValue(null);
-
-    await expect(controller.handle('entity-1', 'user-1')).rejects.toThrow(
-      UnauthorizedException,
-    );
-  });
-
-  it('should seed standard categories and return all', async () => {
-    mockEntityFinder.findByIdAndUserId.mockResolvedValue({ id: 'entity-1' });
-    mockSeeder.ensureStandardCategories.mockResolvedValue(undefined);
-    const categories = [
-      { id: '1', slug: 'water', label: 'Eau', isStandard: true },
-      { id: '2', slug: 'parking', label: 'Parking', isStandard: false },
-    ];
-    mockFinder.findByEntityId.mockResolvedValue(categories);
+  it('should dispatch GetChargeCategoriesQuery and return wrapped data', async () => {
+    const categories = [{ id: '1', slug: 'water', label: 'Eau', isStandard: true }];
+    queryBus.execute.mockResolvedValue(categories);
 
     const result = await controller.handle('entity-1', 'user-1');
 
+    expect(queryBus.execute).toHaveBeenCalledTimes(1);
+    const query = queryBus.execute.mock.calls[0]?.[0] as GetChargeCategoriesQuery;
+    expect(query).toBeInstanceOf(GetChargeCategoriesQuery);
+    expect(query.entityId).toBe('entity-1');
+    expect(query.userId).toBe('user-1');
     expect(result).toEqual({ data: categories });
-    expect(mockSeeder.ensureStandardCategories).toHaveBeenCalledWith('entity-1');
-    expect(mockFinder.findByEntityId).toHaveBeenCalledWith('entity-1');
   });
 });

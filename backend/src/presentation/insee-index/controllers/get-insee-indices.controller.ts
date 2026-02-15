@@ -1,25 +1,14 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Query,
-  ParseUUIDPipe,
-  UnauthorizedException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Controller, Get, Param, Query, ParseUUIDPipe, BadRequestException } from '@nestjs/common';
 import type { InseeIndex } from '@prisma/client';
+import { QueryBus } from '@nestjs/cqrs';
 import { CurrentUser } from '@infrastructure/auth/user.decorator.js';
-import { EntityFinder } from '../../entity/finders/entity.finder.js';
-import { InseeIndexFinder } from '../finders/insee-index.finder.js';
+import { GetInseeIndicesQuery } from '../queries/get-insee-indices.query.js';
 
 const VALID_INDEX_TYPES = ['IRL', 'ILC', 'ICC'];
 
 @Controller('entities/:entityId/insee-indices')
 export class GetInseeIndicesController {
-  constructor(
-    private readonly entityFinder: EntityFinder,
-    private readonly inseeIndexFinder: InseeIndexFinder,
-  ) {}
+  constructor(private readonly queryBus: QueryBus) {}
 
   @Get()
   async handle(
@@ -33,12 +22,9 @@ export class GetInseeIndicesController {
       );
     }
 
-    const entity = await this.entityFinder.findByIdAndUserId(entityId, userId);
-    if (!entity) {
-      throw new UnauthorizedException();
-    }
-
-    const data = await this.inseeIndexFinder.findAllByEntity(entityId, type);
+    const data = await this.queryBus.execute<GetInseeIndicesQuery, InseeIndex[]>(
+      new GetInseeIndicesQuery(entityId, userId, type),
+    );
 
     return { data };
   }

@@ -37,13 +37,8 @@ export class BankStatementProjection implements OnModuleInit {
 
     subscription.on('error', (error: Error) => {
       this.reconnectAttempts++;
-      const delay = Math.min(
-        1000 * Math.pow(2, this.reconnectAttempts),
-        30_000,
-      );
-      this.logger.error(
-        `Bank statement projection subscription error: ${error.message}`,
-      );
+      const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30_000);
+      this.logger.error(`Bank statement projection subscription error: ${error.message}`);
       this.logger.log(
         `Reconnecting bank statement projection in ${delay}ms (attempt ${this.reconnectAttempts})...`,
       );
@@ -51,16 +46,11 @@ export class BankStatementProjection implements OnModuleInit {
     });
   }
 
-  private async handleEvent(
-    eventType: string,
-    data: Record<string, unknown>,
-  ): Promise<void> {
+  private async handleEvent(eventType: string, data: Record<string, unknown>): Promise<void> {
     try {
       switch (eventType) {
         case 'BankStatementImported':
-          await this.onBankStatementImported(
-            data as unknown as BankStatementImportedData,
-          );
+          await this.onBankStatementImported(data as unknown as BankStatementImportedData);
           break;
         default:
           break;
@@ -73,9 +63,7 @@ export class BankStatementProjection implements OnModuleInit {
     }
   }
 
-  private async onBankStatementImported(
-    data: BankStatementImportedData,
-  ): Promise<void> {
+  private async onBankStatementImported(data: BankStatementImportedData): Promise<void> {
     const existing = await this.prisma.bankStatement.findUnique({
       where: { id: data.bankStatementId },
     });

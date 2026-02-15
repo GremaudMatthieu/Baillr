@@ -39,14 +39,9 @@ export class ConfigureLeaseBillingLinesController {
     // Validate all chargeCategoryIds belong to the lease's entity
     if (dto.billingLines.length > 0) {
       const categoryIds = dto.billingLines.map((l) => l.chargeCategoryId);
-      const found = await this.chargeCategoryFinder.findByIdsAndEntity(
-        categoryIds,
-        lease.entityId,
-      );
+      const found = await this.chargeCategoryFinder.findByIdsAndEntity(categoryIds, lease.entityId);
       if (found.length !== categoryIds.length) {
-        throw new BadRequestException(
-          'Une ou plusieurs catégories de charges sont invalides',
-        );
+        throw new BadRequestException('Une ou plusieurs catégories de charges sont invalides');
       }
     }
 

@@ -37,9 +37,9 @@ describe('RecordManualPaymentController', () => {
   it('should throw UnauthorizedException when entity not found', async () => {
     mockEntityFinder.findByIdAndUserId.mockResolvedValue(null);
 
-    await expect(
-      controller.handle(userId, entityId, rentCallId, dto),
-    ).rejects.toThrow(UnauthorizedException);
+    await expect(controller.handle(userId, entityId, rentCallId, dto)).rejects.toThrow(
+      UnauthorizedException,
+    );
 
     expect(mockEntityFinder.findByIdAndUserId).toHaveBeenCalledWith(entityId, userId);
     expect(mockCommandBus.execute).not.toHaveBeenCalled();
@@ -49,15 +49,11 @@ describe('RecordManualPaymentController', () => {
     mockEntityFinder.findByIdAndUserId.mockResolvedValue({ id: entityId });
     mockRentCallFinder.findByIdAndEntity.mockResolvedValue(null);
 
-    await expect(
-      controller.handle(userId, entityId, rentCallId, dto),
-    ).rejects.toThrow(NotFoundException);
-
-    expect(mockRentCallFinder.findByIdAndEntity).toHaveBeenCalledWith(
-      rentCallId,
-      entityId,
-      userId,
+    await expect(controller.handle(userId, entityId, rentCallId, dto)).rejects.toThrow(
+      NotFoundException,
     );
+
+    expect(mockRentCallFinder.findByIdAndEntity).toHaveBeenCalledWith(rentCallId, entityId, userId);
     expect(mockCommandBus.execute).not.toHaveBeenCalled();
   });
 

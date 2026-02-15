@@ -37,13 +37,8 @@ export class RevisionApprovedReaction implements OnModuleInit {
 
     subscription.on('error', (error: Error) => {
       this.reconnectAttempts++;
-      const delay = Math.min(
-        1000 * Math.pow(2, this.reconnectAttempts),
-        30_000,
-      );
-      this.logger.error(
-        `Revision-approved reaction subscription error: ${error.message}`,
-      );
+      const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30_000);
+      this.logger.error(`Revision-approved reaction subscription error: ${error.message}`);
       this.logger.log(
         `Reconnecting revision-approved reaction in ${delay}ms (attempt ${this.reconnectAttempts})...`,
       );

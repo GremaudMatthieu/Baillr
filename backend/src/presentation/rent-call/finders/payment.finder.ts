@@ -6,10 +6,7 @@ import type { Payment } from '@prisma/client';
 export class PaymentFinder {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findByRentCallId(
-    rentCallId: string,
-    entityId: string,
-  ): Promise<Payment[]> {
+  async findByRentCallId(rentCallId: string, entityId: string): Promise<Payment[]> {
     return this.prisma.payment.findMany({
       where: { rentCallId, entityId },
       orderBy: { recordedAt: 'desc' },

@@ -1,5 +1,8 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { UnpaidRentCallFinder, type UnpaidRentCallResult } from '../finders/unpaid-rent-call.finder.js';
+import {
+  UnpaidRentCallFinder,
+  type UnpaidRentCallResult,
+} from '../finders/unpaid-rent-call.finder.js';
 
 export class GetUnpaidRentCallsQuery {
   constructor(

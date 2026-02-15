@@ -12,10 +12,7 @@ describe('ChargeCategorySeeder', () => {
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
-      providers: [
-        ChargeCategorySeeder,
-        { provide: PrismaService, useValue: mockPrisma },
-      ],
+      providers: [ChargeCategorySeeder, { provide: PrismaService, useValue: mockPrisma }],
     }).compile();
 
     seeder = module.get(ChargeCategorySeeder);
@@ -44,7 +41,9 @@ describe('ChargeCategorySeeder', () => {
 
     await seeder.ensureStandardCategories('entity-1');
 
-    const { data } = mockPrisma.chargeCategory.createMany.mock.calls[0][0] as { data: { isStandard: boolean }[] };
+    const { data } = mockPrisma.chargeCategory.createMany.mock.calls[0][0] as {
+      data: { isStandard: boolean }[];
+    };
     for (const entry of data) {
       expect(entry.isStandard).toBe(true);
     }

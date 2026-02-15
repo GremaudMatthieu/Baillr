@@ -6,10 +6,7 @@ import { PrismaService } from '@infrastructure/database/prisma.service.js';
 export class AnnualChargesFinder {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findByEntityAndYear(
-    entityId: string,
-    fiscalYear: number,
-  ): Promise<AnnualCharges | null> {
+  async findByEntityAndYear(entityId: string, fiscalYear: number): Promise<AnnualCharges | null> {
     return this.prisma.annualCharges.findUnique({
       where: {
         entityId_fiscalYear: { entityId, fiscalYear },
@@ -21,6 +18,22 @@ export class AnnualChargesFinder {
     return this.prisma.annualCharges.findMany({
       where: { entityId },
       orderBy: { fiscalYear: 'desc' },
+    });
+  }
+
+  async findPaidBillingLinesByEntityAndYear(
+    entityId: string,
+    fiscalYear: number,
+  ): Promise<Array<{ billingLines: unknown }>> {
+    return this.prisma.rentCall.findMany({
+      where: {
+        entityId,
+        month: { startsWith: `${fiscalYear}-` },
+        paidAt: { not: null },
+      },
+      select: {
+        billingLines: true,
+      },
     });
   }
 }

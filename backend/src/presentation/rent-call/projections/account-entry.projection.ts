@@ -152,7 +152,9 @@ export class AccountEntryProjection implements OnModuleInit {
       select: { tenantId: true, month: true, totalAmountCents: true },
     });
     if (!rentCall) {
-      this.logger.warn(`RentCall ${data.rentCallId} not found for AccountEntry projection — skipping`);
+      this.logger.warn(
+        `RentCall ${data.rentCallId} not found for AccountEntry projection — skipping`,
+      );
       return;
     }
 

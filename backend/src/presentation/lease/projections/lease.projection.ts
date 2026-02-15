@@ -76,7 +76,7 @@ export class LeaseProjection implements OnModuleInit {
       }
     } catch (error) {
       this.logger.error(
-        `Failed to project ${eventType} for lease ${(data as Record<string, unknown>).leaseId ?? (data as Record<string, unknown>).id}: ${(error as Error).message}`,
+        `Failed to project ${eventType} for lease ${data.leaseId ?? data.id}: ${(error as Error).message}`,
         (error as Error).stack,
       );
     }

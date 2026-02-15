@@ -12,6 +12,8 @@ import { GenerateAFormalNoticeController } from './controllers/generate-a-formal
 import { GenerateStakeholderNotificationsController } from './controllers/generate-stakeholder-notifications.controller.js';
 import { GetEscalationStatusController } from './controllers/get-escalation-status.controller.js';
 import { GetBatchEscalationStatusController } from './controllers/get-batch-escalation-status.controller.js';
+import { GetEscalationStatusHandler } from './queries/get-escalation-status.handler.js';
+import { GetBatchEscalationStatusHandler } from './queries/get-batch-escalation-status.handler.js';
 import { EscalationProjection } from './projections/escalation.projection.js';
 import { EscalationFinder } from './finders/escalation.finder.js';
 import { FormalNoticePdfAssembler } from './services/formal-notice-pdf-assembler.service.js';
@@ -35,6 +37,8 @@ import { StakeholderLetterPdfAssembler } from './services/stakeholder-letter-pdf
     SendAReminderEmailHandler,
     GenerateAFormalNoticeHandler,
     GenerateStakeholderNotificationsHandler,
+    GetEscalationStatusHandler,
+    GetBatchEscalationStatusHandler,
     EscalationProjection,
     EscalationFinder,
     FormalNoticePdfAssembler,

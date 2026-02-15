@@ -65,9 +65,7 @@ describe('FormalNoticePdfAssembler', () => {
   it('should assemble unpaid period with remaining balance', () => {
     const result = assembler.assemble(baseInput);
 
-    expect(result.unpaidPeriods).toEqual([
-      { period: 'Janvier 2026', amountCents: 85000 },
-    ]);
+    expect(result.unpaidPeriods).toEqual([{ period: 'Janvier 2026', amountCents: 85000 }]);
     expect(result.totalDebtCents).toBe(85000);
   });
 

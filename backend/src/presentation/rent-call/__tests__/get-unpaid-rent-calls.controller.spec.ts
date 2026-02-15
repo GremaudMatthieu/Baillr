@@ -27,9 +27,7 @@ describe('GetUnpaidRentCallsController', () => {
 
   it('should return unpaid rent calls when entity exists', async () => {
     entityFinder.findByIdAndUserId.mockResolvedValue({ id: 'entity-1' });
-    const mockData = [
-      { id: 'rc-1', daysLate: 10, tenantLastName: 'Dupont' },
-    ];
+    const mockData = [{ id: 'rc-1', daysLate: 10, tenantLastName: 'Dupont' }];
     queryBus.execute.mockResolvedValue(mockData);
 
     const result = await controller.handle('entity-1', 'user_123');
@@ -44,8 +42,6 @@ describe('GetUnpaidRentCallsController', () => {
   it('should throw UnauthorizedException when entity not found', async () => {
     entityFinder.findByIdAndUserId.mockResolvedValue(null);
 
-    await expect(controller.handle('entity-1', 'user_123')).rejects.toThrow(
-      UnauthorizedException,
-    );
+    await expect(controller.handle('entity-1', 'user_123')).rejects.toThrow(UnauthorizedException);
   });
 });

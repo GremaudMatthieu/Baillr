@@ -24,10 +24,7 @@ describe('LeaseProjection', () => {
         updateMany: jest.fn(),
       },
     };
-    projection = new LeaseProjection(
-      mockKurrentDb as never,
-      mockPrisma as never,
-    );
+    projection = new LeaseProjection(mockKurrentDb as never, mockPrisma as never);
   });
 
   describe('onModuleInit', () => {
@@ -43,10 +40,7 @@ describe('LeaseProjection', () => {
 
       await (
         projection as unknown as {
-          handleEvent: (
-            t: string,
-            d: Record<string, unknown>,
-          ) => Promise<void>;
+          handleEvent: (t: string, d: Record<string, unknown>) => Promise<void>;
         }
       ).handleEvent('LeaseCreated', {
         id: 'lease-1',
@@ -84,10 +78,7 @@ describe('LeaseProjection', () => {
 
       await (
         projection as unknown as {
-          handleEvent: (
-            t: string,
-            d: Record<string, unknown>,
-          ) => Promise<void>;
+          handleEvent: (t: string, d: Record<string, unknown>) => Promise<void>;
         }
       ).handleEvent('LeaseRentRevised', {
         leaseId: 'lease-1',
@@ -118,10 +109,7 @@ describe('LeaseProjection', () => {
 
       await (
         projection as unknown as {
-          handleEvent: (
-            t: string,
-            d: Record<string, unknown>,
-          ) => Promise<void>;
+          handleEvent: (t: string, d: Record<string, unknown>) => Promise<void>;
         }
       ).handleEvent('LeaseRentRevised', {
         leaseId: 'lease-missing',
@@ -144,10 +132,7 @@ describe('LeaseProjection', () => {
 
       await (
         projection as unknown as {
-          handleEvent: (
-            t: string,
-            d: Record<string, unknown>,
-          ) => Promise<void>;
+          handleEvent: (t: string, d: Record<string, unknown>) => Promise<void>;
         }
       ).handleEvent('LeaseTerminated', {
         leaseId: 'lease-1',
@@ -165,10 +150,7 @@ describe('LeaseProjection', () => {
     it('should ignore unknown event types', async () => {
       await (
         projection as unknown as {
-          handleEvent: (
-            t: string,
-            d: Record<string, unknown>,
-          ) => Promise<void>;
+          handleEvent: (t: string, d: Record<string, unknown>) => Promise<void>;
         }
       ).handleEvent('UnknownEvent', {});
 

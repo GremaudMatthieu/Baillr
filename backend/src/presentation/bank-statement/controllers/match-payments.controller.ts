@@ -61,10 +61,7 @@ export class MatchPaymentsController {
     // Map to domain types
     const transactionData: TransactionData[] = transactions.map((tx) => ({
       id: tx.id,
-      date:
-        tx.date instanceof Date
-          ? tx.date.toISOString().split('T')[0]
-          : String(tx.date),
+      date: tx.date instanceof Date ? tx.date.toISOString().split('T')[0] : String(tx.date),
       amountCents: tx.amountCents,
       payerName: tx.payerName,
       reference: tx.reference,
@@ -82,11 +79,7 @@ export class MatchPaymentsController {
     }));
 
     // Exclude already-paid rent calls from matching proposals
-    const paidIds = await this.rentCallFinder.findPaidRentCallIds(
-      entityId,
-      userId,
-      month,
-    );
+    const paidIds = await this.rentCallFinder.findPaidRentCallIds(entityId, userId, month);
     const excludedRentCallIds = new Set<string>(paidIds);
 
     const result = this.matchingService.match(
@@ -97,9 +90,7 @@ export class MatchPaymentsController {
 
     return {
       ...result,
-      availableRentCalls: rentCallCandidates.filter(
-        (rc) => !excludedRentCallIds.has(rc.id),
-      ),
+      availableRentCalls: rentCallCandidates.filter((rc) => !excludedRentCallIds.has(rc.id)),
     };
   }
 }

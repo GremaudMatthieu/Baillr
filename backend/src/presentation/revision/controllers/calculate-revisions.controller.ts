@@ -55,8 +55,7 @@ export class CalculateRevisionsController {
       throw new UnauthorizedException();
     }
 
-    const leases =
-      await this.leaseFinder.findAllActiveWithRevisionParams(entityId, userId);
+    const leases = await this.leaseFinder.findAllActiveWithRevisionParams(entityId, userId);
 
     const result: BatchCalculationResult = {
       calculated: 0,
@@ -115,9 +114,7 @@ export class CalculateRevisionsController {
         );
         result.calculated++;
       } catch (error) {
-        result.errors.push(
-          `${lease.id}: ${(error as Error).message}`,
-        );
+        result.errors.push(`${lease.id}: ${(error as Error).message}`);
       }
     }
 

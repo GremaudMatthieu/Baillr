@@ -10,10 +10,7 @@ export type BankStatementWithTransactions = BankStatement & {
 export class BankStatementFinder {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAllByEntity(
-    entityId: string,
-    userId: string,
-  ): Promise<BankStatement[]> {
+  async findAllByEntity(entityId: string, userId: string): Promise<BankStatement[]> {
     return this.prisma.bankStatement.findMany({
       where: { entityId, userId },
       orderBy: { importedAt: 'desc' },

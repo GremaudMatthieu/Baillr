@@ -23,17 +23,19 @@ describe('RecordAnInseeIndexController', () => {
     mockEntityFinder.findByIdAndUserId.mockResolvedValue({ id: 'entity-1' });
     mockInseeIndexFinder.existsByTypeQuarterYearEntity.mockResolvedValue(false);
 
-    await controller.handle('entity-1', {
-      id: 'test-id',
-      type: 'IRL',
-      quarter: 'Q1',
-      year: 2026,
-      value: 142.06,
-    }, 'user-1');
-
-    expect(mockCommandBus.execute).toHaveBeenCalledWith(
-      expect.any(RecordAnInseeIndexCommand),
+    await controller.handle(
+      'entity-1',
+      {
+        id: 'test-id',
+        type: 'IRL',
+        quarter: 'Q1',
+        year: 2026,
+        value: 142.06,
+      },
+      'user-1',
     );
+
+    expect(mockCommandBus.execute).toHaveBeenCalledWith(expect.any(RecordAnInseeIndexCommand));
     const command = mockCommandBus.execute.mock.calls[0][0] as RecordAnInseeIndexCommand;
     expect(command.id).toBe('test-id');
     expect(command.type).toBe('IRL');
@@ -49,13 +51,17 @@ describe('RecordAnInseeIndexController', () => {
     mockInseeIndexFinder.existsByTypeQuarterYearEntity.mockResolvedValue(false);
 
     await expect(
-      controller.handle('entity-1', {
-        id: 'test-id',
-        type: 'IRL',
-        quarter: 'Q1',
-        year: 2026,
-        value: 142.06,
-      }, 'user-1'),
+      controller.handle(
+        'entity-1',
+        {
+          id: 'test-id',
+          type: 'IRL',
+          quarter: 'Q1',
+          year: 2026,
+          value: 142.06,
+        },
+        'user-1',
+      ),
     ).rejects.toThrow(UnauthorizedException);
   });
 
@@ -64,13 +70,17 @@ describe('RecordAnInseeIndexController', () => {
     mockInseeIndexFinder.existsByTypeQuarterYearEntity.mockResolvedValue(true);
 
     await expect(
-      controller.handle('entity-1', {
-        id: 'test-id',
-        type: 'IRL',
-        quarter: 'Q1',
-        year: 2026,
-        value: 142.06,
-      }, 'user-1'),
+      controller.handle(
+        'entity-1',
+        {
+          id: 'test-id',
+          type: 'IRL',
+          quarter: 'Q1',
+          year: 2026,
+          value: 142.06,
+        },
+        'user-1',
+      ),
     ).rejects.toThrow(ConflictException);
   });
 
@@ -78,17 +88,24 @@ describe('RecordAnInseeIndexController', () => {
     mockEntityFinder.findByIdAndUserId.mockResolvedValue({ id: 'entity-1' });
     mockInseeIndexFinder.existsByTypeQuarterYearEntity.mockResolvedValue(false);
 
-    await controller.handle('entity-1', {
-      id: 'test-id',
-      type: 'IRL',
-      quarter: 'Q1',
-      year: 2026,
-      value: 142.06,
-    }, 'user-1');
+    await controller.handle(
+      'entity-1',
+      {
+        id: 'test-id',
+        type: 'IRL',
+        quarter: 'Q1',
+        year: 2026,
+        value: 142.06,
+      },
+      'user-1',
+    );
 
     expect(mockEntityFinder.findByIdAndUserId).toHaveBeenCalledWith('entity-1', 'user-1');
     expect(mockInseeIndexFinder.existsByTypeQuarterYearEntity).toHaveBeenCalledWith(
-      'IRL', 'Q1', 2026, 'entity-1',
+      'IRL',
+      'Q1',
+      2026,
+      'entity-1',
     );
   });
 });

@@ -62,8 +62,8 @@ export class UnpaidRentCallFinder {
     for (const rc of rentCalls) {
       // Compute due date from month + lease.monthlyDueDate
       const [yearStr, monthStr] = rc.month.split('-');
-      const year = parseInt(yearStr!, 10);
-      const monthIndex = parseInt(monthStr!, 10) - 1; // 0-indexed
+      const year = parseInt(yearStr, 10);
+      const monthIndex = parseInt(monthStr, 10) - 1; // 0-indexed
       const dueDay = rc.lease.monthlyDueDate;
       const dueDate = new Date(year, monthIndex, dueDay);
 

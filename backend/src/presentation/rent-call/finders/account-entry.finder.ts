@@ -6,10 +6,7 @@ import type { AccountEntry } from '@prisma/client';
 export class AccountEntryFinder {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findByTenantAndEntity(
-    tenantId: string,
-    entityId: string,
-  ): Promise<AccountEntry[]> {
+  async findByTenantAndEntity(tenantId: string, entityId: string): Promise<AccountEntry[]> {
     return this.prisma.accountEntry.findMany({
       where: { tenantId, entityId },
       orderBy: [{ entryDate: 'desc' }, { createdAt: 'desc' }],

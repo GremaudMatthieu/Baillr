@@ -67,9 +67,7 @@ export class GenerateAFormalNoticeController {
       unit: rentCall.unit,
       lease: rentCall.lease,
       entity: rentCall.entity,
-      escalation: escalation
-        ? { tier1SentAt: escalation.tier1SentAt }
-        : null,
+      escalation: escalation ? { tier1SentAt: escalation.tier1SentAt } : null,
     });
 
     const buffer = await this.pdfGenerator.generateFormalNoticePdf(pdfData);

@@ -36,13 +36,8 @@ export class AnnualChargesProjection implements OnModuleInit {
 
     subscription.on('error', (error: Error) => {
       this.reconnectAttempts++;
-      const delay = Math.min(
-        1000 * Math.pow(2, this.reconnectAttempts),
-        30_000,
-      );
-      this.logger.error(
-        `Annual charges projection subscription error: ${error.message}`,
-      );
+      const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30_000);
+      this.logger.error(`Annual charges projection subscription error: ${error.message}`);
       this.logger.log(
         `Reconnecting annual charges projection in ${delay}ms (attempt ${this.reconnectAttempts})...`,
       );
@@ -61,10 +56,7 @@ export class AnnualChargesProjection implements OnModuleInit {
     );
   }
 
-  private async handleEvent(
-    eventType: string,
-    data: Record<string, unknown>,
-  ): Promise<void> {
+  private async handleEvent(eventType: string, data: Record<string, unknown>): Promise<void> {
     try {
       switch (eventType) {
         case 'AnnualChargesRecorded':
@@ -74,9 +66,7 @@ export class AnnualChargesProjection implements OnModuleInit {
             );
             return;
           }
-          await this.onAnnualChargesRecorded(
-            data as unknown as AnnualChargesRecordedData,
-          );
+          await this.onAnnualChargesRecorded(data as unknown as AnnualChargesRecordedData);
           break;
         default:
           break;
@@ -89,9 +79,7 @@ export class AnnualChargesProjection implements OnModuleInit {
     }
   }
 
-  private async onAnnualChargesRecorded(
-    data: AnnualChargesRecordedData,
-  ): Promise<void> {
+  private async onAnnualChargesRecorded(data: AnnualChargesRecordedData): Promise<void> {
     await this.prisma.annualCharges.upsert({
       where: {
         entityId_fiscalYear: {

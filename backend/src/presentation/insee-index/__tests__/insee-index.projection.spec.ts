@@ -24,10 +24,7 @@ describe('InseeIndexProjection', () => {
         create: jest.fn(),
       },
     };
-    projection = new InseeIndexProjection(
-      mockKurrentDb as never,
-      mockPrisma as never,
-    );
+    projection = new InseeIndexProjection(mockKurrentDb as never, mockPrisma as never);
   });
 
   describe('onModuleInit', () => {
@@ -54,10 +51,11 @@ describe('InseeIndexProjection', () => {
       };
 
       // Access private method via prototype
-      await (projection as unknown as { handleEvent: (t: string, d: Record<string, unknown>) => Promise<void> }).handleEvent(
-        'IndexRecorded',
-        data as unknown as Record<string, unknown>,
-      );
+      await (
+        projection as unknown as {
+          handleEvent: (t: string, d: Record<string, unknown>) => Promise<void>;
+        }
+      ).handleEvent('IndexRecorded', data as unknown as Record<string, unknown>);
 
       expect(mockPrisma.inseeIndex.create).toHaveBeenCalledWith({
         data: {
@@ -86,10 +84,11 @@ describe('InseeIndexProjection', () => {
         recordedAt: '2026-02-14T10:00:00Z',
       };
 
-      await (projection as unknown as { handleEvent: (t: string, d: Record<string, unknown>) => Promise<void> }).handleEvent(
-        'IndexRecorded',
-        data as unknown as Record<string, unknown>,
-      );
+      await (
+        projection as unknown as {
+          handleEvent: (t: string, d: Record<string, unknown>) => Promise<void>;
+        }
+      ).handleEvent('IndexRecorded', data as unknown as Record<string, unknown>);
 
       expect(mockPrisma.inseeIndex.create).not.toHaveBeenCalled();
     });
@@ -97,19 +96,21 @@ describe('InseeIndexProjection', () => {
     it('should skip invalid event data', async () => {
       const invalidData = { indexId: 'test-id' }; // Missing required fields
 
-      await (projection as unknown as { handleEvent: (t: string, d: Record<string, unknown>) => Promise<void> }).handleEvent(
-        'IndexRecorded',
-        invalidData,
-      );
+      await (
+        projection as unknown as {
+          handleEvent: (t: string, d: Record<string, unknown>) => Promise<void>;
+        }
+      ).handleEvent('IndexRecorded', invalidData);
 
       expect(mockPrisma.inseeIndex.create).not.toHaveBeenCalled();
     });
 
     it('should ignore unknown event types', async () => {
-      await (projection as unknown as { handleEvent: (t: string, d: Record<string, unknown>) => Promise<void> }).handleEvent(
-        'UnknownEvent',
-        {},
-      );
+      await (
+        projection as unknown as {
+          handleEvent: (t: string, d: Record<string, unknown>) => Promise<void>;
+        }
+      ).handleEvent('UnknownEvent', {});
 
       expect(mockPrisma.inseeIndex.findUnique).not.toHaveBeenCalled();
     });

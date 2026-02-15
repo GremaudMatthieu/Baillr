@@ -8,10 +8,6 @@ export class GetRentCallsHandler implements IQueryHandler<GetRentCallsQuery> {
   constructor(private readonly rentCallFinder: RentCallFinder) {}
 
   async execute(query: GetRentCallsQuery): Promise<RentCall[]> {
-    return this.rentCallFinder.findAllByEntityAndUser(
-      query.entityId,
-      query.userId,
-      query.month,
-    );
+    return this.rentCallFinder.findAllByEntityAndUser(query.entityId, query.userId, query.month);
   }
 }

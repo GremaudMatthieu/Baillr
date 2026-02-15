@@ -132,12 +132,7 @@ describe('DownloadRevisionLetterController', () => {
 
     await controller.handle('entity-1', 'rev-1', 'user-1', mockRes as never);
 
-    expect(mockAssembler.assemble).toHaveBeenCalledWith(
-      revision,
-      entity,
-      tenant,
-      lease,
-    );
+    expect(mockAssembler.assemble).toHaveBeenCalledWith(revision, entity, tenant, lease);
     expect(mockPdfGenerator.generateRevisionLetterPdf).toHaveBeenCalled();
     expect(mockRes.end).toHaveBeenCalledWith(pdfBuffer);
   });

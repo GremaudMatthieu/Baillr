@@ -17,16 +17,9 @@ describe('RentCallFinder', () => {
 
   describe('findPaidRentCallIds', () => {
     it('should return only IDs of paid rent calls', async () => {
-      mockPrisma.rentCall.findMany.mockResolvedValue([
-        { id: 'rc-1' },
-        { id: 'rc-3' },
-      ]);
+      mockPrisma.rentCall.findMany.mockResolvedValue([{ id: 'rc-1' }, { id: 'rc-3' }]);
 
-      const result = await finder.findPaidRentCallIds(
-        'entity-1',
-        'user_123',
-        '2026-02',
-      );
+      const result = await finder.findPaidRentCallIds('entity-1', 'user_123', '2026-02');
 
       expect(result).toEqual(['rc-1', 'rc-3']);
       expect(mockPrisma.rentCall.findMany).toHaveBeenCalledWith({
@@ -43,11 +36,7 @@ describe('RentCallFinder', () => {
     it('should return empty array when no paid rent calls', async () => {
       mockPrisma.rentCall.findMany.mockResolvedValue([]);
 
-      const result = await finder.findPaidRentCallIds(
-        'entity-1',
-        'user_123',
-        '2026-02',
-      );
+      const result = await finder.findPaidRentCallIds('entity-1', 'user_123', '2026-02');
 
       expect(result).toEqual([]);
     });

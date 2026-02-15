@@ -14,6 +14,8 @@ import { GetRentCallPaymentsController } from './controllers/get-rent-call-payme
 import { GetUnpaidRentCallsController } from './controllers/get-unpaid-rent-calls.controller.js';
 import { GetRentCallsHandler } from './queries/get-rent-calls.handler.js';
 import { GetUnpaidRentCallsHandler } from './queries/get-unpaid-rent-calls.query.js';
+import { GetTenantAccountHandler } from './queries/get-tenant-account.handler.js';
+import { GetRentCallPaymentsHandler } from './queries/get-rent-call-payments.handler.js';
 import { UnpaidRentCallFinder } from './finders/unpaid-rent-call.finder.js';
 import { GenerateRentCallsForMonthHandler } from '@billing/rent-call/commands/generate-rent-calls-for-month.handler';
 import { SendRentCallsByEmailHandler } from '@billing/rent-call/commands/send-rent-calls-by-email.handler';
@@ -28,10 +30,27 @@ import { RentCallCalculationService } from '@billing/rent-call/rent-call-calcula
 import { RentCallAggregate } from '@billing/rent-call/rent-call.aggregate';
 
 @Module({
-  imports: [CqrsModule, CqrxModule.forFeature([RentCallAggregate]), EntityPresentationModule, LeasePresentationModule],
-  controllers: [GenerateRentCallsForMonthController, GetRentCallsController, GetUnpaidRentCallsController, GetRentCallPdfController, GetReceiptPdfController, SendRentCallsByEmailController, RecordManualPaymentController, GetTenantAccountController, GetRentCallPaymentsController],
+  imports: [
+    CqrsModule,
+    CqrxModule.forFeature([RentCallAggregate]),
+    EntityPresentationModule,
+    LeasePresentationModule,
+  ],
+  controllers: [
+    GenerateRentCallsForMonthController,
+    GetRentCallsController,
+    GetUnpaidRentCallsController,
+    GetRentCallPdfController,
+    GetReceiptPdfController,
+    SendRentCallsByEmailController,
+    RecordManualPaymentController,
+    GetTenantAccountController,
+    GetRentCallPaymentsController,
+  ],
   providers: [
     GetRentCallsHandler,
+    GetTenantAccountHandler,
+    GetRentCallPaymentsHandler,
     GenerateRentCallsForMonthHandler,
     SendRentCallsByEmailHandler,
     RentCallProjection,

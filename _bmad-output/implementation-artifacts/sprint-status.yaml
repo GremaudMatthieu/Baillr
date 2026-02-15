@@ -127,6 +127,10 @@ development_status:
   8-8-send-email-alerts-for-critical-events: backlog
   epic-8-retrospective: optional
 
+  # Consolidation Sprint 2 — CQRS Query-Side Normalization (blocking Epic 8)
+  consolidation-2: in-progress
+  c2-1-normalize-cqrs-query-side-across-all-presentation-modules: done # reviewed 2026-02-15, 10 findings (2H/5M/3L), 10 fixes — syntax error INSEE controller, PrismaService→Finder in provisions handler, duplicate interfaces extracted, unsafe cast typed, return type annotations, File List accuracy
+
   # Epic 9: Integrations & Advanced Features (4 stories)
   epic-9: backlog
   9-1-connect-to-bank-via-open-banking-api: backlog

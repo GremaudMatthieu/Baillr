@@ -39,10 +39,7 @@ export class LeaseFinder {
       where: {
         entityId,
         userId,
-        OR: [
-          { endDate: null },
-          { endDate: { gte: monthStart } },
-        ],
+        OR: [{ endDate: null }, { endDate: { gte: monthStart } }],
       },
       orderBy: { createdAt: 'desc' },
     });

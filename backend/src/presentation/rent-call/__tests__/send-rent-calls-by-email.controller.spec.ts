@@ -37,7 +37,11 @@ describe('SendRentCallsByEmailController', () => {
 
     expect(result).toEqual(handlerResult);
     expect(mockEntityFinder.findByIdAndUserId).toHaveBeenCalledWith(entityId, userId);
-    expect(mockRentCallFinder.findUnsentByEntityAndMonth).toHaveBeenCalledWith(entityId, userId, month);
+    expect(mockRentCallFinder.findUnsentByEntityAndMonth).toHaveBeenCalledWith(
+      entityId,
+      userId,
+      month,
+    );
 
     const command = mockCommandBus.execute.mock.calls[0][0];
     expect(command).toBeInstanceOf(SendRentCallsByEmailCommand);
@@ -51,15 +55,20 @@ describe('SendRentCallsByEmailController', () => {
     mockEntityFinder.findByIdAndUserId.mockResolvedValue(null);
     mockRentCallFinder.findUnsentByEntityAndMonth.mockResolvedValue([]);
 
-    await expect(
-      controller.handle(entityId, { month }, userId),
-    ).rejects.toThrow(UnauthorizedException);
+    await expect(controller.handle(entityId, { month }, userId)).rejects.toThrow(
+      UnauthorizedException,
+    );
   });
 
   it('should dispatch empty array when no unsent rent calls', async () => {
     mockEntityFinder.findByIdAndUserId.mockResolvedValue({ id: entityId });
     mockRentCallFinder.findUnsentByEntityAndMonth.mockResolvedValue([]);
-    mockCommandBus.execute.mockResolvedValue({ sent: 0, failed: 0, totalAmountCents: 0, failures: [] });
+    mockCommandBus.execute.mockResolvedValue({
+      sent: 0,
+      failed: 0,
+      totalAmountCents: 0,
+      failures: [],
+    });
 
     await controller.handle(entityId, { month }, userId);
 
@@ -72,8 +81,6 @@ describe('SendRentCallsByEmailController', () => {
     mockRentCallFinder.findUnsentByEntityAndMonth.mockResolvedValue([]);
     mockCommandBus.execute.mockRejectedValue(new Error('Handler error'));
 
-    await expect(
-      controller.handle(entityId, { month }, userId),
-    ).rejects.toThrow('Handler error');
+    await expect(controller.handle(entityId, { month }, userId)).rejects.toThrow('Handler error');
   });
 });

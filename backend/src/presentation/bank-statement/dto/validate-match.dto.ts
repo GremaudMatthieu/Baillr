@@ -1,4 +1,12 @@
-import { IsUUID, IsNotEmpty, IsInt, IsDateString, IsOptional, MaxLength, Min } from 'class-validator';
+import {
+  IsUUID,
+  IsNotEmpty,
+  IsInt,
+  IsDateString,
+  IsOptional,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class ValidateMatchDto {
   @IsUUID()

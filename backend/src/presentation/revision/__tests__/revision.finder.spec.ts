@@ -62,20 +62,12 @@ describe('RevisionFinder', () => {
   describe('existsByLeaseAndPeriod', () => {
     it('should return true when revision exists', async () => {
       mockPrisma.revision.count.mockResolvedValue(1);
-      const result = await finder.existsByLeaseAndPeriod(
-        'lease-1',
-        2025,
-        'Q2',
-      );
+      const result = await finder.existsByLeaseAndPeriod('lease-1', 2025, 'Q2');
       expect(result).toBe(true);
     });
 
     it('should return false when no revision exists', async () => {
-      const result = await finder.existsByLeaseAndPeriod(
-        'lease-1',
-        2025,
-        'Q2',
-      );
+      const result = await finder.existsByLeaseAndPeriod('lease-1', 2025, 'Q2');
       expect(result).toBe(false);
     });
   });

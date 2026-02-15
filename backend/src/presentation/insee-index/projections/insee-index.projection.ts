@@ -37,9 +37,7 @@ export class InseeIndexProjection implements OnModuleInit {
     subscription.on('error', (error: Error) => {
       this.reconnectAttempts++;
       const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30_000);
-      this.logger.error(
-        `INSEE index projection subscription error: ${error.message}`,
-      );
+      this.logger.error(`INSEE index projection subscription error: ${error.message}`);
       this.logger.log(
         `Reconnecting INSEE index projection in ${delay}ms (attempt ${this.reconnectAttempts})...`,
       );
@@ -59,17 +57,12 @@ export class InseeIndexProjection implements OnModuleInit {
     );
   }
 
-  private async handleEvent(
-    eventType: string,
-    data: Record<string, unknown>,
-  ): Promise<void> {
+  private async handleEvent(eventType: string, data: Record<string, unknown>): Promise<void> {
     try {
       switch (eventType) {
         case 'IndexRecorded':
           if (!this.isValidIndexRecordedData(data)) {
-            this.logger.error(
-              `Invalid IndexRecorded event data for index ${data.indexId}`,
-            );
+            this.logger.error(`Invalid IndexRecorded event data for index ${data.indexId}`);
             return;
           }
           await this.onIndexRecorded(data as unknown as IndexRecordedData);

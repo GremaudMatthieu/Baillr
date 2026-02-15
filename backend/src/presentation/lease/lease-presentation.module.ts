@@ -32,7 +32,13 @@ import { LeaseFinder } from './finders/lease.finder.js';
     GetLeasesController,
     GetALeaseController,
   ],
-  providers: [GetLeasesHandler, GetALeaseHandler, LeaseProjection, RevisionApprovedReaction, LeaseFinder],
+  providers: [
+    GetLeasesHandler,
+    GetALeaseHandler,
+    LeaseProjection,
+    RevisionApprovedReaction,
+    LeaseFinder,
+  ],
   exports: [LeaseFinder],
 })
 export class LeasePresentationModule {}

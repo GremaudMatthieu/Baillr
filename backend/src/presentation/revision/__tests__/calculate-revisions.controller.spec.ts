@@ -66,23 +66,16 @@ describe('CalculateRevisionsController', () => {
 
   it('should throw UnauthorizedException when entity not found', async () => {
     mockEntityFinder.findByIdAndUserId.mockResolvedValue(null);
-    await expect(controller.handle('entity-1', 'user-1')).rejects.toThrow(
-      UnauthorizedException,
-    );
+    await expect(controller.handle('entity-1', 'user-1')).rejects.toThrow(UnauthorizedException);
   });
 
   it('should calculate revisions for eligible leases', async () => {
-    const result: BatchCalculationResult = await controller.handle(
-      'entity-1',
-      'user-1',
-    );
+    const result: BatchCalculationResult = await controller.handle('entity-1', 'user-1');
     expect(result.calculated).toBe(1);
     expect(result.skipped).toHaveLength(0);
     expect(result.errors).toHaveLength(0);
     expect(mockCommandBus.execute).toHaveBeenCalledTimes(1);
-    expect(mockCommandBus.execute).toHaveBeenCalledWith(
-      expect.any(CalculateARevisionCommand),
-    );
+    expect(mockCommandBus.execute).toHaveBeenCalledWith(expect.any(CalculateARevisionCommand));
     // Verify baseIndexYear is passed to the command
     const command = mockCommandBus.execute.mock.calls[0][0] as CalculateARevisionCommand;
     expect(command.baseIndexYear).toBe(2025);
@@ -120,9 +113,7 @@ describe('CalculateRevisionsController', () => {
         type: 'company',
       },
     };
-    mockLeaseFinder.findAllActiveWithRevisionParams.mockResolvedValue([
-      companyLease,
-    ]);
+    mockLeaseFinder.findAllActiveWithRevisionParams.mockResolvedValue([companyLease]);
 
     await controller.handle('entity-1', 'user-1');
 

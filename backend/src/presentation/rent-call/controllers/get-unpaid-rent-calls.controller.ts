@@ -1,16 +1,8 @@
-import {
-  Controller,
-  Get,
-  Param,
-  ParseUUIDPipe,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, UnauthorizedException } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { CurrentUser } from '@infrastructure/auth/user.decorator';
 import { EntityFinder } from '../../entity/finders/entity.finder.js';
-import {
-  GetUnpaidRentCallsQuery,
-} from '../queries/get-unpaid-rent-calls.query.js';
+import { GetUnpaidRentCallsQuery } from '../queries/get-unpaid-rent-calls.query.js';
 import type { UnpaidRentCallResult } from '../finders/unpaid-rent-call.finder.js';
 
 @Controller('entities/:entityId/rent-calls')

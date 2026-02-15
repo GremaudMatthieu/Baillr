@@ -71,8 +71,7 @@ describe('ImportABankStatementController', () => {
     const file = {
       originalname: 'releve.xlsx',
       buffer: Buffer.from('excel data'),
-      mimetype:
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     } as Express.Multer.File;
 
     const result: ImportResult = await controller.handle(
@@ -98,12 +97,7 @@ describe('ImportABankStatementController', () => {
       amountColumn: 'Amount',
     });
 
-    await controller.handle(
-      'entity-1',
-      file,
-      { bankAccountId: 'ba-1', mapping },
-      'user_abc',
-    );
+    await controller.handle('entity-1', file, { bankAccountId: 'ba-1', mapping }, 'user_abc');
 
     expect(parser.parseCsv).toHaveBeenCalledWith(
       file.buffer,
@@ -113,12 +107,7 @@ describe('ImportABankStatementController', () => {
 
   it('should throw BadRequestException when no file provided', async () => {
     await expect(
-      controller.handle(
-        'entity-1',
-        undefined as never,
-        { bankAccountId: 'ba-1' },
-        'user_abc',
-      ),
+      controller.handle('entity-1', undefined as never, { bankAccountId: 'ba-1' }, 'user_abc'),
     ).rejects.toThrow(BadRequestException);
   });
 
@@ -133,12 +122,7 @@ describe('ImportABankStatementController', () => {
     } as Express.Multer.File;
 
     await expect(
-      controller.handle(
-        'entity-1',
-        file,
-        { bankAccountId: 'ba-1' },
-        'user_abc',
-      ),
+      controller.handle('entity-1', file, { bankAccountId: 'ba-1' }, 'user_abc'),
     ).rejects.toThrow(BadRequestException);
   });
 
@@ -152,12 +136,7 @@ describe('ImportABankStatementController', () => {
     } as Express.Multer.File;
 
     await expect(
-      controller.handle(
-        'entity-999',
-        file,
-        { bankAccountId: 'ba-1' },
-        'user_abc',
-      ),
+      controller.handle('entity-999', file, { bankAccountId: 'ba-1' }, 'user_abc'),
     ).rejects.toThrow(UnauthorizedException);
   });
 
@@ -173,12 +152,7 @@ describe('ImportABankStatementController', () => {
     } as Express.Multer.File;
 
     await expect(
-      controller.handle(
-        'entity-1',
-        file,
-        { bankAccountId: 'ba-1' },
-        'user_abc',
-      ),
+      controller.handle('entity-1', file, { bankAccountId: 'ba-1' }, 'user_abc'),
     ).rejects.toThrow(BadRequestException);
   });
 
@@ -189,12 +163,7 @@ describe('ImportABankStatementController', () => {
       mimetype: 'text/csv',
     } as Express.Multer.File;
 
-    const result = await controller.handle(
-      'entity-1',
-      file,
-      { bankAccountId: 'ba-1' },
-      'user_abc',
-    );
+    const result = await controller.handle('entity-1', file, { bankAccountId: 'ba-1' }, 'user_abc');
 
     expect(result.transactions[0].amountCents).toBe(80000);
     expect(result.transactions[0].payerName).toBe('DUPONT JEAN');
@@ -207,12 +176,7 @@ describe('ImportABankStatementController', () => {
       mimetype: 'text/csv',
     } as Express.Multer.File;
 
-    const result = await controller.handle(
-      'entity-1',
-      file,
-      { bankAccountId: 'ba-1' },
-      'user_abc',
-    );
+    const result = await controller.handle('entity-1', file, { bankAccountId: 'ba-1' }, 'user_abc');
 
     expect(result.transactions[0]).not.toHaveProperty('rawLine');
     expect(result.transactions[0]).toEqual({
@@ -250,12 +214,7 @@ describe('ImportABankStatementController', () => {
       mimetype: 'text/csv',
     } as Express.Multer.File;
 
-    const result = await controller.handle(
-      'entity-1',
-      file,
-      { bankAccountId: 'ba-1' },
-      'user_abc',
-    );
+    const result = await controller.handle('entity-1', file, { bankAccountId: 'ba-1' }, 'user_abc');
 
     expect(result.transactions[0].isDuplicate).toBe(true);
     expect(result.transactions[1].isDuplicate).toBe(true);
@@ -278,12 +237,7 @@ describe('ImportABankStatementController', () => {
       mimetype: 'text/csv',
     } as Express.Multer.File;
 
-    const result = await controller.handle(
-      'entity-1',
-      file,
-      { bankAccountId: 'ba-1' },
-      'user_abc',
-    );
+    const result = await controller.handle('entity-1', file, { bankAccountId: 'ba-1' }, 'user_abc');
 
     expect(result.transactions[0].isDuplicate).toBe(true);
   });
@@ -304,12 +258,7 @@ describe('ImportABankStatementController', () => {
       mimetype: 'text/csv',
     } as Express.Multer.File;
 
-    const result = await controller.handle(
-      'entity-1',
-      file,
-      { bankAccountId: 'ba-1' },
-      'user_abc',
-    );
+    const result = await controller.handle('entity-1', file, { bankAccountId: 'ba-1' }, 'user_abc');
 
     expect(result.transactions[0].isDuplicate).toBeUndefined();
   });

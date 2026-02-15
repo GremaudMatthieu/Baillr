@@ -30,19 +30,13 @@ describe('RevisionApprovedReaction', () => {
     };
 
     // Access the private method via type assertion for testing
-    await (reaction as unknown as { handleRevisionApproved(data: RevisionApprovedData): Promise<void> })
-      .handleRevisionApproved(eventData);
+    await (
+      reaction as unknown as { handleRevisionApproved(data: RevisionApprovedData): Promise<void> }
+    ).handleRevisionApproved(eventData);
 
     expect(mockCommandBus.execute).toHaveBeenCalledTimes(1);
     expect(mockCommandBus.execute).toHaveBeenCalledWith(
-      new ReviseLeaseRentCommand(
-        'lease-1',
-        77097,
-        142.06,
-        'Q2',
-        2025,
-        'rev-1',
-      ),
+      new ReviseLeaseRentCommand('lease-1', 77097, 142.06, 'Q2', 2025, 'rev-1'),
     );
   });
 
@@ -64,8 +58,9 @@ describe('RevisionApprovedReaction', () => {
 
     // Should not throw — error is caught and logged
     await expect(
-      (reaction as unknown as { handleRevisionApproved(data: RevisionApprovedData): Promise<void> })
-        .handleRevisionApproved(eventData),
+      (
+        reaction as unknown as { handleRevisionApproved(data: RevisionApprovedData): Promise<void> }
+      ).handleRevisionApproved(eventData),
     ).resolves.not.toThrow();
   });
 });

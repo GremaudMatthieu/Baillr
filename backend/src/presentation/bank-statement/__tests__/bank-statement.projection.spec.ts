@@ -51,15 +51,16 @@ describe('BankStatementProjection', () => {
       },
     };
 
-    projection = new BankStatementProjection(
-      mockKurrentDb as never,
-      mockPrisma as never,
-    );
+    projection = new BankStatementProjection(mockKurrentDb as never, mockPrisma as never);
   });
 
   it('should create bank statement row on BankStatementImported', async () => {
     // Access private method via type assertion
-    await (projection as unknown as { onBankStatementImported: (data: BankStatementImportedData) => Promise<void> }).onBankStatementImported(eventData);
+    await (
+      projection as unknown as {
+        onBankStatementImported: (data: BankStatementImportedData) => Promise<void>;
+      }
+    ).onBankStatementImported(eventData);
 
     expect(mockPrisma.bankStatement.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
@@ -74,7 +75,11 @@ describe('BankStatementProjection', () => {
   });
 
   it('should create transaction rows on BankStatementImported', async () => {
-    await (projection as unknown as { onBankStatementImported: (data: BankStatementImportedData) => Promise<void> }).onBankStatementImported(eventData);
+    await (
+      projection as unknown as {
+        onBankStatementImported: (data: BankStatementImportedData) => Promise<void>;
+      }
+    ).onBankStatementImported(eventData);
 
     expect(mockPrisma.bankTransaction.createMany).toHaveBeenCalledWith({
       data: expect.arrayContaining([
@@ -115,7 +120,11 @@ describe('BankStatementProjection', () => {
       ],
     };
 
-    await (projection as unknown as { onBankStatementImported: (data: BankStatementImportedData) => Promise<void> }).onBankStatementImported(dataWithDuplicates);
+    await (
+      projection as unknown as {
+        onBankStatementImported: (data: BankStatementImportedData) => Promise<void>;
+      }
+    ).onBankStatementImported(dataWithDuplicates);
 
     const callData = mockPrisma.bankTransaction.createMany.mock.calls[0][0].data;
     expect(callData[0].isDuplicate).toBe(true);
@@ -123,7 +132,11 @@ describe('BankStatementProjection', () => {
   });
 
   it('should default isDuplicate to false when not present in event', async () => {
-    await (projection as unknown as { onBankStatementImported: (data: BankStatementImportedData) => Promise<void> }).onBankStatementImported(eventData);
+    await (
+      projection as unknown as {
+        onBankStatementImported: (data: BankStatementImportedData) => Promise<void>;
+      }
+    ).onBankStatementImported(eventData);
 
     const callData = mockPrisma.bankTransaction.createMany.mock.calls[0][0].data;
     expect(callData[0].isDuplicate).toBe(false);
@@ -133,7 +146,11 @@ describe('BankStatementProjection', () => {
   it('should skip projection if bank statement already exists', async () => {
     mockPrisma.bankStatement.findUnique.mockResolvedValue({ id: 'bs-123' });
 
-    await (projection as unknown as { onBankStatementImported: (data: BankStatementImportedData) => Promise<void> }).onBankStatementImported(eventData);
+    await (
+      projection as unknown as {
+        onBankStatementImported: (data: BankStatementImportedData) => Promise<void>;
+      }
+    ).onBankStatementImported(eventData);
 
     expect(mockPrisma.bankStatement.create).not.toHaveBeenCalled();
     expect(mockPrisma.bankTransaction.createMany).not.toHaveBeenCalled();

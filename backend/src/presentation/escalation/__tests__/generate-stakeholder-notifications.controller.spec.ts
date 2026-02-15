@@ -39,7 +39,9 @@ describe('GenerateStakeholderNotificationsController', () => {
     mockEntityFinder = { findByIdAndUserId: jest.fn() };
     mockRentCallFinder = { findByIdAndEntity: jest.fn() };
     mockEscalationFinder = { findByRentCallId: jest.fn() };
-    mockPdfGenerator = { generateStakeholderLetterPdf: jest.fn().mockResolvedValue(Buffer.from('pdf')) };
+    mockPdfGenerator = {
+      generateStakeholderLetterPdf: jest.fn().mockResolvedValue(Buffer.from('pdf')),
+    };
     mockAssembler = { assemble: jest.fn().mockReturnValue({ tenantName: 'Jean Dupont' }) };
     mockRes = { set: jest.fn(), end: jest.fn() };
     controller = new GenerateStakeholderNotificationsController(
@@ -125,7 +127,13 @@ describe('GenerateStakeholderNotificationsController', () => {
     mockEntityFinder.findByIdAndUserId.mockResolvedValue(null);
 
     await expect(
-      controller.handle('entity-1', 'rc-1', { recipientType: 'insurance' } as never, 'user-1', mockRes as never),
+      controller.handle(
+        'entity-1',
+        'rc-1',
+        { recipientType: 'insurance' } as never,
+        'user-1',
+        mockRes as never,
+      ),
     ).rejects.toThrow();
   });
 });

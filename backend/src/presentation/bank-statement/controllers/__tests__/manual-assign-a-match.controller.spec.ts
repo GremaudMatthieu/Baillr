@@ -35,9 +35,7 @@ describe('ManualAssignAMatchController', () => {
   it('should dispatch RecordAPaymentCommand and return 202', async () => {
     await controller.handle('user_123', 'entity-1', dto);
 
-    expect(commandBus.execute).toHaveBeenCalledWith(
-      expect.any(RecordAPaymentCommand),
-    );
+    expect(commandBus.execute).toHaveBeenCalledWith(expect.any(RecordAPaymentCommand));
 
     const cmd = commandBus.execute.mock.calls[0][0] as RecordAPaymentCommand;
     expect(cmd.rentCallId).toBe('rc-1');
@@ -49,9 +47,9 @@ describe('ManualAssignAMatchController', () => {
   it('should throw UnauthorizedException when entity not found', async () => {
     entityFinder.findByIdAndUserId.mockResolvedValue(null);
 
-    await expect(
-      controller.handle('user_123', 'entity-1', dto),
-    ).rejects.toThrow(UnauthorizedException);
+    await expect(controller.handle('user_123', 'entity-1', dto)).rejects.toThrow(
+      UnauthorizedException,
+    );
 
     expect(commandBus.execute).not.toHaveBeenCalled();
   });
@@ -59,9 +57,7 @@ describe('ManualAssignAMatchController', () => {
   it('should throw NotFoundException when rent call does not belong to entity', async () => {
     rentCallFinder.findByIdAndEntity.mockResolvedValue(null);
 
-    await expect(
-      controller.handle('user_123', 'entity-1', dto),
-    ).rejects.toThrow(NotFoundException);
+    await expect(controller.handle('user_123', 'entity-1', dto)).rejects.toThrow(NotFoundException);
 
     expect(commandBus.execute).not.toHaveBeenCalled();
   });

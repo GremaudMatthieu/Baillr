@@ -34,13 +34,7 @@ export class RecordAnnualChargesController {
     }
 
     await this.commandBus.execute(
-      new RecordAnnualChargesCommand(
-        dto.id,
-        entityId,
-        userId,
-        dto.fiscalYear,
-        dto.charges,
-      ),
+      new RecordAnnualChargesCommand(dto.id, entityId, userId, dto.fiscalYear, dto.charges),
     );
   }
 }

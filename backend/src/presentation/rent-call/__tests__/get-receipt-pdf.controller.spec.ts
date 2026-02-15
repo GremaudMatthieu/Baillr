@@ -152,26 +152,26 @@ describe('GetReceiptPdfController', () => {
       makeRentCallWithRelations({ paymentStatus: null }),
     );
 
-    await expect(
-      controller.handle(entityId, rentCallId, userId, mockRes as any),
-    ).rejects.toThrow(BadRequestException);
+    await expect(controller.handle(entityId, rentCallId, userId, mockRes as any)).rejects.toThrow(
+      BadRequestException,
+    );
   });
 
   it('should throw UnauthorizedException when entity not found', async () => {
     mockEntityFinder.findByIdAndUserId.mockResolvedValue(null);
 
-    await expect(
-      controller.handle(entityId, rentCallId, userId, mockRes as any),
-    ).rejects.toThrow(UnauthorizedException);
+    await expect(controller.handle(entityId, rentCallId, userId, mockRes as any)).rejects.toThrow(
+      UnauthorizedException,
+    );
   });
 
   it('should throw NotFoundException when rent call not found', async () => {
     mockEntityFinder.findByIdAndUserId.mockResolvedValue({ id: entityId });
     mockRentCallFinder.findByIdAndEntity.mockResolvedValue(null);
 
-    await expect(
-      controller.handle(entityId, rentCallId, userId, mockRes as any),
-    ).rejects.toThrow(NotFoundException);
+    await expect(controller.handle(entityId, rentCallId, userId, mockRes as any)).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   it('should pass payments to assembler', async () => {

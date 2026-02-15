@@ -61,9 +61,7 @@ export class FormalNoticePdfAssembler {
     const now = new Date();
     const date = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
 
-    const tier1SentAt = escalation?.tier1SentAt
-      ? this.formatDate(escalation.tier1SentAt)
-      : null;
+    const tier1SentAt = escalation?.tier1SentAt ? this.formatDate(escalation.tier1SentAt) : null;
 
     return {
       entityName: entity.name,
@@ -73,9 +71,7 @@ export class FormalNoticePdfAssembler {
       tenantAddress,
       leaseReference,
       unitIdentifier: unit.identifier,
-      unpaidPeriods: [
-        { period: formatMonthLabel(rentCall.month), amountCents: debtCents },
-      ],
+      unpaidPeriods: [{ period: formatMonthLabel(rentCall.month), amountCents: debtCents }],
       totalDebtCents: debtCents,
       tier1SentAt,
       date,

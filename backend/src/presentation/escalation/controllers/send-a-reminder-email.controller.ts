@@ -60,7 +60,7 @@ export class SendAReminderEmailController {
     // Compute days late
     const [yearStr, monthStr] = rentCall.month.split('-');
     const dueDay = rentCall.lease.monthlyDueDate;
-    const dueDate = new Date(parseInt(yearStr!, 10), parseInt(monthStr!, 10) - 1, dueDay);
+    const dueDate = new Date(parseInt(yearStr, 10), parseInt(monthStr, 10) - 1, dueDay);
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const diffMs = today.getTime() - dueDate.getTime();
