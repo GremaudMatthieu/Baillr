@@ -13,7 +13,16 @@ export class RecordAnnualChargesHandler
   ) {}
 
   async execute(command: RecordAnnualChargesCommand): Promise<void> {
-    const aggregate = await this.repository.load(command.id);
+    let aggregate: AnnualChargesAggregate;
+    try {
+      aggregate = await this.repository.load(command.id);
+    } catch (error: unknown) {
+      if ((error as { type?: string }).type === 'stream-not-found') {
+        aggregate = new AnnualChargesAggregate(command.id);
+      } else {
+        throw error;
+      }
+    }
     aggregate.record(
       command.entityId,
       command.userId,

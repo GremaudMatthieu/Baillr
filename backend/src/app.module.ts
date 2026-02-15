@@ -21,6 +21,7 @@ import { InseeIndexPresentationModule } from './presentation/insee-index/insee-i
 import { RevisionPresentationModule } from './presentation/revision/revision-presentation.module';
 import { AnnualChargesPresentationModule } from './presentation/annual-charges/annual-charges-presentation.module';
 import { ChargeCategoryPresentationModule } from './presentation/charge-category/charge-category-presentation.module';
+import { WaterMeterReadingsPresentationModule } from './presentation/water-meter-readings/water-meter-readings-presentation.module';
 import { DocumentModule } from './infrastructure/document/document.module';
 import { EmailModule } from './infrastructure/email/email.module';
 import { BankImportModule } from './infrastructure/bank-import/bank-import.module';
@@ -54,6 +55,7 @@ import { AppService } from './app.service';
     RevisionPresentationModule,
     AnnualChargesPresentationModule,
     ChargeCategoryPresentationModule,
+    WaterMeterReadingsPresentationModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ClerkAuthGuard }],

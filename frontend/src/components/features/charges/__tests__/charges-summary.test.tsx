@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/test/test-utils";
 import { ChargesSummary } from "../charges-summary";
 
@@ -216,5 +217,44 @@ describe("ChargesSummary", () => {
     // Should still render the table
     expect(screen.getByText("Eau")).toBeInTheDocument();
     expect(screen.getByText("TOTAL")).toBeInTheDocument();
+  });
+
+  it("shows expandable water detail when distribution data provided", async () => {
+    const user = userEvent.setup();
+    const charges = [
+      { chargeCategoryId: "cat-water", label: "Eau", amountCents: 60000 },
+    ];
+    const units = [
+      { id: "unit-a", propertyId: "p1", userId: "u1", identifier: "Apt 1A", type: "apartment", floor: 1, surfaceArea: 45, billableOptions: [], createdAt: "", updatedAt: "" },
+      { id: "unit-b", propertyId: "p1", userId: "u1", identifier: "Apt 2B", type: "apartment", floor: 2, surfaceArea: 60, billableOptions: [], createdAt: "", updatedAt: "" },
+    ];
+    const waterDistribution = {
+      totalWaterCents: 60000,
+      totalConsumption: 160,
+      distributions: [
+        { unitId: "unit-a", consumption: 50, percentage: 31.3, isMetered: true, amountCents: 18750 },
+        { unitId: "unit-b", consumption: 110, percentage: 68.8, isMetered: true, amountCents: 41250 },
+      ],
+    };
+
+    renderWithProviders(
+      <ChargesSummary
+        charges={charges}
+        provisions={null}
+        totalChargesCents={60000}
+        waterDistribution={waterDistribution}
+        units={units}
+      />,
+    );
+
+    // Detail rows not visible initially
+    expect(screen.queryByText("Apt 1A")).not.toBeInTheDocument();
+
+    // Click to expand
+    await user.click(screen.getByText("Eau"));
+
+    // Detail rows now visible
+    expect(screen.getByText(/Apt 1A/)).toBeInTheDocument();
+    expect(screen.getByText(/Apt 2B/)).toBeInTheDocument();
   });
 });

@@ -66,6 +66,29 @@ vi.mock("@/hooks/use-charge-categories", () => ({
   }),
 }));
 
+vi.mock("@/hooks/use-units", () => ({
+  useEntityUnits: () => ({
+    data: [],
+    isLoading: false,
+  }),
+}));
+
+vi.mock("@/hooks/use-water-meter-readings", () => ({
+  useWaterMeterReadings: () => ({
+    data: null,
+    isLoading: false,
+  }),
+  useRecordWaterMeterReadings: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+    isError: false,
+    isSuccess: false,
+  }),
+  useWaterDistribution: () => ({
+    data: null,
+  }),
+}));
+
 describe("ChargesPage", () => {
   beforeEach(() => {
     mockEntityId = "entity-1";

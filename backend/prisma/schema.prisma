@@ -394,3 +394,18 @@ model BankTransaction {
   @@index([bankStatementId])
   @@index([entityId])
 }
+
+model WaterMeterReadings {
+  id               String   @id
+  entityId         String   @map("entity_id")
+  userId           String   @map("user_id")
+  fiscalYear       Int      @map("fiscal_year")
+  readings         Json     @default("[]")
+  totalConsumption Int      @map("total_consumption")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@unique([entityId, fiscalYear])
+  @@map("water_meter_readings")
+  @@index([entityId])
+}

@@ -99,4 +99,43 @@ describe('RecordAnnualChargesHandler', () => {
     // No new events should be emitted (no-op guard)
     expect(savedAggregate.getUncommittedEvents()).toHaveLength(0);
   });
+
+  it('should create new aggregate when stream does not exist', async () => {
+    const streamNotFoundError = new Error('StreamNotFoundError');
+    (streamNotFoundError as unknown as { type: string }).type = 'stream-not-found';
+    mockRepository.load.mockRejectedValue(streamNotFoundError);
+
+    const charges = [
+      { chargeCategoryId: 'cat-water', label: 'Eau', amountCents: 45000 },
+    ];
+    const command = new RecordAnnualChargesCommand(
+      'entity1-2025',
+      'entity-1',
+      'user-1',
+      2025,
+      charges,
+    );
+
+    await handler.execute(command);
+
+    expect(mockRepository.load).toHaveBeenCalledWith('entity1-2025');
+    expect(mockRepository.save).toHaveBeenCalledTimes(1);
+    const savedAggregate = mockRepository.save.mock.calls[0][0];
+    expect(savedAggregate).toBeInstanceOf(AnnualChargesAggregate);
+    expect(savedAggregate.getUncommittedEvents()).toHaveLength(1);
+  });
+
+  it('should rethrow non-stream-not-found errors', async () => {
+    mockRepository.load.mockRejectedValue(new Error('Connection failed'));
+
+    const command = new RecordAnnualChargesCommand(
+      'entity1-2025',
+      'entity-1',
+      'user-1',
+      2025,
+      [{ chargeCategoryId: 'cat-water', label: 'Eau', amountCents: 45000 }],
+    );
+
+    await expect(handler.execute(command)).rejects.toThrow('Connection failed');
+  });
 });
