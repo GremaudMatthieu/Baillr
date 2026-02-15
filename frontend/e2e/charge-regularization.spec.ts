@@ -8,6 +8,7 @@ test.describe("Charge Regularization", () => {
   const timestamp = Date.now();
   let api: ApiHelper;
   let entityId: string;
+  let tenantId1: string;
   let leaseId1: string;
   let leaseId2: string;
 
@@ -53,7 +54,7 @@ test.describe("Charge Regularization", () => {
     await api.waitForUnitCount(propertyId, 2);
 
     // 4. Register 2 tenants
-    const tenantId1 = await api.registerTenant({
+    tenantId1 = await api.registerTenant({
       entityId,
       firstName: "Jean",
       lastName: "Dupont",
@@ -185,10 +186,13 @@ test.describe("Charge Regularization", () => {
       page.getByRole("heading", { name: "Charges annuelles" }),
     ).toBeVisible({ timeout: 10_000 });
 
-    // Click generate
+    // Click generate trigger to open AlertDialog
     await page
       .getByRole("button", { name: /Générer la régularisation/i })
       .click();
+
+    // Confirm in AlertDialog
+    await page.getByRole("button", { name: "Générer" }).click();
 
     // Wait for results — statements should appear
     await expect(page.getByText(/2 locataires/)).toBeVisible({
@@ -236,5 +240,85 @@ test.describe("Charge Regularization", () => {
     expect(download.suggestedFilename()).toMatch(
       /regularisation-charges-.*\.pdf$/,
     );
+  });
+
+  test("apply regularization and verify badge", async ({ page }) => {
+    test.skip(!entityId, "Requires seed");
+
+    await page.goto("/charges");
+    await expect(
+      page.getByRole("heading", { name: "Charges annuelles" }),
+    ).toBeVisible({ timeout: 10_000 });
+
+    // Wait for regularization data to load
+    await expect(page.getByText(/2 locataires/)).toBeVisible({
+      timeout: 15_000,
+    });
+
+    // "Appliquer" button should be visible (not yet applied)
+    await expect(
+      page.getByRole("button", { name: /Appliquer/ }),
+    ).toBeVisible();
+
+    // Click apply trigger to open AlertDialog
+    await page.getByRole("button", { name: /Appliquer/ }).click();
+
+    // Verify AlertDialog content
+    await expect(
+      page.getByText(/Cette action est irréversible/),
+    ).toBeVisible();
+
+    // Confirm in AlertDialog
+    await page.getByRole("button", { name: "Appliquer" }).click();
+
+    // Wait for "Déjà appliquée" badge to appear
+    await expect(page.getByText("Déjà appliquée")).toBeVisible({
+      timeout: 15_000,
+    });
+
+    // "Appliquer" button should no longer exist
+    await expect(
+      page.getByRole("button", { name: /Appliquer/ }),
+    ).not.toBeVisible();
+  });
+
+  test("verify regularization entry on tenant detail page", async ({ page }) => {
+    test.skip(!entityId || !tenantId1, "Requires seed + apply");
+
+    await page.goto(`/tenants/${tenantId1}`);
+
+    // Wait for tenant page to load
+    await expect(page.getByText("Compte courant")).toBeVisible({
+      timeout: 10_000,
+    });
+
+    const fiscalYear = new Date().getFullYear() - 1;
+
+    // Verify regularization account entry appears in the tenant's current account table
+    await expect(
+      page.getByText(new RegExp(`Régularisation des charges — ${fiscalYear}`)),
+    ).toBeVisible({ timeout: 15_000 });
+  });
+
+  test("re-apply is blocked — badge persists on reload", async ({ page }) => {
+    test.skip(!entityId, "Requires seed");
+
+    await page.goto("/charges");
+    await expect(
+      page.getByRole("heading", { name: "Charges annuelles" }),
+    ).toBeVisible({ timeout: 10_000 });
+
+    // Wait for regularization data
+    await expect(page.getByText(/2 locataires/)).toBeVisible({
+      timeout: 15_000,
+    });
+
+    // Badge should still show "Déjà appliquée"
+    await expect(page.getByText("Déjà appliquée")).toBeVisible();
+
+    // "Appliquer" button should not be present
+    await expect(
+      page.getByRole("button", { name: /Appliquer/ }),
+    ).not.toBeVisible();
   });
 });

@@ -102,7 +102,7 @@ development_status:
   epic-6-retrospective: optional
 
   # Epic 7: Index Revision & Annual Charges (8 stories)
-  epic-7: in-progress
+  epic-7: done
   7-1-enter-and-validate-insee-indices-irl-ilc-icc: done # reviewed 2026-02-14, 12 findings (3H/4M/3L), 10 fixes — @IsNotEmpty DTO H1, dead DuplicateIndexException removed H2, form.reset timing H3, GET type validation M1, finder userId consistency M2, E2E AC#6 duplicate test M3, IndexValue float decimal fix M4, duplicate error display L1, file list count L2, empty module removed L3
   7-2-calculate-revised-rent-using-official-formula: done # reviewed 2026-02-14, 10 findings (3H/4M/3L), 9 fixes — cross-entity data leak (entityId on findByTypeQuarterYear), dead code exceptions removed, double-click guard, error display, useRevisions tests, test rename, E2E selector
   7-3-review-and-batch-approve-pending-revisions: done # reviewed 2026-02-14, 12 findings (2H/6M/4L), 10 fixes + Saga/Reaction arch refactor — cross-BC decoupled via RevisionApprovedReaction (KurrentDB subscription → CommandBus dispatch → ReviseLeaseRentHandler in Tenancy BC), zero cross-BC aggregate imports
@@ -111,13 +111,13 @@ development_status:
   7-5b-add-charge-category-to-billing-lines: done # reviewed 2026-02-14, 10 findings (1H/5M/4L), 7 fixes — duplicate BillingLineCategory→ChargeCategory cross-BC import (H1), Zod enum validation (M2), File List sync (M1), type safety casts
   7-5c-normalize-billing-lines-with-charge-category-table: done # reviewed 2026-02-15, 10 findings (1H/5M/4L), 11 fixes — H1: 5 test fixtures stale format, M1: unscoped findByIds removed, M4: debug.png cleaned, M5: onDelete Restrict FK, L1: File List count 10→12, L2: use-charge-categories hook tests (4 tests), L3: seeder sequential→createMany batch, L4: E2E api fixture methods
   7-6-enter-individual-water-meter-readings-per-unit: done # reviewed 2026-02-15, 10 findings (3H/4M/3L), 8 fixes — type mismatch H1, null-guard chargeCategoryId H2, DTO deviation doc H3, role="status" M2, File List count M4, consumption null-guards in 2 components + 2 tests
-  7-7-calculate-and-generate-charge-regularization-statements: review
-  7-8-apply-regularization-credits-debits-to-tenant-accounts: backlog
-  epic-7-retrospective: optional
+  7-7-calculate-and-generate-charge-regularization-statements: done # reviewed 2026-02-15, 12 findings (4H/5M/3L), 10 fixes — AlertDialog H1, TenantFinder/UnitFinder CQRS H2, lastName firstName H3, chargeCategoryId filter H4, Math.floor M1, unsafe cast M2, date DD/MM/YYYY M3, CORS header M4, unitAddress PDF M5, formatCurrency DRY L1
+  7-8-apply-regularization-credits-debits-to-tenant-accounts: done # reviewed 2026-02-15, 7 findings (2H/3M/2L), 7 fixes — cache invalidation key mismatch H2, missing E2E tenant detail test H1, uncalculated aggregate guard M1, Prisma comment M2, .js extension M3
+  epic-7-retrospective: done # 2026-02-15 — 10 stories, ~2197 tests, CRITICAL bug found (provisions 0€ in regularization), C2-2 story defined (6 tasks), 3 AI + 3 TD + 5 team agreements
 
   # Epic 8: Dashboard, Accounting & Monitoring (8 stories)
-  epic-8: backlog
-  8-1-implement-event-sourced-account-book-livre-de-comptes: backlog
+  epic-8: in-progress
+  8-1-implement-event-sourced-account-book-livre-de-comptes: ready-for-dev
   8-2-view-and-filter-the-account-book: backlog
   8-3-export-account-book-as-excel-for-2072-tax-declaration: backlog
   8-4-display-dashboard-with-unit-payment-status-mosaic: backlog
@@ -128,8 +128,9 @@ development_status:
   epic-8-retrospective: optional
 
   # Consolidation Sprint 2 — CQRS Query-Side Normalization (blocking Epic 8)
-  consolidation-2: in-progress
+  consolidation-2: done
   c2-1-normalize-cqrs-query-side-across-all-presentation-modules: done # reviewed 2026-02-15, 10 findings (2H/5M/3L), 10 fixes — syntax error INSEE controller, PrismaService→Finder in provisions handler, duplicate interfaces extracted, unsafe cast typed, return type annotations, File List accuracy
+  c2-2-close-open-circuits-from-epic-7: done # reviewed 2026-02-16, 10 findings (3H/4M/3L), 10 fixes — entityId scoping on findBillingLinesByLeaseIds + deleteChargeCategory, await res.json(), settle tests, cache invalidation plural key, email trim, settle isSent guard, multi-tenant batch test, CircleDollarSign icon
 
   # Epic 9: Integrations & Advanced Features (4 stories)
   epic-9: backlog

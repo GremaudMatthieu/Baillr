@@ -18,7 +18,11 @@ import {
   useRecordAnnualCharges,
   useProvisionsCollected,
 } from "@/hooks/use-annual-charges";
-import { useChargeCategories, useCreateChargeCategory } from "@/hooks/use-charge-categories";
+import {
+  useChargeCategories,
+  useCreateChargeCategory,
+  useDeleteChargeCategory,
+} from "@/hooks/use-charge-categories";
 import { useEntityUnits } from "@/hooks/use-units";
 import {
   useWaterMeterReadings,
@@ -31,6 +35,18 @@ import { WaterMeterReadingsForm } from "@/components/features/charges/water-mete
 import { WaterDistributionSummary } from "@/components/features/charges/water-distribution-summary";
 import { ChargeRegularizationSection } from "@/components/features/charges/charge-regularization-section";
 import type { ChargeEntryData } from "@/lib/api/annual-charges-api";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Trash2 } from "lucide-react";
 import type { MeterReadingData } from "@/lib/api/water-meter-api";
 
 function getYearOptions(): { value: string; label: string }[] {
@@ -91,6 +107,12 @@ function ChargesPageContent({ entityId }: { entityId: string }) {
   const { data: provisions } = useProvisionsCollected(entityId, fiscalYear);
   const { data: chargeCategories } = useChargeCategories(entityId);
   const createCategoryMutation = useCreateChargeCategory(entityId);
+  const {
+    mutate: deleteCategory,
+    isPending: isDeleting,
+    deleteError,
+    clearDeleteError,
+  } = useDeleteChargeCategory(entityId);
 
   const recordMutation = useRecordAnnualCharges(entityId);
 
@@ -238,6 +260,67 @@ function ChargesPageContent({ entityId }: { entityId: string }) {
           entityId={entityId}
           fiscalYear={fiscalYear}
         />
+
+        {chargeCategories && chargeCategories.some((c) => !c.isStandard) && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Catégories personnalisées</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {deleteError && (
+                <p className="text-sm text-destructive mb-3">{deleteError}</p>
+              )}
+              <ul className="space-y-2">
+                {chargeCategories
+                  .filter((c) => !c.isStandard)
+                  .map((cat) => (
+                    <li
+                      key={cat.id}
+                      className="flex items-center justify-between rounded-md border px-3 py-2"
+                    >
+                      <span className="text-sm">{cat.label}</span>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            disabled={isDeleting}
+                            aria-label={`Supprimer ${cat.label}`}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Supprimer la catégorie
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Voulez-vous supprimer la catégorie
+                              &quot;{cat.label}&quot; ? Cette action est
+                              irréversible. Si la catégorie est utilisée par des
+                              baux, la suppression sera refusée.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Annuler</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => {
+                                clearDeleteError();
+                                deleteCategory(cat.id);
+                              }}
+                            >
+                              Supprimer
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </li>
+                  ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>

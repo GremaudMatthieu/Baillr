@@ -9,6 +9,7 @@ export interface StatementChargeData {
   label: string;
   totalChargeCents: number;
   tenantShareCents: number;
+  provisionsPaidCents: number;
   isWaterByConsumption: boolean;
 }
 
@@ -35,8 +36,17 @@ export interface ChargeRegularizationData {
   fiscalYear: number;
   statements: StatementData[];
   totalBalanceCents: number;
+  appliedAt: string | null;
+  sentAt: string | null;
+  settledAt: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface SendChargeRegularizationResult {
+  sent: number;
+  failed: number;
+  failures: string[];
 }
 
 export interface CalculateChargeRegularizationPayload {
@@ -62,6 +72,19 @@ export function useChargeRegularizationApi() {
       return body.data;
     },
 
+    async getChargeRegularizations(
+      entityId: string,
+    ): Promise<ChargeRegularizationData[]> {
+      const res = await fetchWithAuth(
+        `/entities/${entityId}/charge-regularization`,
+        getToken,
+      );
+      const body = (await res.json()) as {
+        data: ChargeRegularizationData[];
+      };
+      return body.data;
+    },
+
     async calculateChargeRegularization(
       entityId: string,
       payload: CalculateChargeRegularizationPayload,
@@ -73,6 +96,40 @@ export function useChargeRegularizationApi() {
           method: "POST",
           body: JSON.stringify(payload),
         },
+      );
+    },
+
+    async applyChargeRegularization(
+      entityId: string,
+      fiscalYear: number,
+    ): Promise<void> {
+      await fetchWithAuth(
+        `/entities/${entityId}/charge-regularizations/${fiscalYear}/apply`,
+        getToken,
+        { method: "POST" },
+      );
+    },
+
+    async sendChargeRegularization(
+      entityId: string,
+      fiscalYear: number,
+    ): Promise<SendChargeRegularizationResult> {
+      const res = await fetchWithAuth(
+        `/entities/${entityId}/charge-regularizations/${fiscalYear}/send`,
+        getToken,
+        { method: "POST" },
+      );
+      return (await res.json()) as SendChargeRegularizationResult;
+    },
+
+    async settleChargeRegularization(
+      entityId: string,
+      fiscalYear: number,
+    ): Promise<void> {
+      await fetchWithAuth(
+        `/entities/${entityId}/charge-regularizations/${fiscalYear}/settle`,
+        getToken,
+        { method: "POST" },
       );
     },
   };

@@ -5,6 +5,8 @@ jest.mock('nestjs-cqrx', () => {
 
 import { ChargeRegularizationAggregate } from '../charge-regularization.aggregate';
 import { ChargeRegularizationCalculated } from '../events/charge-regularization-calculated.event';
+import { ChargeRegularizationApplied } from '../events/charge-regularization-applied.event';
+import { ChargeRegularizationSettled } from '../events/charge-regularization-settled.event';
 import type { StatementPrimitives } from '../regularization-statement';
 
 const makeStatement = (
@@ -25,6 +27,7 @@ const makeStatement = (
       label: 'Eau',
       totalChargeCents: 60000,
       tenantShareCents: 60000,
+      provisionsPaidCents: 0,
       isWaterByConsumption: true,
     },
     {
@@ -32,6 +35,7 @@ const makeStatement = (
       label: 'TEOM',
       totalChargeCents: 80000,
       tenantShareCents: 80000,
+      provisionsPaidCents: 72000,
       isWaterByConsumption: false,
     },
   ],
@@ -139,7 +143,7 @@ describe('ChargeRegularizationAggregate', () => {
 
       const updatedStatement = makeStatement({
         charges: [
-          { chargeCategoryId: 'cat-water', label: 'Eau', totalChargeCents: 60000, tenantShareCents: 60000, isWaterByConsumption: true },
+          { chargeCategoryId: 'cat-water', label: 'Eau', totalChargeCents: 60000, tenantShareCents: 60000, provisionsPaidCents: 0, isWaterByConsumption: true },
         ],
         totalShareCents: 60000,
         balanceCents: -75000,
@@ -147,6 +151,134 @@ describe('ChargeRegularizationAggregate', () => {
       aggregate.calculate('entity-1', 'user-1', 2025, [updatedStatement]);
 
       expect(aggregate.getUncommittedEvents()).toHaveLength(1);
+    });
+  });
+
+  describe('applyRegularization', () => {
+    it('should emit ChargeRegularizationApplied event after calculation', () => {
+      const aggregate = new ChargeRegularizationAggregate('entity1-2025');
+      const statements = [makeStatement()];
+      aggregate.calculate('entity-1', 'user-1', 2025, statements);
+      aggregate.commit();
+
+      aggregate.applyRegularization('entity-1', 'user-1', 2025);
+
+      const events = aggregate.getUncommittedEvents();
+      expect(events).toHaveLength(1);
+      expect(events[0]).toBeInstanceOf(ChargeRegularizationApplied);
+
+      const event = events[0] as ChargeRegularizationApplied;
+      expect(event.data.chargeRegularizationId).toBe('entity1-2025');
+      expect(event.data.entityId).toBe('entity-1');
+      expect(event.data.userId).toBe('user-1');
+      expect(event.data.fiscalYear).toBe(2025);
+      expect(event.data.statements).toHaveLength(1);
+      expect(event.data.appliedAt).toBeDefined();
+    });
+
+    it('should be no-op when already applied', () => {
+      const aggregate = new ChargeRegularizationAggregate('entity1-2025');
+      aggregate.calculate('entity-1', 'user-1', 2025, [makeStatement()]);
+      aggregate.commit();
+      aggregate.applyRegularization('entity-1', 'user-1', 2025);
+      aggregate.commit();
+
+      // Second apply should be no-op
+      aggregate.applyRegularization('entity-1', 'user-1', 2025);
+
+      expect(aggregate.getUncommittedEvents()).toHaveLength(0);
+    });
+
+    it('should include statements data in applied event', () => {
+      const aggregate = new ChargeRegularizationAggregate('entity1-2025');
+      const statements = [
+        makeStatement({ leaseId: 'lease-1', balanceCents: 5000 }),
+        makeStatement({ leaseId: 'lease-2', balanceCents: -3000, tenantName: 'Martin' }),
+      ];
+      aggregate.calculate('entity-1', 'user-1', 2025, statements);
+      aggregate.commit();
+
+      aggregate.applyRegularization('entity-1', 'user-1', 2025);
+
+      const event = aggregate.getUncommittedEvents()[0] as ChargeRegularizationApplied;
+      expect(event.data.statements).toHaveLength(2);
+      expect(event.data.statements[0].balanceCents).toBe(5000);
+      expect(event.data.statements[1].balanceCents).toBe(-3000);
+    });
+
+    it('should apply even with empty statements', () => {
+      const aggregate = new ChargeRegularizationAggregate('entity1-2025');
+      aggregate.calculate('entity-1', 'user-1', 2025, []);
+      aggregate.commit();
+
+      aggregate.applyRegularization('entity-1', 'user-1', 2025);
+
+      const events = aggregate.getUncommittedEvents();
+      expect(events).toHaveLength(1);
+      const event = events[0] as ChargeRegularizationApplied;
+      expect(event.data.statements).toHaveLength(0);
+    });
+
+    it('should be no-op when applying on uncalculated aggregate', () => {
+      const aggregate = new ChargeRegularizationAggregate('entity1-2025');
+
+      aggregate.applyRegularization('entity-1', 'user-1', 2025);
+
+      expect(aggregate.getUncommittedEvents()).toHaveLength(0);
+    });
+  });
+
+  describe('markAsSettled', () => {
+    it('should emit ChargeRegularizationSettled event after applied', () => {
+      const aggregate = new ChargeRegularizationAggregate('entity1-2025');
+      aggregate.calculate('entity-1', 'user-1', 2025, [makeStatement()]);
+      aggregate.commit();
+      aggregate.applyRegularization('entity-1', 'user-1', 2025);
+      aggregate.commit();
+
+      aggregate.markAsSettled('entity-1', 'user-1', 2025);
+
+      const events = aggregate.getUncommittedEvents();
+      expect(events).toHaveLength(1);
+      expect(events[0]).toBeInstanceOf(ChargeRegularizationSettled);
+
+      const event = events[0] as ChargeRegularizationSettled;
+      expect(event.data.chargeRegularizationId).toBe('entity1-2025');
+      expect(event.data.entityId).toBe('entity-1');
+      expect(event.data.fiscalYear).toBe(2025);
+      expect(event.data.settledAt).toBeDefined();
+    });
+
+    it('should be no-op when not yet applied', () => {
+      const aggregate = new ChargeRegularizationAggregate('entity1-2025');
+      aggregate.calculate('entity-1', 'user-1', 2025, [makeStatement()]);
+      aggregate.commit();
+
+      aggregate.markAsSettled('entity-1', 'user-1', 2025);
+
+      expect(aggregate.getUncommittedEvents()).toHaveLength(0);
+    });
+
+    it('should be no-op when already settled', () => {
+      const aggregate = new ChargeRegularizationAggregate('entity1-2025');
+      aggregate.calculate('entity-1', 'user-1', 2025, [makeStatement()]);
+      aggregate.commit();
+      aggregate.applyRegularization('entity-1', 'user-1', 2025);
+      aggregate.commit();
+      aggregate.markAsSettled('entity-1', 'user-1', 2025);
+      aggregate.commit();
+
+      aggregate.markAsSettled('entity-1', 'user-1', 2025);
+
+      expect(aggregate.getUncommittedEvents()).toHaveLength(0);
+    });
+
+    it('should be no-op when not calculated at all', () => {
+      const aggregate = new ChargeRegularizationAggregate('entity1-2025');
+
+      aggregate.markAsSettled('entity-1', 'user-1', 2025);
+
+      expect(aggregate.getUncommittedEvents()).toHaveLength(0);
     });
   });
 

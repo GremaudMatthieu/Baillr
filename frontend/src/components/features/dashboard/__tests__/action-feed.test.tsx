@@ -45,6 +45,10 @@ vi.mock("@/hooks/use-escalation", () => ({
   useEscalationStatuses: () => ({ data: [] }),
 }));
 
+vi.mock("@/hooks/use-charge-regularization", () => ({
+  useChargeRegularizations: () => ({ data: [] }),
+}));
+
 describe("ActionFeed", () => {
   it("should display section heading", () => {
     renderWithProviders(<ActionFeed actions={[]} />);

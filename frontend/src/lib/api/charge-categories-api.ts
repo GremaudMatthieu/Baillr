@@ -41,5 +41,16 @@ export function useChargeCategoriesApi() {
       const body = (await res.json()) as { data: ChargeCategoryData };
       return body.data;
     },
+
+    async deleteChargeCategory(
+      entityId: string,
+      id: string,
+    ): Promise<void> {
+      await fetchWithAuth(
+        `/entities/${entityId}/charge-categories/${id}`,
+        getToken,
+        { method: "DELETE" },
+      );
+    },
   };
 }

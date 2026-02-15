@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { RentCallProjection } from '../projections/rent-call.projection';
 
 jest.mock('@kurrent/kurrentdb-client', () => ({
@@ -13,7 +14,6 @@ const mockPrisma = {
     findMany: jest.fn(),
   },
   payment: {
-    findFirst: jest.fn(),
     create: jest.fn(),
     findMany: jest.fn(),
   },
@@ -140,8 +140,7 @@ describe('RentCallProjection', () => {
     };
 
     beforeEach(() => {
-      // Default: no existing payment row, full payment scenario
-      mockPrisma.payment.findFirst.mockResolvedValue(null);
+      // Default: full payment scenario
       mockPrisma.payment.create.mockResolvedValue({});
       mockPrisma.payment.findMany.mockResolvedValue([{ amountCents: 85000 }]);
     });
@@ -235,20 +234,25 @@ describe('RentCallProjection', () => {
       expect(mockPrisma.payment.create).not.toHaveBeenCalled();
     });
 
-    it('should skip Payment creation if transaction already exists (idempotent)', async () => {
+    it('should skip Payment creation if transaction already exists (P2002 idempotent)', async () => {
       mockPrisma.rentCall.findUnique.mockResolvedValue({
         id: 'rc-1',
         totalAmountCents: 85000,
         paidAt: null,
       });
       mockPrisma.rentCall.update.mockResolvedValue({});
-      mockPrisma.payment.findFirst.mockResolvedValue({ id: 'p-existing' });
+      mockPrisma.payment.create.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+          code: 'P2002',
+          clientVersion: '7.0.0',
+        }),
+      );
       mockPrisma.payment.findMany.mockResolvedValue([{ amountCents: 85000 }]);
 
       await (projection as any).onPaymentRecorded(paymentEvent);
 
-      expect(mockPrisma.payment.create).not.toHaveBeenCalled();
-      // But rent call update still happens (recompute status)
+      expect(mockPrisma.payment.create).toHaveBeenCalled();
+      // Rent call update still happens (recompute status from all payments)
       expect(mockPrisma.rentCall.update).toHaveBeenCalled();
     });
 

@@ -3,6 +3,15 @@ import {
   ChargeRegularizationCalculated,
   type ChargeRegularizationCalculatedData,
 } from './events/charge-regularization-calculated.event.js';
+import {
+  ChargeRegularizationApplied,
+} from './events/charge-regularization-applied.event.js';
+import {
+  ChargeRegularizationSent,
+} from './events/charge-regularization-sent.event.js';
+import {
+  ChargeRegularizationSettled,
+} from './events/charge-regularization-settled.event.js';
 import type { StatementPrimitives } from './regularization-statement.js';
 import { FiscalYear } from '@indexation/annual-charges/fiscal-year.js';
 
@@ -10,6 +19,9 @@ export class ChargeRegularizationAggregate extends AggregateRoot {
   static readonly streamName = 'charge-regularization';
 
   private calculated = false;
+  private appliedAt: string | null = null;
+  private sentAt: string | null = null;
+  private settledAt: string | null = null;
   private statements: StatementPrimitives[] = [];
   private totalBalanceCents = 0;
 
@@ -67,6 +79,29 @@ export class ChargeRegularizationAggregate extends AggregateRoot {
     );
   }
 
+  applyRegularization(entityId: string, userId: string, fiscalYear: number): void {
+    // Guard: cannot apply if not yet calculated
+    if (!this.calculated) {
+      return;
+    }
+
+    // No-op guard: skip if already applied
+    if (this.appliedAt) {
+      return;
+    }
+
+    this.apply(
+      new ChargeRegularizationApplied({
+        chargeRegularizationId: this.id,
+        entityId,
+        userId,
+        fiscalYear,
+        statements: this.statements,
+        appliedAt: new Date().toISOString(),
+      }),
+    );
+  }
+
   @EventHandler(ChargeRegularizationCalculated)
   onChargeRegularizationCalculated(
     event: ChargeRegularizationCalculated,
@@ -74,5 +109,80 @@ export class ChargeRegularizationAggregate extends AggregateRoot {
     this.calculated = true;
     this.statements = event.data.statements;
     this.totalBalanceCents = event.data.totalBalanceCents;
+  }
+
+  @EventHandler(ChargeRegularizationApplied)
+  onChargeRegularizationApplied(
+    event: ChargeRegularizationApplied,
+  ): void {
+    this.appliedAt = event.data.appliedAt;
+  }
+
+  markAsSent(
+    entityId: string,
+    userId: string,
+    fiscalYear: number,
+    sentCount: number,
+  ): void {
+    // Guard: cannot send if not yet calculated
+    if (!this.calculated) {
+      return;
+    }
+
+    // No-op guard: skip if already sent
+    if (this.sentAt) {
+      return;
+    }
+
+    this.apply(
+      new ChargeRegularizationSent({
+        chargeRegularizationId: this.id,
+        entityId,
+        userId,
+        fiscalYear,
+        sentCount,
+        sentAt: new Date().toISOString(),
+      }),
+    );
+  }
+
+  @EventHandler(ChargeRegularizationSent)
+  onChargeRegularizationSent(
+    event: ChargeRegularizationSent,
+  ): void {
+    this.sentAt = event.data.sentAt;
+  }
+
+  markAsSettled(
+    entityId: string,
+    userId: string,
+    fiscalYear: number,
+  ): void {
+    // Guard: cannot settle if not yet applied
+    if (!this.appliedAt) {
+      return;
+    }
+
+    // No-op guard: skip if already settled
+    if (this.settledAt) {
+      return;
+    }
+
+    this.apply(
+      new ChargeRegularizationSettled({
+        chargeRegularizationId: this.id,
+        entityId,
+        userId,
+        fiscalYear,
+        settledAt: new Date().toISOString(),
+      }),
+    );
+  }
+
+  @EventHandler(ChargeRegularizationSettled)
+  onChargeRegularizationSettled(
+    event: ChargeRegularizationSettled,
+  ): void {
+    this.settledAt = event.data.settledAt;
   }
 }

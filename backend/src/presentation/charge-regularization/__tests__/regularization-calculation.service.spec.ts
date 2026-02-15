@@ -64,23 +64,49 @@ function makeAnnualCharges(charges: Array<{ chargeCategoryId: string; label: str
   };
 }
 
+function makeBillingLine(
+  overrides: Partial<{
+    leaseId: string;
+    chargeCategoryId: string;
+    amountCents: number;
+  }> = {},
+) {
+  return {
+    leaseId: 'lease-1',
+    chargeCategoryId: 'cat-teom',
+    amountCents: 6667, // ~80000 / 12
+    chargeCategory: {
+      id: overrides.chargeCategoryId ?? 'cat-teom',
+      label: 'TEOM',
+      slug: 'teom',
+      entityId: 'entity-1',
+      isStandard: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    ...overrides,
+  };
+}
+
 describe('RegularizationCalculationService', () => {
   let service: RegularizationCalculationService;
   let mockAnnualChargesFinder: {
     findByEntityAndYear: jest.Mock;
-    findPaidBillingLinesByLeaseAndYear: jest.Mock;
   };
-  let mockLeaseFinder: { findAllByEntityAndFiscalYear: jest.Mock };
+  let mockLeaseFinder: {
+    findAllByEntityAndFiscalYear: jest.Mock;
+    findBillingLinesByLeaseIds: jest.Mock;
+  };
   let mockWaterReadingsFinder: { findByEntityAndYear: jest.Mock };
   let mockWaterDistributionService: { compute: jest.Mock };
 
   beforeEach(() => {
     mockAnnualChargesFinder = {
       findByEntityAndYear: jest.fn(),
-      findPaidBillingLinesByLeaseAndYear: jest.fn().mockResolvedValue([]),
     };
     mockLeaseFinder = {
       findAllByEntityAndFiscalYear: jest.fn(),
+      findBillingLinesByLeaseIds: jest.fn().mockResolvedValue([]),
     };
     mockWaterReadingsFinder = {
       findByEntityAndYear: jest.fn().mockResolvedValue(null),
@@ -96,8 +122,8 @@ describe('RegularizationCalculationService', () => {
     );
   });
 
-  describe('BDD Scenario 1: Full-year tenant with all categories', () => {
-    it('should calculate full-year share with no pro-rata', async () => {
+  describe('Full-year tenant with provisions from billing lines', () => {
+    it('should calculate provisions from lease billing lines × 12 months', async () => {
       const charges = [
         makeCharge({ chargeCategoryId: 'cat-teom', label: 'TEOM', amountCents: 80000 }),
         makeCharge({ chargeCategoryId: 'cat-cleaning', label: 'Nettoyage', amountCents: 50000 }),
@@ -108,20 +134,10 @@ describe('RegularizationCalculationService', () => {
       mockLeaseFinder.findAllByEntityAndFiscalYear.mockResolvedValue([
         makeLease(),
       ]);
-      // 12 months × 10833¢ (with chargeCategoryId to count as provisions)
-      mockAnnualChargesFinder.findPaidBillingLinesByLeaseAndYear.mockResolvedValue([
-        { billingLines: [{ chargeCategoryId: 'cat-teom', amountCents: 10833 }] },
-        { billingLines: [{ chargeCategoryId: 'cat-teom', amountCents: 10833 }] },
-        { billingLines: [{ chargeCategoryId: 'cat-teom', amountCents: 10833 }] },
-        { billingLines: [{ chargeCategoryId: 'cat-teom', amountCents: 10833 }] },
-        { billingLines: [{ chargeCategoryId: 'cat-teom', amountCents: 10833 }] },
-        { billingLines: [{ chargeCategoryId: 'cat-teom', amountCents: 10833 }] },
-        { billingLines: [{ chargeCategoryId: 'cat-teom', amountCents: 10833 }] },
-        { billingLines: [{ chargeCategoryId: 'cat-teom', amountCents: 10833 }] },
-        { billingLines: [{ chargeCategoryId: 'cat-teom', amountCents: 10833 }] },
-        { billingLines: [{ chargeCategoryId: 'cat-teom', amountCents: 10833 }] },
-        { billingLines: [{ chargeCategoryId: 'cat-teom', amountCents: 10833 }] },
-        { billingLines: [{ chargeCategoryId: 'cat-teom', amountCents: 10833 }] },
+      // Billing lines: TEOM 6667¢/month, Cleaning 4167¢/month
+      mockLeaseFinder.findBillingLinesByLeaseIds.mockResolvedValue([
+        makeBillingLine({ leaseId: 'lease-1', chargeCategoryId: 'cat-teom', amountCents: 6667 }),
+        makeBillingLine({ leaseId: 'lease-1', chargeCategoryId: 'cat-cleaning', amountCents: 4167 }),
       ]);
 
       const result = await service.calculate('entity-1', 'user-1', 2025);
@@ -129,25 +145,29 @@ describe('RegularizationCalculationService', () => {
       expect(result).toHaveLength(1);
       const statement = result[0];
       expect(statement.tenantName).toBe('Dupont Jean');
-      expect(statement.unitIdentifier).toBe('Apt A');
       expect(statement.occupiedDays).toBe(365);
-      expect(statement.daysInYear).toBe(365);
-      // Full year: Math.floor(365 * 80000 / 365) = 80000
       expect(statement.totalShareCents).toBe(130000); // 80000 + 50000
-      expect(statement.totalProvisionsPaidCents).toBe(129996); // 12 × 10833
-      expect(statement.balanceCents).toBe(4); // Complément
+      // Provisions: TEOM 6667 × 12 = 80004, Cleaning 4167 × 12 = 50004
+      expect(statement.totalProvisionsPaidCents).toBe(130008);
+      expect(statement.balanceCents).toBe(130000 - 130008); // -8 (slight overpayment)
+
+      // Per-category provisions
+      const teomCharge = statement.charges.find((c) => c.label === 'TEOM');
+      expect(teomCharge!.provisionsPaidCents).toBe(80004); // 6667 × 12
+      const cleaningCharge = statement.charges.find((c) => c.label === 'Nettoyage');
+      expect(cleaningCharge!.provisionsPaidCents).toBe(50004); // 4167 × 12
     });
   });
 
-  describe('BDD Scenario 2: Partial-year tenant', () => {
-    it('should pro-rate charges for mid-year lease start', async () => {
+  describe('Partial-year tenant with pro-rata provisions', () => {
+    it('should compute provisions × occupied months for mid-year lease', async () => {
       const charges = [
         makeCharge({ chargeCategoryId: 'cat-teom', label: 'TEOM', amountCents: 80000 }),
       ];
       mockAnnualChargesFinder.findByEntityAndYear.mockResolvedValue(
         makeAnnualCharges(charges),
       );
-      // Lease started July 1, 2025 → 184 days
+      // Lease started July 1, 2025 → 184 days → ceil(184 / (365/12)) = ceil(6.04) = 7 months
       mockLeaseFinder.findAllByEntityAndFiscalYear.mockResolvedValue([
         makeLease({
           startDate: new Date('2025-07-01'),
@@ -155,13 +175,8 @@ describe('RegularizationCalculationService', () => {
           unit: { id: 'unit-2', identifier: 'Apt B' },
         }),
       ]);
-      mockAnnualChargesFinder.findPaidBillingLinesByLeaseAndYear.mockResolvedValue([
-        { billingLines: [{ chargeCategoryId: 'cat-teom', amountCents: 7000 }] },
-        { billingLines: [{ chargeCategoryId: 'cat-teom', amountCents: 7000 }] },
-        { billingLines: [{ chargeCategoryId: 'cat-teom', amountCents: 7000 }] },
-        { billingLines: [{ chargeCategoryId: 'cat-teom', amountCents: 7000 }] },
-        { billingLines: [{ chargeCategoryId: 'cat-teom', amountCents: 7000 }] },
-        { billingLines: [{ chargeCategoryId: 'cat-teom', amountCents: 7000 }] },
+      mockLeaseFinder.findBillingLinesByLeaseIds.mockResolvedValue([
+        makeBillingLine({ leaseId: 'lease-1', chargeCategoryId: 'cat-teom', amountCents: 7000 }),
       ]);
 
       const result = await service.calculate('entity-1', 'user-1', 2025);
@@ -171,14 +186,109 @@ describe('RegularizationCalculationService', () => {
       expect(statement.occupancyStart).toBe('2025-07-01');
       expect(statement.occupancyEnd).toBe('2025-12-31');
       expect(statement.occupiedDays).toBe(184);
-      // TEOM: Math.floor(184 * 80000 / 365) = Math.floor(40328.767...) = 40328
+      // TEOM share: Math.floor(184 * 80000 / 365) = 40328
       expect(statement.charges[0].tenantShareCents).toBe(40328);
-      expect(statement.totalProvisionsPaidCents).toBe(42000); // 6 × 7000
-      expect(statement.balanceCents).toBe(40328 - 42000); // -1672 (Trop-perçu)
+      // Provisions: 7000 × ceil(184 / (365/12)) = 7000 × 7 = 49000
+      const occupiedMonths = Math.ceil(184 / (365 / 12));
+      expect(occupiedMonths).toBe(7);
+      expect(statement.charges[0].provisionsPaidCents).toBe(49000);
+      expect(statement.totalProvisionsPaidCents).toBe(49000);
+      expect(statement.balanceCents).toBe(40328 - 49000); // -8672 (overpaid)
     });
   });
 
-  describe('BDD Scenario 3: Water distribution by consumption', () => {
+  describe('Multiple charge categories per lease', () => {
+    it('should compute per-category provisions independently', async () => {
+      const charges = [
+        makeCharge({ chargeCategoryId: 'cat-teom', label: 'TEOM', amountCents: 36000 }),
+        makeCharge({ chargeCategoryId: 'cat-cleaning', label: 'Nettoyage', amountCents: 12000 }),
+        makeCharge({ chargeCategoryId: 'cat-elevator', label: 'Ascenseur', amountCents: 24000 }),
+      ];
+      mockAnnualChargesFinder.findByEntityAndYear.mockResolvedValue(
+        makeAnnualCharges(charges),
+      );
+      mockLeaseFinder.findAllByEntityAndFiscalYear.mockResolvedValue([makeLease()]);
+      mockLeaseFinder.findBillingLinesByLeaseIds.mockResolvedValue([
+        makeBillingLine({ leaseId: 'lease-1', chargeCategoryId: 'cat-teom', amountCents: 3000 }),
+        makeBillingLine({ leaseId: 'lease-1', chargeCategoryId: 'cat-cleaning', amountCents: 1000 }),
+        makeBillingLine({ leaseId: 'lease-1', chargeCategoryId: 'cat-elevator', amountCents: 2000 }),
+      ]);
+
+      const result = await service.calculate('entity-1', 'user-1', 2025);
+
+      expect(result).toHaveLength(1);
+      const s = result[0];
+      // Full year = 12 months
+      expect(s.charges[0].provisionsPaidCents).toBe(36000); // 3000 × 12
+      expect(s.charges[1].provisionsPaidCents).toBe(12000); // 1000 × 12
+      expect(s.charges[2].provisionsPaidCents).toBe(24000); // 2000 × 12
+      expect(s.totalProvisionsPaidCents).toBe(72000);
+      expect(s.totalShareCents).toBe(72000); // 36000 + 12000 + 24000
+      expect(s.balanceCents).toBe(0); // exactly balanced
+    });
+  });
+
+  describe('Lease with no billing lines', () => {
+    it('should return 0 provisions when lease has no billing lines configured', async () => {
+      const charges = [makeCharge({ amountCents: 50000 })];
+      mockAnnualChargesFinder.findByEntityAndYear.mockResolvedValue(
+        makeAnnualCharges(charges),
+      );
+      mockLeaseFinder.findAllByEntityAndFiscalYear.mockResolvedValue([makeLease()]);
+      mockLeaseFinder.findBillingLinesByLeaseIds.mockResolvedValue([]); // No billing lines
+
+      const result = await service.calculate('entity-1', 'user-1', 2025);
+
+      expect(result[0].totalProvisionsPaidCents).toBe(0);
+      expect(result[0].charges[0].provisionsPaidCents).toBe(0);
+      expect(result[0].balanceCents).toBe(50000); // tenant owes full amount
+    });
+  });
+
+  describe('Water category excluded from billing-line provisions', () => {
+    it('should NOT use billing-line provisions for water (uses meter readings instead)', async () => {
+      const charges = [
+        makeCharge({ chargeCategoryId: 'cat-water', label: 'Eau', amountCents: 60000 }),
+        makeCharge({ chargeCategoryId: 'cat-teom', label: 'TEOM', amountCents: 36000 }),
+      ];
+      mockAnnualChargesFinder.findByEntityAndYear.mockResolvedValue(
+        makeAnnualCharges(charges),
+      );
+      mockLeaseFinder.findAllByEntityAndFiscalYear.mockResolvedValue([makeLease()]);
+      // Even though billing lines exist for water category, they should be ignored
+      mockLeaseFinder.findBillingLinesByLeaseIds.mockResolvedValue([
+        makeBillingLine({ leaseId: 'lease-1', chargeCategoryId: 'cat-water', amountCents: 5000 }),
+        makeBillingLine({ leaseId: 'lease-1', chargeCategoryId: 'cat-teom', amountCents: 3000 }),
+      ]);
+      mockWaterReadingsFinder.findByEntityAndYear.mockResolvedValue({
+        id: 'wr-1',
+        readings: [],
+        totalConsumption: 100,
+        fiscalYear: 2025,
+      });
+      mockWaterDistributionService.compute.mockReturnValue({
+        fiscalYear: 2025,
+        totalWaterCents: 60000,
+        totalConsumption: 100,
+        distributions: [
+          { unitId: 'unit-1', consumption: 100, percentage: 100, amountCents: 60000, isMetered: true },
+        ],
+      });
+
+      const result = await service.calculate('entity-1', 'user-1', 2025);
+
+      const waterCharge = result[0].charges.find((c) => c.label === 'Eau');
+      expect(waterCharge!.tenantShareCents).toBe(60000);
+      expect(waterCharge!.isWaterByConsumption).toBe(true);
+      expect(waterCharge!.provisionsPaidCents).toBe(0); // Water provisions = 0 (meter-based)
+
+      const teomCharge = result[0].charges.find((c) => c.label === 'TEOM');
+      expect(teomCharge!.provisionsPaidCents).toBe(36000); // 3000 × 12
+      expect(teomCharge!.isWaterByConsumption).toBe(false);
+    });
+  });
+
+  describe('Water distribution by consumption (legacy test)', () => {
     it('should use water distribution instead of pro-rata for water category', async () => {
       const charges = [
         makeCharge({ chargeCategoryId: 'cat-water', label: 'Eau', amountCents: 60000 }),
@@ -190,6 +300,7 @@ describe('RegularizationCalculationService', () => {
       mockLeaseFinder.findAllByEntityAndFiscalYear.mockResolvedValue([
         makeLease({ startDate: new Date('2025-07-01') }),
       ]);
+      mockLeaseFinder.findBillingLinesByLeaseIds.mockResolvedValue([]);
       mockWaterReadingsFinder.findByEntityAndYear.mockResolvedValue({
         id: 'wr-1',
         readings: [],
@@ -204,22 +315,20 @@ describe('RegularizationCalculationService', () => {
           { unitId: 'unit-1', consumption: 75, percentage: 75, amountCents: 45000, isMetered: true },
         ],
       });
-      mockAnnualChargesFinder.findPaidBillingLinesByLeaseAndYear.mockResolvedValue([]);
 
       const result = await service.calculate('entity-1', 'user-1', 2025);
 
       const waterCharge = result[0].charges.find((c) => c.label === 'Eau');
-      expect(waterCharge!.tenantShareCents).toBe(45000); // from water distribution
+      expect(waterCharge!.tenantShareCents).toBe(45000);
       expect(waterCharge!.isWaterByConsumption).toBe(true);
 
       const teomCharge = result[0].charges.find((c) => c.label === 'TEOM');
-      // 184 days: Math.floor(184 * 80000 / 365) = 40328
       expect(teomCharge!.tenantShareCents).toBe(40328);
       expect(teomCharge!.isWaterByConsumption).toBe(false);
     });
   });
 
-  describe('BDD Scenario 4: No annual charges', () => {
+  describe('No annual charges', () => {
     it('should throw NoChargesRecordedException', async () => {
       mockAnnualChargesFinder.findByEntityAndYear.mockResolvedValue(null);
 
@@ -229,7 +338,7 @@ describe('RegularizationCalculationService', () => {
     });
   });
 
-  describe('BDD Scenario 5: No leases found', () => {
+  describe('No leases found', () => {
     it('should throw NoLeasesFoundException', async () => {
       mockAnnualChargesFinder.findByEntityAndYear.mockResolvedValue(
         makeAnnualCharges([makeCharge()]),
@@ -244,16 +353,12 @@ describe('RegularizationCalculationService', () => {
 
   describe('Rounding remainder distribution', () => {
     it('should distribute remainder to first tenant alphabetically', async () => {
-      // 2 tenants partial year, charge 10001¢ → creates rounding difference
       const charges = [
         makeCharge({ chargeCategoryId: 'cat-teom', label: 'TEOM', amountCents: 10001 }),
       ];
       mockAnnualChargesFinder.findByEntityAndYear.mockResolvedValue(
         makeAnnualCharges(charges),
       );
-      // Both full year → each gets floor(365*10001/365) = 10001 → sum=20002, remainder = 10001-20002 = -10001 (wrong)
-      // This only works with partial year. Let's use 2 partial year tenants.
-      // Tenant A: 200 days, Tenant B: 165 days (total = 365)
       mockLeaseFinder.findAllByEntityAndFiscalYear.mockResolvedValue([
         makeLease({
           id: 'lease-1',
@@ -274,21 +379,17 @@ describe('RegularizationCalculationService', () => {
           unit: { id: 'unit-1', identifier: 'Apt A' },
         }),
       ]);
-      mockAnnualChargesFinder.findPaidBillingLinesByLeaseAndYear.mockResolvedValue([]);
+      mockLeaseFinder.findBillingLinesByLeaseIds.mockResolvedValue([]);
 
       const result = await service.calculate('entity-1', 'user-1', 2025);
 
       expect(result).toHaveLength(2);
-      // Abc Alice is first alphabetically (lastName firstName format)
       expect(result[0].tenantName).toBe('Abc Alice');
       expect(result[1].tenantName).toBe('Zzz Zoé');
 
-      // Alice: 200 days → floor(200 * 10001 / 365) = floor(5480.0) = 5480 (actually 200*10001/365=5479.45..→5479)
-      // Zoé: 165 days → floor(165 * 10001 / 365) = floor(4521.5...) = 4521
-      // Sum = 5479+4521 = 10000, remainder = 10001-10000 = 1 → added to Alice
       const aliceShare = result[0].charges[0].tenantShareCents;
       const zoeShare = result[1].charges[0].tenantShareCents;
-      expect(aliceShare + zoeShare).toBe(10001); // sum exactly equals total
+      expect(aliceShare + zoeShare).toBe(10001);
     });
   });
 
@@ -302,7 +403,7 @@ describe('RegularizationCalculationService', () => {
           tenant: { id: 'tenant-1', firstName: 'Jean', lastName: 'Dupont', companyName: 'SARL Dupont' },
         }),
       ]);
-      mockAnnualChargesFinder.findPaidBillingLinesByLeaseAndYear.mockResolvedValue([]);
+      mockLeaseFinder.findBillingLinesByLeaseIds.mockResolvedValue([]);
 
       const result = await service.calculate('entity-1', 'user-1', 2025);
       expect(result[0].tenantName).toBe('SARL Dupont');
@@ -317,39 +418,12 @@ describe('RegularizationCalculationService', () => {
       mockLeaseFinder.findAllByEntityAndFiscalYear.mockResolvedValue([
         makeLease({ startDate: new Date('2024-01-01') }),
       ]);
-      mockAnnualChargesFinder.findPaidBillingLinesByLeaseAndYear.mockResolvedValue([]);
+      mockLeaseFinder.findBillingLinesByLeaseIds.mockResolvedValue([]);
 
       const result = await service.calculate('entity-1', 'user-1', 2024);
       expect(result[0].daysInYear).toBe(366);
       expect(result[0].occupiedDays).toBe(366);
-      // Full year on leap year: Math.floor(366 * 36600 / 366) = 36600
       expect(result[0].totalShareCents).toBe(36600);
-    });
-  });
-
-  describe('Multiple billing lines in provisions', () => {
-    it('should sum all billing lines from paid rent calls', async () => {
-      mockAnnualChargesFinder.findByEntityAndYear.mockResolvedValue(
-        makeAnnualCharges([makeCharge()]),
-      );
-      mockLeaseFinder.findAllByEntityAndFiscalYear.mockResolvedValue([makeLease()]);
-      mockAnnualChargesFinder.findPaidBillingLinesByLeaseAndYear.mockResolvedValue([
-        {
-          billingLines: [
-            { chargeCategoryId: 'cat-teom', amountCents: 5000 },
-            { chargeCategoryId: 'cat-cleaning', amountCents: 3000 },
-          ],
-        },
-        {
-          billingLines: [
-            { chargeCategoryId: 'cat-teom', amountCents: 5000 },
-            { chargeCategoryId: 'cat-cleaning', amountCents: 3000 },
-          ],
-        },
-      ]);
-
-      const result = await service.calculate('entity-1', 'user-1', 2025);
-      expect(result[0].totalProvisionsPaidCents).toBe(16000); // (5000+3000) × 2
     });
   });
 
@@ -358,18 +432,21 @@ describe('RegularizationCalculationService', () => {
       mockAnnualChargesFinder.findByEntityAndYear.mockResolvedValue(
         makeAnnualCharges([makeCharge({ amountCents: 36500 })]),
       );
-      // Lease terminated mid-year
       mockLeaseFinder.findAllByEntityAndFiscalYear.mockResolvedValue([
         makeLease({ endDate: new Date('2025-06-30') }),
       ]);
-      mockAnnualChargesFinder.findPaidBillingLinesByLeaseAndYear.mockResolvedValue([]);
+      mockLeaseFinder.findBillingLinesByLeaseIds.mockResolvedValue([
+        makeBillingLine({ leaseId: 'lease-1', chargeCategoryId: 'cat-teom', amountCents: 3000 }),
+      ]);
 
       const result = await service.calculate('entity-1', 'user-1', 2025);
       expect(result[0].occupancyStart).toBe('2025-01-01');
       expect(result[0].occupancyEnd).toBe('2025-06-30');
-      expect(result[0].occupiedDays).toBe(181); // Jan-June inclusive
-      // Math.floor(181 * 36500 / 365) = Math.floor(18100) = 18100
+      expect(result[0].occupiedDays).toBe(181);
       expect(result[0].charges[0].tenantShareCents).toBe(18100);
+      // 181 days → ceil(181 / (365/12)) = ceil(5.95) = 6 months → 3000 × 6 = 18000
+      expect(result[0].charges[0].provisionsPaidCents).toBe(18000);
+      expect(result[0].balanceCents).toBe(18100 - 18000); // 100 (tenant owes)
     });
   });
 });
@@ -435,7 +512,6 @@ describe('calculateOccupiedDaysInYear', () => {
       new Date('2026-03-15'),
       2025,
     );
-    // June 1 to Dec 31 = 214 days
     expect(result).toBe(214);
   });
 });

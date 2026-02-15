@@ -59,6 +59,7 @@ export class ChargeRegularizationPdfAssembler {
       label: c.label,
       totalChargeCents: c.totalChargeCents,
       tenantShareCents: c.tenantShareCents,
+      provisionsPaidCents: c.provisionsPaidCents,
       isWaterByConsumption: c.isWaterByConsumption,
     }));
 

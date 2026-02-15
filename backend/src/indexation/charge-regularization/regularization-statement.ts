@@ -3,6 +3,7 @@ export interface StatementChargePrimitives {
   label: string;
   totalChargeCents: number;
   tenantShareCents: number;
+  provisionsPaidCents: number;
   isWaterByConsumption: boolean;
 }
 

@@ -26,6 +26,7 @@ const makeStatement = (
       label: 'Eau',
       totalChargeCents: 60000,
       tenantShareCents: 60000,
+      provisionsPaidCents: 0,
       isWaterByConsumption: true,
     },
   ],

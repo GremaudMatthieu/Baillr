@@ -6,6 +6,7 @@ describe('StatementPrimitives interface', () => {
     label: 'Eau',
     totalChargeCents: 60000,
     tenantShareCents: 30000,
+    provisionsPaidCents: 0,
     isWaterByConsumption: true,
   };
 

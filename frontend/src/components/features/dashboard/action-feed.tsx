@@ -5,6 +5,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   AlertTriangle,
   Building2,
+  CircleDollarSign,
   ClipboardList,
   FileText,
   Landmark,
@@ -37,10 +38,12 @@ import { useRentCalls } from "@/hooks/use-rent-calls";
 import { useBankStatements } from "@/hooks/use-bank-statements";
 import { useUnpaidRentCalls } from "@/hooks/use-unpaid-rent-calls";
 import { useEscalationStatuses } from "@/hooks/use-escalation";
+import { useChargeRegularizations } from "@/hooks/use-charge-regularization";
 import { useMemo } from "react";
 
 const iconMap: Record<string, LucideIcon> = {
   AlertTriangle,
+  CircleDollarSign,
   Plus,
   Building2,
   ClipboardList,
@@ -374,6 +377,36 @@ function useUnpaidAlerts(): ActionItem[] {
   return actions;
 }
 
+function useUnsettledRegularizationAlerts(): ActionItem[] {
+  const { entityId } = useCurrentEntity();
+  const { data: regularizations } = useChargeRegularizations(entityId ?? undefined);
+  const actions: ActionItem[] = [];
+
+  if (!regularizations) return actions;
+
+  const unsettled = regularizations.filter(
+    (r) => r.appliedAt !== null && r.settledAt === null,
+  );
+
+  if (unsettled.length === 0) return actions;
+
+  const fiscalYears = unsettled
+    .map((r) => r.fiscalYear)
+    .sort((a, b) => b - a)
+    .join(", ");
+
+  actions.push({
+    id: "unsettled-regularizations",
+    icon: "CircleDollarSign",
+    title: `${unsettled.length} régularisation${unsettled.length > 1 ? "s" : ""} en attente de règlement`,
+    description: `Exercice${unsettled.length > 1 ? "s" : ""} : ${fiscalYears} — Marquez les régularisations comme réglées une fois les paiements reçus.`,
+    href: "/charges",
+    priority: "high",
+  });
+
+  return actions;
+}
+
 const priorityLabels: Record<ActionItem["priority"], string> = {
   critical: "Urgent",
   high: "Recommandé",
@@ -445,7 +478,8 @@ export function ActionFeed({ actions }: ActionFeedProps) {
   const onboardingActions = useOnboardingActions();
   const insuranceAlerts = useInsuranceAlerts();
   const unpaidAlerts = useUnpaidAlerts();
-  const displayActions = actions ?? [...unpaidAlerts, ...insuranceAlerts, ...onboardingActions];
+  const unsettledAlerts = useUnsettledRegularizationAlerts();
+  const displayActions = actions ?? [...unpaidAlerts, ...unsettledAlerts, ...insuranceAlerts, ...onboardingActions];
   const hasActions = displayActions.length > 0;
 
   return (

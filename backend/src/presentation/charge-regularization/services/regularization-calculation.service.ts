@@ -6,6 +6,7 @@ import type {
 } from '@indexation/charge-regularization/regularization-statement.js';
 import { AnnualChargesFinder } from '../../annual-charges/finders/annual-charges.finder.js';
 import { LeaseFinder } from '../../lease/finders/lease.finder.js';
+import type { LeaseBillingLineWithCategory } from '../../lease/finders/lease.finder.js';
 import { WaterMeterReadingsFinder } from '../../water-meter-readings/finders/water-meter-readings.finder.js';
 import { WaterDistributionService } from '../../water-meter-readings/services/water-distribution.service.js';
 import type { WaterDistributionResult } from '../../water-meter-readings/services/water-distribution.service.js';
@@ -16,14 +17,6 @@ interface ChargeEntry {
   chargeCategoryId: string;
   label: string;
   amountCents: number;
-}
-
-interface BillingLine {
-  chargeCategoryId?: string | null;
-  categoryLabel?: string;
-  amountCents: number;
-  label?: string;
-  type?: string;
 }
 
 function isWaterCategory(charge: ChargeEntry): boolean {
@@ -124,9 +117,22 @@ export class RegularizationCalculationService {
 
     const daysInYear = isLeapYear(fiscalYear) ? 366 : 365;
 
-    // 4. Calculate per-lease statements
+    // 4. Load lease billing lines (normalized table, NOT rent call JSON blobs)
+    const allLeaseIds = leases.map((l) => l.id);
+    const billingLines =
+      await this.leaseFinder.findBillingLinesByLeaseIds(allLeaseIds, entityId);
+
+    // Build map: leaseId → chargeCategoryId → monthlyAmountCents
+    const billingLineMap = new Map<string, Map<string, number>>();
+    for (const bl of billingLines) {
+      if (!billingLineMap.has(bl.leaseId)) {
+        billingLineMap.set(bl.leaseId, new Map());
+      }
+      billingLineMap.get(bl.leaseId)!.set(bl.chargeCategoryId, bl.amountCents);
+    }
+
+    // 5. Calculate per-lease statements
     const statements: StatementPrimitives[] = [];
-    const chargeShareTrackers = new Map<string, number>(); // categoryId → sum of all tenant shares
 
     for (const lease of leases) {
       const occupiedDays = calculateOccupiedDaysInYear(
@@ -157,11 +163,17 @@ export class RegularizationCalculationService {
       const occupancyStart = startUtc > yearStart ? startUtc : yearStart;
       const occupancyEnd = endUtc && endUtc < yearEnd ? endUtc : yearEnd;
 
+      // Occupied months for provision calculation (occupiedDays / average days-per-month)
+      const occupiedMonths = Math.ceil(occupiedDays / (daysInYear / 12));
+
+      const leaseBillingLines = billingLineMap.get(lease.id);
+
       // Calculate per-category shares
       const statementCharges: StatementChargePrimitives[] = [];
       for (const charge of charges) {
         let tenantShareCents: number;
         let isWaterByConsumptionFlag: boolean;
+        let provisionsPaidCents: number;
 
         if (isWaterCategory(charge) && waterDistribution) {
           const unitDist = waterDistribution.distributions.find(
@@ -169,11 +181,18 @@ export class RegularizationCalculationService {
           );
           tenantShareCents = unitDist?.amountCents ?? 0;
           isWaterByConsumptionFlag = true;
+          // Water provisions are NOT from billing lines — water uses meter readings
+          provisionsPaidCents = 0;
         } else {
           tenantShareCents = Math.floor(
             (occupiedDays * charge.amountCents) / daysInYear,
           );
           isWaterByConsumptionFlag = false;
+
+          // Provisions = monthly billing line amount × occupied months
+          const monthlyProvision =
+            leaseBillingLines?.get(charge.chargeCategoryId) ?? 0;
+          provisionsPaidCents = monthlyProvision * occupiedMonths;
         }
 
         statementCharges.push({
@@ -181,15 +200,9 @@ export class RegularizationCalculationService {
           label: charge.label,
           totalChargeCents: charge.amountCents,
           tenantShareCents,
+          provisionsPaidCents,
           isWaterByConsumption: isWaterByConsumptionFlag,
         });
-
-        // Track shares for remainder distribution
-        const current = chargeShareTrackers.get(charge.chargeCategoryId) ?? 0;
-        chargeShareTrackers.set(
-          charge.chargeCategoryId,
-          current + tenantShareCents,
-        );
       }
 
       const totalShareCents = statementCharges.reduce(
@@ -197,10 +210,9 @@ export class RegularizationCalculationService {
         0,
       );
 
-      // Calculate provisions paid for this lease
-      const totalProvisionsPaidCents = await this.calculateProvisions(
-        lease.id,
-        fiscalYear,
+      const totalProvisionsPaidCents = statementCharges.reduce(
+        (sum, c) => sum + c.provisionsPaidCents,
+        0,
       );
 
       const balanceCents = totalShareCents - totalProvisionsPaidCents;
@@ -297,26 +309,4 @@ export class RegularizationCalculationService {
     );
   }
 
-  private async calculateProvisions(
-    leaseId: string,
-    fiscalYear: number,
-  ): Promise<number> {
-    const rentCalls =
-      await this.annualChargesFinder.findPaidBillingLinesByLeaseAndYear(
-        leaseId,
-        fiscalYear,
-      );
-
-    let total = 0;
-    for (const rc of rentCalls) {
-      const lines = rc.billingLines as unknown as BillingLine[];
-      if (!Array.isArray(lines)) continue;
-      for (const line of lines) {
-        if (line.chargeCategoryId) {
-          total += line.amountCents;
-        }
-      }
-    }
-    return total;
-  }
 }

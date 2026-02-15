@@ -4,7 +4,7 @@ import { fetchWithAuth } from "./fetch-with-auth";
 export interface AccountEntryData {
   id: string;
   type: "debit" | "credit";
-  category: "rent_call" | "payment" | "overpayment_credit" | "adjustment";
+  category: "rent_call" | "payment" | "overpayment_credit" | "adjustment" | "charge_regularization";
   description: string;
   amountCents: number;
   balanceCents: number;

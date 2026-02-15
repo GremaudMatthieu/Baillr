@@ -3,6 +3,9 @@ import { KurrentDbService } from '@infrastructure/eventstore/kurrentdb.service.j
 import { PrismaService } from '@infrastructure/database/prisma.service.js';
 import { START, streamNameFilter } from '@kurrent/kurrentdb-client';
 import type { ChargeRegularizationCalculatedData } from '@indexation/charge-regularization/events/charge-regularization-calculated.event';
+import type { ChargeRegularizationAppliedData } from '@indexation/charge-regularization/events/charge-regularization-applied.event';
+import type { ChargeRegularizationSentData } from '@indexation/charge-regularization/events/charge-regularization-sent.event';
+import type { ChargeRegularizationSettledData } from '@indexation/charge-regularization/events/charge-regularization-settled.event';
 
 @Injectable()
 export class ChargeRegularizationProjection implements OnModuleInit {
@@ -70,6 +73,39 @@ export class ChargeRegularizationProjection implements OnModuleInit {
             data as unknown as ChargeRegularizationCalculatedData,
           );
           break;
+        case 'ChargeRegularizationApplied':
+          if (!this.isValidAppliedData(data)) {
+            this.logger.error(
+              `Invalid ChargeRegularizationApplied event data for ${data.chargeRegularizationId}`,
+            );
+            return;
+          }
+          await this.onChargeRegularizationApplied(
+            data as unknown as ChargeRegularizationAppliedData,
+          );
+          break;
+        case 'ChargeRegularizationSent':
+          if (!this.isValidSentData(data)) {
+            this.logger.error(
+              `Invalid ChargeRegularizationSent event data for ${data.chargeRegularizationId}`,
+            );
+            return;
+          }
+          await this.onChargeRegularizationSent(
+            data as unknown as ChargeRegularizationSentData,
+          );
+          break;
+        case 'ChargeRegularizationSettled':
+          if (!this.isValidSettledData(data)) {
+            this.logger.error(
+              `Invalid ChargeRegularizationSettled event data for ${data.chargeRegularizationId}`,
+            );
+            return;
+          }
+          await this.onChargeRegularizationSettled(
+            data as unknown as ChargeRegularizationSettledData,
+          );
+          break;
         default:
           break;
       }
@@ -106,6 +142,114 @@ export class ChargeRegularizationProjection implements OnModuleInit {
     });
     this.logger.log(
       `Projected ChargeRegularizationCalculated for ${data.chargeRegularizationId} (fiscal year ${data.fiscalYear})`,
+    );
+  }
+
+  private isValidAppliedData(data: Record<string, unknown>): boolean {
+    return (
+      typeof data.chargeRegularizationId === 'string' &&
+      typeof data.entityId === 'string' &&
+      typeof data.fiscalYear === 'number' &&
+      typeof data.appliedAt === 'string'
+    );
+  }
+
+  private async onChargeRegularizationApplied(
+    data: ChargeRegularizationAppliedData,
+  ): Promise<void> {
+    const existing = await this.prisma.chargeRegularization.findUnique({
+      where: {
+        entityId_fiscalYear: {
+          entityId: data.entityId,
+          fiscalYear: data.fiscalYear,
+        },
+      },
+    });
+    if (!existing) {
+      this.logger.warn(
+        `ChargeRegularization ${data.chargeRegularizationId} not found for applied projection — skipping`,
+      );
+      return;
+    }
+
+    await this.prisma.chargeRegularization.update({
+      where: { id: existing.id },
+      data: { appliedAt: new Date(data.appliedAt) },
+    });
+    this.logger.log(
+      `Projected ChargeRegularizationApplied for ${data.chargeRegularizationId} (fiscal year ${data.fiscalYear})`,
+    );
+  }
+
+  private isValidSentData(data: Record<string, unknown>): boolean {
+    return (
+      typeof data.chargeRegularizationId === 'string' &&
+      typeof data.entityId === 'string' &&
+      typeof data.fiscalYear === 'number' &&
+      typeof data.sentAt === 'string'
+    );
+  }
+
+  private async onChargeRegularizationSent(
+    data: ChargeRegularizationSentData,
+  ): Promise<void> {
+    const existing = await this.prisma.chargeRegularization.findUnique({
+      where: {
+        entityId_fiscalYear: {
+          entityId: data.entityId,
+          fiscalYear: data.fiscalYear,
+        },
+      },
+    });
+    if (!existing) {
+      this.logger.warn(
+        `ChargeRegularization ${data.chargeRegularizationId} not found for sent projection — skipping`,
+      );
+      return;
+    }
+
+    await this.prisma.chargeRegularization.update({
+      where: { id: existing.id },
+      data: { sentAt: new Date(data.sentAt) },
+    });
+    this.logger.log(
+      `Projected ChargeRegularizationSent for ${data.chargeRegularizationId} (fiscal year ${data.fiscalYear})`,
+    );
+  }
+
+  private isValidSettledData(data: Record<string, unknown>): boolean {
+    return (
+      typeof data.chargeRegularizationId === 'string' &&
+      typeof data.entityId === 'string' &&
+      typeof data.fiscalYear === 'number' &&
+      typeof data.settledAt === 'string'
+    );
+  }
+
+  private async onChargeRegularizationSettled(
+    data: ChargeRegularizationSettledData,
+  ): Promise<void> {
+    const existing = await this.prisma.chargeRegularization.findUnique({
+      where: {
+        entityId_fiscalYear: {
+          entityId: data.entityId,
+          fiscalYear: data.fiscalYear,
+        },
+      },
+    });
+    if (!existing) {
+      this.logger.warn(
+        `ChargeRegularization ${data.chargeRegularizationId} not found for settled projection — skipping`,
+      );
+      return;
+    }
+
+    await this.prisma.chargeRegularization.update({
+      where: { id: existing.id },
+      data: { settledAt: new Date(data.settledAt) },
+    });
+    this.logger.log(
+      `Projected ChargeRegularizationSettled for ${data.chargeRegularizationId} (fiscal year ${data.fiscalYear})`,
     );
   }
 }

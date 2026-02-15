@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { KurrentDbService } from '@infrastructure/eventstore/kurrentdb.service';
 import { PrismaService } from '@infrastructure/database/prisma.service';
+import { Prisma } from '@prisma/client';
 import { START, streamNameFilter } from '@kurrent/kurrentdb-client';
 import type { RentCallGeneratedData } from '@billing/rent-call/events/rent-call-generated.event';
 import type { RentCallSentData } from '@billing/rent-call/events/rent-call-sent.event';
@@ -174,11 +175,8 @@ export class RentCallProjection implements OnModuleInit {
       return;
     }
 
-    // Create Payment row (idempotent by transactionId check)
-    const existingPayment = await this.prisma.payment.findFirst({
-      where: { transactionId: data.transactionId, rentCallId: data.rentCallId },
-    });
-    if (!existingPayment) {
+    // Create Payment row (idempotent: catch P2002 unique violation on transactionId)
+    try {
       await this.prisma.payment.create({
         data: {
           rentCallId: data.rentCallId,
@@ -193,6 +191,17 @@ export class RentCallProjection implements OnModuleInit {
           recordedAt: new Date(data.recordedAt),
         },
       });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        this.logger.warn(
+          `Payment with transactionId ${data.transactionId} already exists — skipping (idempotent)`,
+        );
+      } else {
+        throw error;
+      }
     }
 
     // Compute total paid from all Payment rows

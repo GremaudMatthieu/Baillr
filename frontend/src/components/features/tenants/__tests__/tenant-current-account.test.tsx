@@ -189,4 +189,66 @@ describe("TenantCurrentAccount", () => {
     const rows = screen.getAllByRole("row");
     expect(rows).toHaveLength(3); // header + 2 data rows
   });
+
+  it("should render charge_regularization debit entry correctly", () => {
+    const regulDebit: AccountEntryData = {
+      id: "ae-regul-1",
+      type: "debit",
+      category: "charge_regularization",
+      description: "Régularisation des charges — 2025",
+      amountCents: 5000,
+      balanceCents: -90000,
+      referenceId: "entity1-2025-tenant-1",
+      referenceMonth: "2025-12",
+      entryDate: "2026-02-15T10:00:00.000Z",
+    };
+
+    renderWithProviders(
+      <TenantCurrentAccount
+        entries={[debitEntry, regulDebit]}
+        balanceCents={-90000}
+      />,
+    );
+
+    expect(
+      screen.getByText("Régularisation des charges — 2025"),
+    ).toBeInTheDocument();
+
+    const rows = screen.getAllByRole("row");
+    const regulRow = rows[2]; // header + debitEntry + regulDebit
+    const cells = regulRow.querySelectorAll("td");
+    expect(cells[2].textContent).toMatch(/50,00/); // 5000 cents = 50,00 €
+    expect(cells[2]).toHaveClass("text-red-600");
+  });
+
+  it("should render charge_regularization credit entry correctly", () => {
+    const regulCredit: AccountEntryData = {
+      id: "ae-regul-2",
+      type: "credit",
+      category: "charge_regularization",
+      description: "Avoir régularisation des charges — 2025",
+      amountCents: 3000,
+      balanceCents: -82000,
+      referenceId: "entity1-2025-tenant-2",
+      referenceMonth: "2025-12",
+      entryDate: "2026-02-15T10:00:00.000Z",
+    };
+
+    renderWithProviders(
+      <TenantCurrentAccount
+        entries={[debitEntry, regulCredit]}
+        balanceCents={-82000}
+      />,
+    );
+
+    expect(
+      screen.getByText("Avoir régularisation des charges — 2025"),
+    ).toBeInTheDocument();
+
+    const rows = screen.getAllByRole("row");
+    const regulRow = rows[2];
+    const cells = regulRow.querySelectorAll("td");
+    expect(cells[3].textContent).toMatch(/30,00/); // 3000 cents = 30,00 €
+    expect(cells[3]).toHaveClass("text-green-600");
+  });
 });

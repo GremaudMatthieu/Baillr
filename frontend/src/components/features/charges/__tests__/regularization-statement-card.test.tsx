@@ -22,6 +22,7 @@ function makeStatement(overrides: Partial<StatementData> = {}): StatementData {
         label: "Eau",
         totalChargeCents: 60000,
         tenantShareCents: 30000,
+        provisionsPaidCents: 0,
         isWaterByConsumption: true,
       },
       {
@@ -29,6 +30,7 @@ function makeStatement(overrides: Partial<StatementData> = {}): StatementData {
         label: "TEOM",
         totalChargeCents: 40000,
         tenantShareCents: 20000,
+        provisionsPaidCents: 20000,
         isWaterByConsumption: false,
       },
     ],

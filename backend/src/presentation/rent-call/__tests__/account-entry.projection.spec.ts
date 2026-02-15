@@ -200,4 +200,131 @@ describe('AccountEntryProjection', () => {
       expect(mockPrisma.accountEntry.create).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('onChargeRegularizationApplied', () => {
+    const appliedEvent = {
+      chargeRegularizationId: 'entity1-2025',
+      entityId: 'entity-1',
+      userId: 'user_123',
+      fiscalYear: 2025,
+      statements: [
+        { tenantId: 'tenant-1', balanceCents: 5000 },
+        { tenantId: 'tenant-2', balanceCents: -3000 },
+      ],
+      appliedAt: '2026-02-15T10:00:00.000Z',
+    };
+
+    it('should create debit entry for positive balance (Complément)', async () => {
+      mockPrisma.accountEntry.findFirst.mockResolvedValueOnce(null); // no existing
+      mockPrisma.accountEntry.findFirst.mockResolvedValueOnce({ balanceCents: -10000 }); // latest balance
+      mockPrisma.accountEntry.create.mockResolvedValue({});
+      // For second tenant
+      mockPrisma.accountEntry.findFirst.mockResolvedValueOnce(null);
+      mockPrisma.accountEntry.findFirst.mockResolvedValueOnce({ balanceCents: -5000 });
+      mockPrisma.accountEntry.create.mockResolvedValue({});
+
+      await (projection as any).onChargeRegularizationApplied(appliedEvent);
+
+      expect(mockPrisma.accountEntry.create).toHaveBeenCalledTimes(2);
+
+      // First: debit for tenant-1 (positive balance = owes more)
+      expect(mockPrisma.accountEntry.create).toHaveBeenNthCalledWith(1, {
+        data: expect.objectContaining({
+          entityId: 'entity-1',
+          tenantId: 'tenant-1',
+          type: 'debit',
+          category: 'charge_regularization',
+          description: 'Régularisation des charges — 2025',
+          amountCents: 5000,
+          balanceCents: -15000, // -10000 - 5000
+          referenceId: 'entity1-2025-tenant-1',
+          referenceMonth: '2025-12',
+        }),
+      });
+    });
+
+    it('should create credit entry for negative balance (Trop-perçu)', async () => {
+      // For first tenant (positive)
+      mockPrisma.accountEntry.findFirst.mockResolvedValueOnce(null);
+      mockPrisma.accountEntry.findFirst.mockResolvedValueOnce({ balanceCents: 0 });
+      mockPrisma.accountEntry.create.mockResolvedValue({});
+      // For second tenant (negative = credit)
+      mockPrisma.accountEntry.findFirst.mockResolvedValueOnce(null);
+      mockPrisma.accountEntry.findFirst.mockResolvedValueOnce({ balanceCents: -20000 });
+      mockPrisma.accountEntry.create.mockResolvedValue({});
+
+      await (projection as any).onChargeRegularizationApplied(appliedEvent);
+
+      // Second call: credit for tenant-2 (negative balance = tenant overpaid)
+      expect(mockPrisma.accountEntry.create).toHaveBeenNthCalledWith(2, {
+        data: expect.objectContaining({
+          entityId: 'entity-1',
+          tenantId: 'tenant-2',
+          type: 'credit',
+          category: 'charge_regularization',
+          description: 'Avoir régularisation des charges — 2025',
+          amountCents: 3000,
+          balanceCents: -17000, // -20000 + 3000
+          referenceId: 'entity1-2025-tenant-2',
+          referenceMonth: '2025-12',
+        }),
+      });
+    });
+
+    it('should skip zero-balance statements', async () => {
+      const zeroEvent = {
+        ...appliedEvent,
+        statements: [
+          { tenantId: 'tenant-1', balanceCents: 0 },
+          { tenantId: 'tenant-2', balanceCents: 5000 },
+        ],
+      };
+
+      // Only for second tenant (non-zero)
+      mockPrisma.accountEntry.findFirst.mockResolvedValueOnce(null);
+      mockPrisma.accountEntry.findFirst.mockResolvedValueOnce({ balanceCents: 0 });
+      mockPrisma.accountEntry.create.mockResolvedValue({});
+
+      await (projection as any).onChargeRegularizationApplied(zeroEvent);
+
+      expect(mockPrisma.accountEntry.create).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.accountEntry.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          tenantId: 'tenant-2',
+          type: 'debit',
+          amountCents: 5000,
+        }),
+      });
+    });
+
+    it('should be idempotent — skip if entry already exists', async () => {
+      mockPrisma.accountEntry.findFirst.mockResolvedValueOnce({ id: 'existing-1' }); // first tenant already exists
+      mockPrisma.accountEntry.findFirst.mockResolvedValueOnce({ id: 'existing-2' }); // second tenant already exists
+
+      await (projection as any).onChargeRegularizationApplied(appliedEvent);
+
+      expect(mockPrisma.accountEntry.create).not.toHaveBeenCalled();
+    });
+
+    it('should compute running balance correctly', async () => {
+      const singleEvent = {
+        ...appliedEvent,
+        statements: [{ tenantId: 'tenant-1', balanceCents: -7500 }],
+      };
+
+      mockPrisma.accountEntry.findFirst.mockResolvedValueOnce(null);
+      mockPrisma.accountEntry.findFirst.mockResolvedValueOnce({ balanceCents: -30000 });
+      mockPrisma.accountEntry.create.mockResolvedValue({});
+
+      await (projection as any).onChargeRegularizationApplied(singleEvent);
+
+      expect(mockPrisma.accountEntry.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          type: 'credit',
+          amountCents: 7500,
+          balanceCents: -22500, // -30000 + 7500
+        }),
+      });
+    });
+  });
 });

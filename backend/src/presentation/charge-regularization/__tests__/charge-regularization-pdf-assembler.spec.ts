@@ -34,6 +34,7 @@ describe('ChargeRegularizationPdfAssembler', () => {
         label: 'TEOM',
         totalChargeCents: 80000,
         tenantShareCents: 80000,
+        provisionsPaidCents: 75000,
         isWaterByConsumption: false,
       },
     ],

@@ -906,6 +906,105 @@ export class ApiHelper {
     );
   }
 
+  async recordInseeIndex(
+    entityId: string,
+    payload: {
+      id: string;
+      type: 'IRL' | 'ILC' | 'ICC';
+      quarter: 'Q1' | 'Q2' | 'Q3' | 'Q4';
+      year: number;
+      value: number;
+    },
+  ) {
+    const response = await this.request.post(
+      `${API_BASE}/api/entities/${entityId}/insee-indices`,
+      {
+        headers: this.headers(),
+        data: payload,
+      },
+    );
+    if (!response.ok()) {
+      throw new Error(
+        `Failed to record INSEE index: ${response.status()} ${await response.text()}`,
+      );
+    }
+  }
+
+  async calculateRevisions(entityId: string) {
+    const response = await this.request.post(
+      `${API_BASE}/api/entities/${entityId}/revisions/calculate`,
+      { headers: this.headers() },
+    );
+    if (!response.ok()) {
+      throw new Error(
+        `Failed to calculate revisions: ${response.status()} ${await response.text()}`,
+      );
+    }
+    return (await response.json()) as {
+      calculated: number;
+      skipped: string[];
+      errors: string[];
+    };
+  }
+
+  async getRevisions(entityId: string) {
+    const response = await this.request.get(
+      `${API_BASE}/api/entities/${entityId}/revisions`,
+      { headers: this.headers() },
+    );
+    if (!response.ok()) {
+      throw new Error(`Failed to get revisions: ${response.status()}`);
+    }
+    return (await response.json()) as { data: Record<string, unknown>[] };
+  }
+
+  async approveRevisions(entityId: string, revisionIds: string[]) {
+    const response = await this.request.post(
+      `${API_BASE}/api/entities/${entityId}/revisions/approve`,
+      {
+        headers: this.headers(),
+        data: { revisionIds },
+      },
+    );
+    if (!response.ok()) {
+      throw new Error(
+        `Failed to approve revisions: ${response.status()} ${await response.text()}`,
+      );
+    }
+  }
+
+  async waitForRevisionCount(
+    entityId: string,
+    expectedCount: number,
+    timeoutMs = 5000,
+  ) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      const { data } = await this.getRevisions(entityId);
+      if (data.length >= expectedCount) return data;
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    throw new Error(
+      `Timed out waiting for ${expectedCount} revisions (${timeoutMs}ms)`,
+    );
+  }
+
+  async waitForRevisionStatus(
+    entityId: string,
+    status: string,
+    timeoutMs = 5000,
+  ) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      const { data } = await this.getRevisions(entityId);
+      if (data.length > 0 && data[0].status === status) return data[0];
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    throw new Error(
+      `Timed out waiting for revision status "${status}" (${timeoutMs}ms)`,
+    );
+  }
+
   getCreatedEntityIds() {
     return [...this.createdEntityIds];
   }

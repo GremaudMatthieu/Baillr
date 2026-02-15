@@ -1,6 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import type { Lease, Tenant, Unit } from '@prisma/client';
+import type { Lease, Tenant, Unit, ChargeCategory } from '@prisma/client';
 import { PrismaService } from '@infrastructure/database/prisma.service';
+
+export interface LeaseBillingLineWithCategory {
+  leaseId: string;
+  chargeCategoryId: string;
+  amountCents: number;
+  chargeCategory: ChargeCategory;
+}
 
 @Injectable()
 export class LeaseFinder {
@@ -62,6 +69,20 @@ export class LeaseFinder {
       },
       include: { tenant: true, unit: true },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findBillingLinesByLeaseIds(
+    leaseIds: string[],
+    entityId: string,
+  ): Promise<LeaseBillingLineWithCategory[]> {
+    if (leaseIds.length === 0) return [];
+    return this.prisma.leaseBillingLine.findMany({
+      where: {
+        leaseId: { in: leaseIds },
+        lease: { entityId },
+      },
+      include: { chargeCategory: true },
     });
   }
 

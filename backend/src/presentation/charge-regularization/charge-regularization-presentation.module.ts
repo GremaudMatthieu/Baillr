@@ -9,9 +9,15 @@ import { TenantPresentationModule } from '../tenant/tenant-presentation.module.j
 import { PropertyPresentationModule } from '../property/property-presentation.module.js';
 import { ChargeRegularizationAggregate } from '@indexation/charge-regularization/charge-regularization.aggregate';
 import { CalculateChargeRegularizationHandler } from '@indexation/charge-regularization/commands/calculate-charge-regularization.handler';
+import { ApplyChargeRegularizationHandler } from '@indexation/charge-regularization/commands/apply-charge-regularization.handler';
+import { SendChargeRegularizationHandler } from '@indexation/charge-regularization/commands/send-charge-regularization.handler';
+import { SettleChargeRegularizationHandler } from '@indexation/charge-regularization/commands/settle-charge-regularization.handler';
 import { CalculateChargeRegularizationController } from './controllers/calculate-charge-regularization.controller.js';
+import { ApplyChargeRegularizationController } from './controllers/apply-charge-regularization.controller.js';
 import { GetChargeRegularizationController } from './controllers/get-charge-regularization.controller.js';
 import { GetChargeRegularizationPdfController } from './controllers/get-charge-regularization-pdf.controller.js';
+import { SendChargeRegularizationController } from './controllers/send-charge-regularization.controller.js';
+import { SettleChargeRegularizationController } from './controllers/settle-charge-regularization.controller.js';
 import { GetChargeRegularizationHandler } from './queries/get-charge-regularization.handler.js';
 import { ChargeRegularizationProjection } from './projections/charge-regularization.projection.js';
 import { ChargeRegularizationFinder } from './finders/charge-regularization.finder.js';
@@ -31,11 +37,17 @@ import { ChargeRegularizationPdfAssembler } from './services/charge-regularizati
   ],
   controllers: [
     CalculateChargeRegularizationController,
+    ApplyChargeRegularizationController,
     GetChargeRegularizationController,
     GetChargeRegularizationPdfController,
+    SendChargeRegularizationController,
+    SettleChargeRegularizationController,
   ],
   providers: [
     CalculateChargeRegularizationHandler,
+    ApplyChargeRegularizationHandler,
+    SendChargeRegularizationHandler,
+    SettleChargeRegularizationHandler,
     GetChargeRegularizationHandler,
     ChargeRegularizationProjection,
     ChargeRegularizationFinder,

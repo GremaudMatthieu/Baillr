@@ -4,6 +4,7 @@ import { PrismaService } from '@infrastructure/database/prisma.service';
 import { START, streamNameFilter } from '@kurrent/kurrentdb-client';
 import type { RentCallGeneratedData } from '@billing/rent-call/events/rent-call-generated.event';
 import type { PaymentRecordedData } from '@billing/rent-call/events/payment-recorded.event';
+import type { ChargeRegularizationAppliedData } from '@indexation/charge-regularization/events/charge-regularization-applied.event';
 
 @Injectable()
 export class AccountEntryProjection implements OnModuleInit {
@@ -24,7 +25,7 @@ export class AccountEntryProjection implements OnModuleInit {
   private subscribeToAll(): void {
     const subscription = this.kurrentDb.client.subscribeToAll({
       fromPosition: START,
-      filter: streamNameFilter({ prefixes: ['rent-call_'] }),
+      filter: streamNameFilter({ prefixes: ['rent-call_', 'charge-regularization_'] }),
     });
 
     subscription.on('data', ({ event }) => {
@@ -66,6 +67,16 @@ export class AccountEntryProjection implements OnModuleInit {
     );
   }
 
+  private isValidChargeRegularizationAppliedData(data: Record<string, unknown>): boolean {
+    return (
+      typeof data.chargeRegularizationId === 'string' &&
+      typeof data.entityId === 'string' &&
+      typeof data.fiscalYear === 'number' &&
+      Array.isArray(data.statements) &&
+      typeof data.appliedAt === 'string'
+    );
+  }
+
   private async handleEvent(eventType: string, data: Record<string, unknown>): Promise<void> {
     try {
       switch (eventType) {
@@ -86,6 +97,17 @@ export class AccountEntryProjection implements OnModuleInit {
             return;
           }
           await this.onPaymentRecorded(data as unknown as PaymentRecordedData);
+          break;
+        case 'ChargeRegularizationApplied':
+          if (!this.isValidChargeRegularizationAppliedData(data)) {
+            this.logger.error(
+              `Invalid ChargeRegularizationApplied event data for ${data.chargeRegularizationId}`,
+            );
+            return;
+          }
+          await this.onChargeRegularizationApplied(
+            data as unknown as ChargeRegularizationAppliedData,
+          );
           break;
         default:
           break;
@@ -213,6 +235,63 @@ export class AccountEntryProjection implements OnModuleInit {
           `Projected AccountEntry overpayment credit for payment ${data.transactionId} (${overpaymentCents} cents)`,
         );
       }
+    }
+  }
+
+  private async onChargeRegularizationApplied(
+    data: ChargeRegularizationAppliedData,
+  ): Promise<void> {
+    interface StatementData {
+      tenantId: string;
+      balanceCents: number;
+    }
+    const statements = data.statements as StatementData[];
+
+    for (const statement of statements) {
+      // Skip zero-balance statements
+      if (statement.balanceCents === 0) {
+        continue;
+      }
+
+      const referenceId = `${data.chargeRegularizationId}-${statement.tenantId}`;
+
+      // Idempotency: check if entry already exists
+      const existing = await this.prisma.accountEntry.findFirst({
+        where: { referenceId, category: 'charge_regularization' },
+      });
+      if (existing) {
+        continue;
+      }
+
+      const isDebit = statement.balanceCents > 0;
+      const amountCents = Math.abs(statement.balanceCents);
+
+      const currentBalance = await this.getLatestBalance(statement.tenantId, data.entityId);
+      const newBalance = isDebit
+        ? currentBalance - amountCents
+        : currentBalance + amountCents;
+
+      const description = isDebit
+        ? `Régularisation des charges — ${data.fiscalYear}`
+        : `Avoir régularisation des charges — ${data.fiscalYear}`;
+
+      await this.prisma.accountEntry.create({
+        data: {
+          entityId: data.entityId,
+          tenantId: statement.tenantId,
+          type: isDebit ? 'debit' : 'credit',
+          category: 'charge_regularization',
+          description,
+          amountCents,
+          balanceCents: newBalance,
+          referenceId,
+          referenceMonth: `${data.fiscalYear}-12`,
+          entryDate: new Date(data.appliedAt),
+        },
+      });
+      this.logger.log(
+        `Projected AccountEntry ${isDebit ? 'debit' : 'credit'} for charge regularization ${data.chargeRegularizationId}, tenant ${statement.tenantId}`,
+      );
     }
   }
 }

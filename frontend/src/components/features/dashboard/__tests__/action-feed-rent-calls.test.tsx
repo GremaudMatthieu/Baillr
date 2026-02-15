@@ -70,6 +70,10 @@ vi.mock("@/hooks/use-escalation", () => ({
   useEscalationStatuses: () => ({ data: [] }),
 }));
 
+vi.mock("@/hooks/use-charge-regularization", () => ({
+  useChargeRegularizations: () => ({ data: [] }),
+}));
+
 describe("ActionFeed — rent calls onboarding step 7", () => {
   beforeEach(() => {
     mockLeasesData = [

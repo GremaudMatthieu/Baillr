@@ -232,7 +232,7 @@ model AccountEntry {
   entityId       String   @map("entity_id")
   tenantId       String   @map("tenant_id")
   type           String   // 'debit' | 'credit'
-  category       String   // 'rent_call' | 'payment' | 'overpayment_credit' | 'adjustment'
+  category       String   // 'rent_call' | 'payment' | 'overpayment_credit' | 'adjustment' | 'charge_regularization'
   description    String
   amountCents    Int      @map("amount_cents")
   balanceCents   Int      @map("balance_cents")
@@ -411,14 +411,17 @@ model WaterMeterReadings {
 }
 
 model ChargeRegularization {
-  id                String   @id
-  entityId          String   @map("entity_id")
-  userId            String   @map("user_id")
-  fiscalYear        Int      @map("fiscal_year")
-  statements        Json     @default("[]")
-  totalBalanceCents Int      @map("total_balance_cents")
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  id                String    @id
+  entityId          String    @map("entity_id")
+  userId            String    @map("user_id")
+  fiscalYear        Int       @map("fiscal_year")
+  statements        Json      @default("[]")
+  totalBalanceCents Int       @map("total_balance_cents")
+  appliedAt         DateTime? @map("applied_at")
+  sentAt            DateTime? @map("sent_at")
+  settledAt         DateTime? @map("settled_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
 
   @@unique([entityId, fiscalYear])
   @@map("charge_regularizations")
