@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import {
   AlertTriangle,
+  BookOpen,
   Building2,
   CircleDollarSign,
   ClipboardList,
@@ -43,6 +44,7 @@ import { useMemo } from "react";
 
 const iconMap: Record<string, LucideIcon> = {
   AlertTriangle,
+  BookOpen,
   CircleDollarSign,
   Plus,
   Building2,
@@ -257,6 +259,21 @@ function useOnboardingActions(): ActionItem[] {
         "Des paiements ont été enregistrés — téléchargez les quittances pour vos locataires depuis la page des appels de loyer",
       href: "/rent-calls",
       priority: "medium",
+    });
+  }
+
+  const hasRentCalls =
+    rentCallsForCurrentMonth && rentCallsForCurrentMonth.length > 0;
+
+  if (entityId && hasRentCalls) {
+    actions.push({
+      id: "onboarding-view-account-book",
+      icon: "BookOpen",
+      title: "Consultez votre livre de comptes",
+      description:
+        "Retrouvez l\u2019ensemble de vos écritures comptables : appels de loyer, paiements et régularisations",
+      href: "/accounting",
+      priority: "low",
     });
   }
 

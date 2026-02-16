@@ -1,6 +1,6 @@
 # Story 8.1: Implement Event-Sourced Account Book (Livre de Comptes)
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -24,46 +24,46 @@ so that every financial operation is recorded with a complete audit trail (FR53,
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add Prisma relation and create AccountingFinder (AC: #2, #5, #6, #7)
-  - [ ] 1.1 Add Prisma relation from `AccountEntry` to `Tenant`: add `tenant Tenant @relation(fields: [tenantId], references: [id])` to the AccountEntry model, and add `accountEntries AccountEntry[]` to the Tenant model. Run `npx prisma migrate dev --name add_account_entry_tenant_relation` then `npx prisma generate`.
-  - [ ] 1.2 Create `backend/src/presentation/accounting/` module structure (controllers/, queries/, finders/, __tests__/)
-  - [ ] 1.3 Create `AccountingFinder` with `findByEntity(entityId, filters?)` method — queries `account_entries` table with optional filters (startDate, endDate, category, tenantId). Uses `include: { tenant: true }` (Prisma relation from 1.1) to denormalize tenant `firstName`/`lastName`/`companyName`. Order by `entryDate DESC, createdAt DESC`.
-  - [ ] 1.4 Create `GetAccountBookQuery` + `GetAccountBookHandler` using QueryBus pattern (C2-1 norm). Handler validates ownership via `EntityFinder.findByIdAndUserId()`. Returns `{ data: { entries: AccountEntryWithTenant[], totalBalanceCents: number } }` (all GET controllers wrap response in `{ data }` object).
-  - [ ] 1.5 Create `GetAccountBookController` — `GET /api/entities/:entityId/accounting`. Uses `@Param('entityId', ParseUUIDPipe)` and `@CurrentUser() userId`. Accepts optional `@Query()` params: `startDate` (ISO string), `endDate` (ISO string), `category` (string), `tenantId` (string). Dispatches to QueryBus.
-  - [ ] 1.6 Create `AccountingPresentationModule` — registers controller, query handler, finder. Import `EntityPresentationModule` for EntityFinder. Do NOT import or reuse `AccountEntryFinder` from RentCallPresentationModule (it is NOT exported and serves per-tenant queries only).
-  - [ ] 1.7 Register module in `app.module.ts`
-  - [ ] 1.8 Unit tests: `GetAccountBookHandler` test (delegates to finder, validates ownership), `GetAccountBookController` test (auth, params, delegation), `AccountingFinder` test (filters, ordering, tenant include)
+- [x] Task 1: Add Prisma relation and create AccountingFinder (AC: #2, #5, #6, #7)
+  - [x] 1.1 Add Prisma relation from `AccountEntry` to `Tenant`
+  - [x] 1.2 Create `backend/src/presentation/accounting/` module structure
+  - [x] 1.3 Create `AccountingFinder` with `findByEntity(entityId, filters?)` method
+  - [x] 1.4 Create `GetAccountBookQuery` + `GetAccountBookHandler` using QueryBus pattern
+  - [x] 1.5 Create `GetAccountBookController` — `GET /api/entities/:entityId/accounting`
+  - [x] 1.6 Create `AccountingPresentationModule`
+  - [x] 1.7 Register module in `app.module.ts`
+  - [x] 1.8 Unit tests: handler (4 tests), controller (3 tests), finder (10 tests) — 17 tests passing
 
-- [ ] Task 2: Create accounting API and hooks on frontend (AC: #2, #3, #5)
-  - [ ] 2.1 Create `frontend/src/lib/api/accounting-api.ts` — `getAccountBook(entityId, filters?)` function using `fetchWithAuth`
-  - [ ] 2.2 Create `frontend/src/hooks/use-accounting.ts` — `useAccountBook(entityId, filters)` hook with React Query, `staleTime: 30_000`
-  - [ ] 2.3 Define `AccountEntryWithTenant` type interface in API module
-  - [ ] 2.4 Hook tests: loading state, success state, filter params forwarded
+- [x] Task 2: Create accounting API and hooks on frontend (AC: #2, #3, #5)
+  - [x] 2.1 Create `frontend/src/lib/api/accounting-api.ts`
+  - [x] 2.2 Create `frontend/src/hooks/use-accounting.ts`
+  - [x] 2.3 Define `AccountEntryWithTenant` type interface in API module
+  - [x] 2.4 Hook tests: 4 tests passing
 
-- [ ] Task 3: Create accounting page and account book table component (AC: #1, #2, #4, #8, #9)
-  - [ ] 3.1 Create `frontend/src/app/(auth)/accounting/page.tsx` — Server Component with metadata `{ title: "Livre de comptes" }`, delegates to AccountBookContent client component
-  - [ ] 3.2 Create `frontend/src/components/features/accounting/account-book-content.tsx` — main client component. Reads `useCurrentEntity()`, calls `useAccountBook()`, renders filters + table + balance summary
-  - [ ] 3.3 Create `frontend/src/components/features/accounting/account-book-table.tsx` — reusable table component. Columns: Date (DD/MM/YYYY), Type (Badge), Description, Tenant, Débit (red), Crédit (green), Solde. French number formatting with `tabular-nums`. Responsive: desktop full table, mobile card layout
-  - [ ] 3.4 Create `frontend/src/components/features/accounting/account-book-filters.tsx` — filter bar with: date range (2 date inputs), category Select, tenant Select. Uses local `useState` (NOT useSearchParams — project convention).
-  - [ ] 3.5 Create `frontend/src/components/features/accounting/account-book-summary.tsx` — summary Card above table: total balance (large number, red if negative), entry count, date range
-  - [ ] 3.6 OPERATION_TYPE_LABELS constant: `{ rent_call: "Appel de loyer", payment: "Paiement", overpayment_credit: "Trop-perçu", charge_regularization: "Régularisation", adjustment: "Ajustement" }`
+- [x] Task 3: Create accounting page and account book table component (AC: #1, #2, #4, #8, #9)
+  - [x] 3.1 Create `frontend/src/app/(auth)/accounting/page.tsx` — Server Component with metadata
+  - [x] 3.2 Create `account-book-content.tsx` — main client component
+  - [x] 3.3 Create `account-book-table.tsx` — desktop table + mobile card layout
+  - [x] 3.4 Create `account-book-filters.tsx` — date range, category Select, tenant Select
+  - [x] 3.5 Create `account-book-summary.tsx` — balance summary card
+  - [x] 3.6 OPERATION_TYPE_LABELS constant
 
-- [ ] Task 4: Verify sidebar navigation and add empty state (AC: #1)
-  - [ ] 4.1 Verify the existing "Comptabilité" sidebar item (BookOpen icon, `/accounting`) works correctly — it already exists in `sidebar.tsx` line 48. Do NOT re-add it.
-  - [ ] 4.2 Empty state: when no entries exist, display "Aucune écriture comptable" with guidance text "Les écritures apparaîtront automatiquement lorsque vous générerez des appels de loyer et enregistrerez des paiements."
+- [x] Task 4: Verify sidebar navigation and add empty state (AC: #1)
+  - [x] 4.1 Verified existing "Comptabilité" sidebar item (line 48) — works correctly, NOT re-added
+  - [x] 4.2 Empty state implemented in AccountBookContent
 
-- [ ] Task 5: Frontend component tests (AC: #10)
-  - [ ] 5.1 `account-book-content.test.tsx` — renders loading, empty state, table with entries, balance summary
-  - [ ] 5.2 `account-book-table.test.tsx` — renders entries with correct columns, French formatting, badge colors, responsive breakpoints
-  - [ ] 5.3 `account-book-filters.test.tsx` — filter interactions, state updates, category/tenant select
-  - [ ] 5.4 `account-book-summary.test.tsx` — balance display, negative balance red, entry count
+- [x] Task 5: Frontend component tests (AC: #10)
+  - [x] 5.1 `account-book-content.test.tsx` — 6 tests
+  - [x] 5.2 `account-book-table.test.tsx` — 7 tests
+  - [x] 5.3 `account-book-filters.test.tsx` — 4 tests
+  - [x] 5.4 `account-book-summary.test.tsx` — 4 tests — 21 tests passing
 
-- [ ] Task 6: E2E test (AC: #10, #11)
-  - [ ] 6.1 E2E spec: navigate to `/accounting`, verify empty state, then (via API fixture or existing E2E setup) verify entries appear after rent call generation + payment recording
-  - [ ] 6.2 Full test suite regression check — all backend + frontend + E2E tests green
+- [x] Task 6: E2E test (AC: #10, #11)
+  - [x] 6.1 E2E spec: `accounting.spec.ts` — 4 tests (seed, empty state, debit after rent call, credit after payment)
+  - [x] 6.2 Full test suite regression: backend 1493 tests (224 suites), frontend 793 tests (101 suites) — all green
 
-- [ ] Task 7: ActionFeed integration (AC: #1)
-  - [ ] 7.1 Add ActionFeed entry: "Consultez votre livre de comptes" when entity has financial activity (rent calls exist). Icon: `BookOpen`, priority: `low`, href: `/accounting`. Only appears once as onboarding guidance.
+- [x] Task 7: ActionFeed integration (AC: #1)
+  - [x] 7.1 Added "Consultez votre livre de comptes" action — BookOpen icon, priority low, href `/accounting`, triggers when rent calls exist
 
 ## Dev Notes
 
@@ -100,6 +100,8 @@ Per architecture doc: `presentation/accounting/` is a **read-only module** (FR53
 backend/src/presentation/accounting/
 ├── controllers/
 │   └── get-account-book.controller.ts     # GET /api/entities/:entityId/accounting
+├── dto/
+│   └── get-account-book-query-params.dto.ts  # Query param validation (class-validator)
 ├── queries/
 │   ├── get-account-book.query.ts
 │   └── get-account-book.handler.ts
@@ -316,10 +318,88 @@ The Prisma schema lists `adjustment` as a valid category, but NO projection hand
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+- Fixed EntityFinder import path: initially `@infrastructure/database/finders/entity.finder.js` → corrected to `../../entity/finders/entity.finder.js` (project convention)
+- Fixed Jest CLI flag: `--testPathPattern` → `--testPathPatterns` (Jest 30 breaking change)
+
 ### Completion Notes List
 
+- Read-only presentation module: no domain counterpart, queries existing `account_entries` table
+- `AccountingFinder` vs `AccountEntryFinder`: separate read paths (entity-level vs per-tenant)
+- `getTotalBalance` uses raw SQL `DISTINCT ON (tenant_id)` subquery for entity-level sum
+- Filters use local `useState` (project convention, not `useSearchParams`)
+- Badge variants mapped to available project variants (default, secondary, destructive, outline, ghost)
+- Sidebar "Comptabilité" item already existed at line 48 — verified, not re-added
+- ActionFeed: BookOpen icon added to iconMap, "Consultez votre livre de comptes" triggers when `hasRentCalls` is true
+
 ### File List
+
+**New files (24):**
+- `backend/prisma/migrations/20260216191637_add_account_entry_tenant_relation/migration.sql`
+- `backend/src/presentation/accounting/accounting-presentation.module.ts`
+- `backend/src/presentation/accounting/controllers/get-account-book.controller.ts`
+- `backend/src/presentation/accounting/dto/get-account-book-query-params.dto.ts`
+- `backend/src/presentation/accounting/queries/get-account-book.query.ts`
+- `backend/src/presentation/accounting/queries/get-account-book.handler.ts`
+- `backend/src/presentation/accounting/finders/accounting.finder.ts`
+- `backend/src/presentation/accounting/__tests__/get-account-book.handler.spec.ts`
+- `backend/src/presentation/accounting/__tests__/get-account-book.controller.spec.ts`
+- `backend/src/presentation/accounting/__tests__/accounting.finder.spec.ts`
+- `frontend/src/app/(auth)/accounting/page.tsx`
+- `frontend/src/components/features/accounting/account-book-content.tsx`
+- `frontend/src/components/features/accounting/account-book-table.tsx`
+- `frontend/src/components/features/accounting/account-book-filters.tsx`
+- `frontend/src/components/features/accounting/account-book-summary.tsx`
+- `frontend/src/components/features/accounting/__tests__/account-book-content.test.tsx`
+- `frontend/src/components/features/accounting/__tests__/account-book-table.test.tsx`
+- `frontend/src/components/features/accounting/__tests__/account-book-filters.test.tsx`
+- `frontend/src/components/features/accounting/__tests__/account-book-summary.test.tsx`
+- `frontend/src/hooks/use-accounting.ts`
+- `frontend/src/hooks/__tests__/use-accounting.test.ts`
+- `frontend/src/lib/api/accounting-api.ts`
+- `frontend/src/lib/constants/operation-types.ts`
+- `frontend/e2e/accounting.spec.ts`
+
+**Modified files (4):**
+- `backend/prisma/schema.prisma` — added `tenant Tenant @relation(...)` on AccountEntry + `accountEntries AccountEntry[]` on Tenant
+- `backend/src/app.module.ts` — registered `AccountingPresentationModule`
+- `frontend/src/components/features/dashboard/action-feed.tsx` — added BookOpen import, iconMap entry, "Consultez votre livre de comptes" action
+- `frontend/e2e/fixtures/api.fixture.ts` — added `getAccountBook()` and `waitForAccountEntryCount()` helper methods
+
+### Change Log
+
+| Change | Reason | AC |
+|--------|--------|-----|
+| Added Prisma relation AccountEntry→Tenant | Denormalize tenant names in entity-level queries | AC2, AC5 |
+| Created AccountingPresentationModule | New read-only module for entity-level accounting | AC5, AC6 |
+| Created AccountingFinder with filters | Entity-level queries with optional date/category/tenant filters | AC2, AC3, AC5 |
+| Created GetAccountBookHandler + Controller | CQRS QueryBus pattern, ownership validation via EntityFinder | AC5, AC7 |
+| Created accounting-api.ts + use-accounting.ts | Frontend API layer and React Query hook | AC2, AC3 |
+| Created /accounting page + 4 components | Server Component page, content, table, filters, summary | AC1, AC4, AC8, AC9 |
+| Created OPERATION_TYPE_LABELS constant | Category badge labels in French | AC8 |
+| Created 4 frontend test suites (21 tests) | Component tests for table, filters, content, summary | AC10 |
+| Created 3 backend test suites (17 tests) | Handler, controller, finder tests | AC10 |
+| Created E2E accounting.spec.ts (4 tests) | Seed, empty state, debit/credit verification | AC10 |
+| Created hook test (4 tests) | useAccountBook loading/success/filter forwarding | AC10 |
+| Added ActionFeed "Consultez votre livre de comptes" | BookOpen icon, low priority, shown when rent calls exist | AC1 |
+| Full regression: 1493 backend + 793 frontend tests | All green, no regressions | AC11 |
+
+### Code Review Fixes (12 findings, 12 fixes)
+
+| # | Sev | Finding | Fix |
+|---|-----|---------|-----|
+| H1 | High | AC9 responsive: no tablet breakpoint, Type column shown at all sizes | Added `hidden lg:table-cell` to Type and Locataire columns |
+| H2 | High | getTotalBalance not filtered by tenantId — shows entity total even when tenant filter active | Added `tenantId?` param to getTotalBalance, pass from handler |
+| M1 | Med | Unsafe `as unknown as` double cast in finder where clause building | Changed to `Prisma.AccountEntryWhereInput` typed where clause |
+| M2 | Med | No DTO validation on query params (startDate, endDate, category, tenantId) | Created `GetAccountBookQueryParamsDto` with class-validator decorators |
+| M3 | Med | Story File List count "20" is wrong (actually 23 new files) | Fixed to 21 (original 20 + new DTO file) |
+| M4 | Med | Payment badge should be green (success) but uses `secondary` (grey) | Added `CATEGORY_BADGE_CLASS` with green CSS classes (no success variant) |
+| M5 | Med | Date parsing timezone risk — `new Date(dateStr)` can shift day | Added `timeZone: "UTC"` to `toLocaleDateString()` |
+| M6 | Med | Finder test doesn't verify SQL query content — only checks call count | Added tests verifying tagged template args (entityId, tenantId) |
+| L1 | Low | AccountingFinder exported from module but unused externally | Removed `exports: [AccountingFinder]` |
+| L2 | Low | availableCategories computed from filtered entries — disappear when filtering | Moved to backend: `getAvailableCategories()` using `groupBy` (unfiltered) |
+| L3 | Low | No aria-label on table | Added `aria-label="Livre de comptes"` to `<table>` |
+| L4 | Low | Redundant "use client" on table component (only used by client parent) | Removed `"use client"` directive |

@@ -119,9 +119,10 @@ model Tenant {
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
-  entity    OwnershipEntity @relation(fields: [entityId], references: [id])
-  leases    Lease[]
-  rentCalls RentCall[]
+  entity         OwnershipEntity @relation(fields: [entityId], references: [id])
+  leases         Lease[]
+  rentCalls      RentCall[]
+  accountEntries AccountEntry[]
 
   @@map("tenants")
   @@index([entityId])
@@ -240,6 +241,8 @@ model AccountEntry {
   referenceMonth String   @map("reference_month")
   entryDate      DateTime @map("entry_date")
   createdAt      DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
 
   @@map("account_entries")
   @@unique([referenceId, category])

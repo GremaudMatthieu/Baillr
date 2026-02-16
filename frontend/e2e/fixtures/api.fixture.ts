@@ -1005,6 +1005,38 @@ export class ApiHelper {
     );
   }
 
+  async getAccountBook(entityId: string) {
+    const response = await this.request.get(
+      `${API_BASE}/api/entities/${entityId}/accounting`,
+      { headers: this.headers() },
+    );
+    if (!response.ok()) {
+      throw new Error(`Failed to get account book: ${response.status()}`);
+    }
+    return (await response.json()) as {
+      data: {
+        entries: Record<string, unknown>[];
+        totalBalanceCents: number;
+      };
+    };
+  }
+
+  async waitForAccountEntryCount(
+    entityId: string,
+    expectedCount: number,
+    timeoutMs = 10000,
+  ) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      const { data } = await this.getAccountBook(entityId);
+      if (data.entries.length >= expectedCount) return data;
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    throw new Error(
+      `Timed out waiting for ${expectedCount} account entries (${timeoutMs}ms)`,
+    );
+  }
+
   getCreatedEntityIds() {
     return [...this.createdEntityIds];
   }

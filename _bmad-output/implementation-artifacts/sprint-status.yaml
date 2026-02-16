@@ -117,7 +117,7 @@ development_status:
 
   # Epic 8: Dashboard, Accounting & Monitoring (8 stories)
   epic-8: in-progress
-  8-1-implement-event-sourced-account-book-livre-de-comptes: ready-for-dev
+  8-1-implement-event-sourced-account-book-livre-de-comptes: done # reviewed 2026-02-16, 12 findings (2H/6M/4L), 12 fixes — tenantId-filtered getTotalBalance H2, tablet responsive hidden lg:table-cell H1, Prisma.AccountEntryWhereInput typed where M1, GetAccountBookQueryParamsDto with class-validator M2, green payment badge M4, UTC timezone date parsing M5, SQL query test verification M6, removed unused export L1, backend getAvailableCategories L2, aria-label table L3, removed redundant "use client" L4, File List count M3
   8-2-view-and-filter-the-account-book: backlog
   8-3-export-account-book-as-excel-for-2072-tax-declaration: backlog
   8-4-display-dashboard-with-unit-payment-status-mosaic: backlog
