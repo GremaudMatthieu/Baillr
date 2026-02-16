@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCurrentEntity } from "@/hooks/use-current-entity";
 import { useAccountBook } from "@/hooks/use-accounting";
 import { useTenants } from "@/hooks/use-tenants";
+import { useDownloadAccountBookExcel } from "@/hooks/use-download-account-book-excel";
 import { AccountBookSummary } from "./account-book-summary";
 import { AccountBookFilters } from "./account-book-filters";
 import { AccountBookTable } from "./account-book-table";
@@ -50,11 +51,26 @@ function AccountBookInner({ entityId }: { entityId: string }) {
   const [filters, setFilters] = useState<AccountingFilters>({});
   const { data, isLoading, isError } = useAccountBook(entityId, filters);
   const { data: tenants } = useTenants(entityId);
+  const { downloadExcel, isDownloading } =
+    useDownloadAccountBookExcel(entityId);
 
   return (
     <div>
-      <div className="mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Livre de comptes</h1>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => downloadExcel(filters)}
+          disabled={!data || data.entries.length === 0 || isDownloading}
+        >
+          {isDownloading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="mr-2 h-4 w-4" />
+          )}
+          Exporter en Excel
+        </Button>
       </div>
 
       <div className="space-y-4">
