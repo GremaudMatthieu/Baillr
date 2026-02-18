@@ -9,9 +9,20 @@ import {
   type RentCallData,
   type GenerationResult,
   type SendResult,
+  type DashboardKpisData,
 } from "@/lib/api/rent-calls-api";
 
-export type { RentCallData, GenerationResult, SendResult };
+export type { RentCallData, GenerationResult, SendResult, DashboardKpisData };
+
+export function useDashboardKpis(entityId: string, month: string) {
+  const api = useRentCallsApi();
+  return useQuery({
+    queryKey: ["entities", entityId, "dashboard-kpis", month],
+    queryFn: () => api.getDashboardKpis(entityId, month),
+    enabled: !!entityId && !!month,
+    staleTime: 30_000,
+  });
+}
 
 export function useRentCalls(entityId: string, month?: string) {
   const api = useRentCallsApi();
@@ -77,6 +88,9 @@ export function useSendRentCallsByEmail(entityId: string) {
           queryKey: ["entities", entityId, "units"],
         });
         void queryClient.invalidateQueries({
+          queryKey: ["entities", entityId, "dashboard-kpis"],
+        });
+        void queryClient.invalidateQueries({
           queryKey: ["entities"],
         });
       }, 1500);
@@ -96,6 +110,9 @@ export function useGenerateRentCalls(entityId: string) {
         });
         void queryClient.invalidateQueries({
           queryKey: ["entities", entityId, "leases"],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["entities", entityId, "dashboard-kpis"],
         });
         void queryClient.invalidateQueries({
           queryKey: ["entities"],

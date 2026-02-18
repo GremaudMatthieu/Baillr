@@ -92,7 +92,7 @@ describe("UnitMosaic", () => {
       isError: false,
     });
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
     // Skeleton has no text content but should be rendered
     expect(screen.queryByText("Aucun lot configure")).not.toBeInTheDocument();
   });
@@ -104,7 +104,7 @@ describe("UnitMosaic", () => {
       isError: true,
     });
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
     expect(
       screen.getByText("Impossible de charger les lots"),
     ).toBeInTheDocument();
@@ -118,7 +118,7 @@ describe("UnitMosaic", () => {
       isError: false,
     });
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
     expect(screen.getByText("Aucun lot configure")).toBeInTheDocument();
   });
 
@@ -129,7 +129,7 @@ describe("UnitMosaic", () => {
       isError: false,
     });
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
     expect(screen.getByText("Résidence Les Pins")).toBeInTheDocument();
     expect(screen.getByText("Résidence Les Chênes")).toBeInTheDocument();
   });
@@ -141,7 +141,7 @@ describe("UnitMosaic", () => {
       isError: false,
     });
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
     expect(screen.getByText("Apt 101")).toBeInTheDocument();
     expect(screen.getByText("Parking P01")).toBeInTheDocument();
     expect(screen.getByText("Commerce 1")).toBeInTheDocument();
@@ -154,7 +154,7 @@ describe("UnitMosaic", () => {
       isError: false,
     });
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
     expect(screen.getByText("Appartement")).toBeInTheDocument();
     expect(screen.getByText("Parking")).toBeInTheDocument();
     expect(screen.getByText("Local commercial")).toBeInTheDocument();
@@ -167,7 +167,7 @@ describe("UnitMosaic", () => {
       isError: false,
     });
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
     expect(screen.getByText("Etage 1 · 45.5 m²")).toBeInTheDocument();
   });
 
@@ -178,7 +178,7 @@ describe("UnitMosaic", () => {
       isError: false,
     });
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
     // Parking with surfaceArea=0 should show empty string (no floor, no surface)
     expect(screen.queryByText("0 m²")).not.toBeInTheDocument();
   });
@@ -191,7 +191,7 @@ describe("UnitMosaic", () => {
       isError: false,
     });
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
     await user.click(screen.getByText("Apt 101"));
     expect(mockPush).toHaveBeenCalledWith("/properties/prop-1/units/unit-1");
   });
@@ -203,7 +203,7 @@ describe("UnitMosaic", () => {
       isError: false,
     });
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
     expect(
       screen.getByRole("grid", { name: "Mosaique des lots" }),
     ).toBeInTheDocument();
@@ -216,7 +216,7 @@ describe("UnitMosaic", () => {
       isError: false,
     });
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
     expect(
       screen.getByRole("gridcell", { name: /Apt 101.*Appartement/i }),
     ).toBeInTheDocument();
@@ -234,7 +234,7 @@ describe("UnitMosaic", () => {
       ],
     });
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
     const unpaidTile = screen.getByRole("gridcell", { name: /Apt 101.*impayé/i });
     expect(unpaidTile).toBeInTheDocument();
     expect(unpaidTile.className).toContain("bg-red-100");
@@ -253,7 +253,7 @@ describe("UnitMosaic", () => {
       ],
     });
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
     const tile = screen.getByRole("gridcell", { name: /Apt 101.*impayé/i });
     expect(tile.className).toContain("bg-red-100");
     expect(tile.className).not.toContain("bg-green-100");
@@ -267,7 +267,7 @@ describe("UnitMosaic", () => {
       isError: false,
     });
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
 
     // Focus the first tile
     const firstTile = screen.getByRole("gridcell", { name: /Apt 101/i });

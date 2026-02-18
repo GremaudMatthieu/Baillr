@@ -57,7 +57,7 @@ describe("UnitMosaic — month selector", () => {
   it("should render month selector label", () => {
     mockUseRentCalls.mockReturnValue({ data: [] });
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
 
     expect(screen.getByText("Mois")).toBeInTheDocument();
   });
@@ -65,7 +65,7 @@ describe("UnitMosaic — month selector", () => {
   it("should render month selector with current month selected", () => {
     mockUseRentCalls.mockReturnValue({ data: [] });
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
 
     // The Select trigger should be present
     const trigger = screen.getByRole("combobox");
@@ -75,7 +75,7 @@ describe("UnitMosaic — month selector", () => {
   it("should call useRentCalls with current month by default", () => {
     mockUseRentCalls.mockReturnValue({ data: [] });
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
 
     // Should have been called with entityId and current month
     expect(mockUseRentCalls).toHaveBeenCalled();

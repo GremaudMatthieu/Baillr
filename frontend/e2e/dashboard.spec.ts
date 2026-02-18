@@ -199,4 +199,64 @@ test.describe('Dashboard UnitMosaic payment status', () => {
     const selector = page.getByRole('combobox');
     await expect(selector).toBeVisible();
   });
+
+  // --- Story 8.5: KPI tiles ---
+
+  test('8.5.1 — dashboard displays 5 KPI tiles with correct labels', async ({
+    page,
+  }) => {
+    test.skip(!entityId, 'Requires seed data');
+
+    await page.goto('/dashboard');
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Tableau de bord' }),
+    ).toBeVisible();
+
+    // Wait for KPI tiles to load (check for a known label)
+    await expect(
+      page.getByText("Taux d'encaissement"),
+    ).toBeVisible({ timeout: 10_000 });
+
+    // All 5 KPI labels should be visible
+    await expect(page.getByText("Taux d'encaissement")).toBeVisible();
+    await expect(page.getByText('Loyers appelés')).toBeVisible();
+    await expect(page.getByText('Paiements reçus')).toBeVisible();
+    await expect(page.getByText('Impayés')).toBeVisible();
+    await expect(page.getByText('Encours total')).toBeVisible();
+  });
+
+  test('8.5.2 — collection rate displays as percentage', async ({
+    page,
+  }) => {
+    test.skip(!entityId, 'Requires seed data');
+
+    await page.goto('/dashboard');
+
+    // Wait for KPI tiles
+    await expect(
+      page.getByText("Taux d'encaissement"),
+    ).toBeVisible({ timeout: 10_000 });
+
+    // Collection rate value should match "XX,X %" format (e.g., "0,0 %", "85,5 %")
+    const rateText = page.locator('text=/\\d+,\\d\\s%/');
+    await expect(rateText.first()).toBeVisible();
+  });
+
+  test('8.5.3 — amounts display in French number format', async ({
+    page,
+  }) => {
+    test.skip(!entityId, 'Requires seed data');
+
+    await page.goto('/dashboard');
+
+    // Wait for KPI tiles
+    await expect(
+      page.getByText('Loyers appelés'),
+    ).toBeVisible({ timeout: 10_000 });
+
+    // At least one amount should be visible with French currency format (contains "€")
+    // The rent call was generated for 750€, so "Loyers appelés" should show a value with €
+    const euroAmounts = page.locator('text=/\\d.*€/');
+    await expect(euroAmounts.first()).toBeVisible();
+  });
 });

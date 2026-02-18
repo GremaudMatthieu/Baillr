@@ -53,7 +53,7 @@ vi.mock("@/hooks/use-unpaid-rent-calls", () => ({
 
 describe("UnitMosaicLegend", () => {
   it("should render legend with 5 status items", () => {
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
 
     const legend = screen.getByRole("list", { name: "Légende des statuts" });
     expect(legend).toBeInTheDocument();
@@ -63,7 +63,7 @@ describe("UnitMosaicLegend", () => {
   });
 
   it("should display all 5 status labels", () => {
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
 
     expect(screen.getByText("Payé")).toBeInTheDocument();
     expect(screen.getByText("Partiellement payé")).toBeInTheDocument();
@@ -73,7 +73,7 @@ describe("UnitMosaicLegend", () => {
   });
 
   it("should have color indicators for each status", () => {
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
 
     const items = screen.getAllByRole("listitem");
     // Each list item should contain a color indicator span

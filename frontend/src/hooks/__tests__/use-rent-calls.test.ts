@@ -7,12 +7,14 @@ import React from "react";
 const mockGenerateRentCalls = vi.fn();
 const mockGetRentCalls = vi.fn();
 const mockSendRentCallsByEmail = vi.fn();
+const mockGetDashboardKpis = vi.fn();
 
 vi.mock("@/lib/api/rent-calls-api", () => ({
   useRentCallsApi: () => ({
     generateRentCalls: mockGenerateRentCalls,
     getRentCalls: mockGetRentCalls,
     sendRentCallsByEmail: mockSendRentCallsByEmail,
+    getDashboardKpis: mockGetDashboardKpis,
   }),
 }));
 
@@ -20,6 +22,7 @@ import {
   useRentCalls,
   useGenerateRentCalls,
   useSendRentCallsByEmail,
+  useDashboardKpis,
 } from "../use-rent-calls";
 
 function createWrapper() {
@@ -155,5 +158,55 @@ describe("useSendRentCallsByEmail", () => {
     expect(result.current.data?.failures).toEqual(["Tenant A", "Tenant B"]);
     expect(result.current.data?.sent).toBe(0);
     expect(result.current.data?.failed).toBe(2);
+  });
+});
+
+describe("useDashboardKpis", () => {
+  it("should fetch KPIs for entity and month", async () => {
+    const mockKpis = {
+      currentMonth: {
+        collectionRatePercent: 85.5,
+        totalCalledCents: 200000,
+        totalReceivedCents: 171000,
+        unpaidCount: 1,
+        outstandingDebtCents: 29000,
+      },
+      previousMonth: {
+        collectionRatePercent: 100,
+        totalCalledCents: 180000,
+        totalReceivedCents: 180000,
+        unpaidCount: 0,
+        outstandingDebtCents: 0,
+      },
+    };
+    mockGetDashboardKpis.mockResolvedValue(mockKpis);
+
+    const { result } = renderHook(
+      () => useDashboardKpis("entity-1", "2026-02"),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual(mockKpis);
+    expect(mockGetDashboardKpis).toHaveBeenCalledWith("entity-1", "2026-02");
+  });
+
+  it("should not fetch when entityId is empty", () => {
+    const { result } = renderHook(
+      () => useDashboardKpis("", "2026-02"),
+      { wrapper: createWrapper() },
+    );
+
+    expect(result.current.isFetching).toBe(false);
+    expect(mockGetDashboardKpis).not.toHaveBeenCalled();
+  });
+
+  it("should not fetch when month is empty", () => {
+    const { result } = renderHook(
+      () => useDashboardKpis("entity-1", ""),
+      { wrapper: createWrapper() },
+    );
+
+    expect(result.current.isFetching).toBe(false);
   });
 });

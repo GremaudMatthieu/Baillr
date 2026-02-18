@@ -66,7 +66,7 @@ describe("UnitMosaic — lease occupancy", () => {
   it("should show vacant status when no leases exist", () => {
     mockLeasesData = [];
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
 
     const apt1 = screen.getByRole("gridcell", {
       name: /Apt 1.*vacant/,
@@ -78,7 +78,7 @@ describe("UnitMosaic — lease occupancy", () => {
   it("should show occupied status when lease exists for unit (no endDate)", () => {
     mockLeasesData = [{ id: "l1", unitId: "u1", endDate: null }];
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
 
     const apt1 = screen.getByRole("gridcell", {
       name: /Apt 1.*occupé/,
@@ -97,7 +97,7 @@ describe("UnitMosaic — lease occupancy", () => {
   it("should show vacant status when lease has past endDate (terminated)", () => {
     mockLeasesData = [{ id: "l1", unitId: "u1", endDate: "2020-01-01T00:00:00Z" }];
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
 
     const apt1 = screen.getByRole("gridcell", {
       name: /Apt 1.*vacant/,
@@ -109,7 +109,7 @@ describe("UnitMosaic — lease occupancy", () => {
   it("should show occupied status when lease has future endDate", () => {
     mockLeasesData = [{ id: "l1", unitId: "u1", endDate: "2099-12-31T00:00:00Z" }];
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
 
     const apt1 = screen.getByRole("gridcell", {
       name: /Apt 1.*occupé/,

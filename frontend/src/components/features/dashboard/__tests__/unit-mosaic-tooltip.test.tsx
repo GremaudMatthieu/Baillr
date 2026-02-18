@@ -90,7 +90,7 @@ describe("UnitMosaic — tooltip integration", () => {
       },
     ];
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
 
     // Each tile button should be wrapped in a TooltipTrigger
     const tiles = screen.getAllByRole("gridcell");
@@ -116,7 +116,7 @@ describe("UnitMosaic — tooltip integration", () => {
       },
     ];
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
 
     const paidTile = screen.getByRole("gridcell", { name: /Apt 1.*payé/ });
     expect(paidTile).toBeInTheDocument();
@@ -126,7 +126,7 @@ describe("UnitMosaic — tooltip integration", () => {
   it("should render tooltip trigger on vacant tile with correct aria label", () => {
     mockRentCallsData = [];
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
 
     // u2 has no lease → vacant
     const vacantTile = screen.getByRole("gridcell", { name: /Apt 2.*vacant/ });
@@ -151,7 +151,7 @@ describe("UnitMosaic — tooltip integration", () => {
       },
     ];
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
 
     const partialTile = screen.getByRole("gridcell", { name: /Apt 1.*partiellement payé/ });
     expect(partialTile).toBeInTheDocument();
@@ -161,7 +161,7 @@ describe("UnitMosaic — tooltip integration", () => {
   it("should render all tiles with tooltip triggers wrapping gridcells", () => {
     mockRentCallsData = [];
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
 
     // All gridcell elements should have tooltip-trigger data-slot
     const gridcells = screen.getAllByRole("gridcell");

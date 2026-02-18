@@ -9,13 +9,36 @@ vi.mock("@/hooks/use-current-entity", () => ({
   useCurrentEntity: () => mockUseCurrentEntity(),
 }));
 
-vi.mock("../kpi-tiles-placeholder", () => ({
-  KpiTilesPlaceholder: () => <div data-testid="kpi-tiles-placeholder" />,
+vi.mock("@/lib/month-options", () => ({
+  getCurrentMonth: () => "2026-02",
+  getMonthOptions: () => [{ value: "2026-02", label: "février 2026" }],
+}));
+
+vi.mock("../kpi-tiles", () => ({
+  KpiTiles: ({
+    entityId,
+    selectedMonth,
+  }: {
+    entityId: string;
+    selectedMonth: string;
+  }) => (
+    <div data-testid="kpi-tiles">
+      {entityId}-{selectedMonth}
+    </div>
+  ),
 }));
 
 vi.mock("../unit-mosaic", () => ({
-  UnitMosaic: ({ entityId }: { entityId: string }) => (
-    <div data-testid="unit-mosaic">{entityId}</div>
+  UnitMosaic: ({
+    entityId,
+    selectedMonth,
+  }: {
+    entityId: string;
+    selectedMonth: string;
+  }) => (
+    <div data-testid="unit-mosaic">
+      {entityId}-{selectedMonth}
+    </div>
   ),
 }));
 
@@ -24,7 +47,7 @@ vi.mock("../unit-mosaic-placeholder", () => ({
 }));
 
 describe("DashboardContent", () => {
-  it("should render KPI tiles placeholder", () => {
+  it("should render KpiTiles when entityId is available", () => {
     mockUseCurrentEntity.mockReturnValue({
       entityId: "entity-1",
       entity: null,
@@ -34,7 +57,10 @@ describe("DashboardContent", () => {
     });
 
     renderWithProviders(<DashboardContent />);
-    expect(screen.getByTestId("kpi-tiles-placeholder")).toBeInTheDocument();
+    expect(screen.getByTestId("kpi-tiles")).toBeInTheDocument();
+    expect(screen.getByTestId("kpi-tiles")).toHaveTextContent(
+      "entity-1-2026-02",
+    );
   });
 
   it("should render UnitMosaic when entityId is available", () => {
@@ -48,10 +74,12 @@ describe("DashboardContent", () => {
 
     renderWithProviders(<DashboardContent />);
     expect(screen.getByTestId("unit-mosaic")).toBeInTheDocument();
-    expect(screen.getByTestId("unit-mosaic")).toHaveTextContent("entity-1");
+    expect(screen.getByTestId("unit-mosaic")).toHaveTextContent(
+      "entity-1-2026-02",
+    );
   });
 
-  it("should render UnitMosaicPlaceholder when no entityId", () => {
+  it("should render placeholders when no entityId", () => {
     mockUseCurrentEntity.mockReturnValue({
       entityId: null,
       entity: null,
@@ -64,6 +92,7 @@ describe("DashboardContent", () => {
     expect(
       screen.getByTestId("unit-mosaic-placeholder"),
     ).toBeInTheDocument();
+    expect(screen.queryByTestId("kpi-tiles")).not.toBeInTheDocument();
     expect(screen.queryByTestId("unit-mosaic")).not.toBeInTheDocument();
   });
 });

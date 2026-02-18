@@ -87,7 +87,7 @@ describe("UnitMosaic — paid rent call status", () => {
       { id: "rc1", unitId: "u1", sentAt: "2026-02-10T10:00:00.000Z", paidAt: "2026-02-12T14:00:00.000Z", paymentStatus: "paid" },
     ];
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
 
     const apt1 = screen.getByRole("gridcell", {
       name: /Apt 1.*payé/,
@@ -102,7 +102,7 @@ describe("UnitMosaic — paid rent call status", () => {
       { id: "rc2", unitId: "u2", sentAt: "2026-02-10T10:00:00.000Z", paidAt: null, paymentStatus: null },
     ];
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
 
     // u1 is paid → green + payé
     const apt1 = screen.getByRole("gridcell", {
@@ -122,7 +122,7 @@ describe("UnitMosaic — paid rent call status", () => {
       { id: "rc1", unitId: "u1", sentAt: "2026-02-10T10:00:00.000Z", paidAt: "2026-02-12T14:00:00.000Z", paymentStatus: "paid" },
     ];
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
 
     // u3 has lease but no rent call → occupied green
     const apt3 = screen.getByRole("gridcell", {
@@ -137,7 +137,7 @@ describe("UnitMosaic — paid rent call status", () => {
       { id: "rc1", unitId: "u1", sentAt: "2026-02-10T10:00:00.000Z", paidAt: "2026-02-12T14:00:00.000Z", paymentStatus: "paid" },
     ];
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
 
     // Should NOT match "envoyé" for u1
     expect(
@@ -155,7 +155,7 @@ describe("UnitMosaic — paid rent call status", () => {
       { id: "rc1", unitId: "u1", sentAt: "2026-02-10T10:00:00.000Z", paidAt: null, paymentStatus: "partial" },
     ];
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
 
     const apt1 = screen.getByRole("gridcell", {
       name: /Apt 1.*partiellement payé/,
@@ -170,7 +170,7 @@ describe("UnitMosaic — paid rent call status", () => {
       { id: "rc1", unitId: "u1", sentAt: "2026-02-10T10:00:00.000Z", paidAt: "2026-02-12T14:00:00.000Z", paymentStatus: "overpaid" },
     ];
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
 
     const apt1 = screen.getByRole("gridcell", {
       name: /Apt 1.*payé/,

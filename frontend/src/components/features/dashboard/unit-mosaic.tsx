@@ -24,13 +24,15 @@ import { useLeases } from "@/hooks/use-leases";
 import { useRentCalls } from "@/hooks/use-rent-calls";
 import { useUnpaidRentCalls } from "@/hooks/use-unpaid-rent-calls";
 import { UNIT_TYPE_LABELS } from "@/lib/constants/unit-types";
-import { getCurrentMonth, getMonthOptions } from "@/lib/month-options";
+import { getMonthOptions } from "@/lib/month-options";
 import { formatCurrency } from "@/lib/utils/format-currency";
 import type { UnitWithPropertyData } from "@/lib/api/units-api";
 import type { RentCallData } from "@/lib/api/rent-calls-api";
 
 interface UnitMosaicProps {
   entityId: string;
+  selectedMonth: string;
+  onMonthChange: (month: string) => void;
 }
 
 function groupByProperty(
@@ -225,13 +227,12 @@ export function buildTooltipContent(
   );
 }
 
-export function UnitMosaic({ entityId }: UnitMosaicProps) {
+export function UnitMosaic({ entityId, selectedMonth, onMonthChange }: UnitMosaicProps) {
   const router = useRouter();
   const { data: units, isLoading, isError } = useEntityUnits(entityId);
   const { data: leases } = useLeases(entityId);
   const tileRefs = React.useRef<(HTMLButtonElement | null)[]>([]);
   const [activeIndex, setActiveIndex] = React.useState(0);
-  const [selectedMonth, setSelectedMonth] = React.useState(getCurrentMonth);
 
   const now = React.useMemo(() => new Date(), []);
   const { data: rentCalls } = useRentCalls(entityId, selectedMonth);
@@ -345,7 +346,7 @@ export function UnitMosaic({ entityId }: UnitMosaicProps) {
           <label htmlFor="mosaic-month-selector" className="text-sm font-medium text-muted-foreground">
             Mois
           </label>
-          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+          <Select value={selectedMonth} onValueChange={onMonthChange}>
             <SelectTrigger id="mosaic-month-selector" className="w-[200px]">
               <SelectValue />
             </SelectTrigger>

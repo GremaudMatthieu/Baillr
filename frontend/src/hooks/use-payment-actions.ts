@@ -34,6 +34,9 @@ export function useValidateMatch(entityId: string) {
             queryKey: ["entities", entityId, "rent-calls"],
           });
           void queryClient.invalidateQueries({
+            queryKey: ["entities", entityId, "dashboard-kpis"],
+          });
+          void queryClient.invalidateQueries({
             queryKey: ["entities"],
           });
           if (data.rentCallId) {
@@ -104,6 +107,9 @@ export function useManualAssignMatch(entityId: string) {
         setTimeout(() => {
           void queryClient.invalidateQueries({
             queryKey: ["entities", entityId, "rent-calls"],
+          });
+          void queryClient.invalidateQueries({
+            queryKey: ["entities", entityId, "dashboard-kpis"],
           });
           void queryClient.invalidateQueries({
             queryKey: ["entities"],

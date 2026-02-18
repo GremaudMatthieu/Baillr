@@ -131,6 +131,19 @@ export interface UnpaidRentCallData {
   daysLate: number;
 }
 
+export interface MonthKpisData {
+  collectionRatePercent: number;
+  totalCalledCents: number;
+  totalReceivedCents: number;
+  unpaidCount: number;
+  outstandingDebtCents: number;
+}
+
+export interface DashboardKpisData {
+  currentMonth: MonthKpisData;
+  previousMonth: MonthKpisData;
+}
+
 export function useRentCallsApi() {
   const { getToken } = useAuth();
 
@@ -195,6 +208,17 @@ export function useRentCallsApi() {
       );
       const body = (await res.json()) as { data: UnpaidRentCallData[] };
       return body.data;
+    },
+
+    async getDashboardKpis(
+      entityId: string,
+      month: string,
+    ): Promise<DashboardKpisData> {
+      const res = await fetchWithAuth(
+        `/entities/${entityId}/dashboard-kpis?month=${month}`,
+        getToken,
+      );
+      return (await res.json()) as DashboardKpisData;
     },
 
     async getRentCalls(

@@ -73,7 +73,7 @@ describe("UnitMosaic — sent rent call status", () => {
       { id: "rc1", unitId: "u1", sentAt: "2026-02-10T10:00:00.000Z" },
     ];
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
 
     const apt1 = screen.getByRole("gridcell", {
       name: /Apt 1.*envoyé/,
@@ -94,7 +94,7 @@ describe("UnitMosaic — sent rent call status", () => {
       { id: "rc1", unitId: "u1", sentAt: null },
     ];
 
-    renderWithProviders(<UnitMosaic entityId="entity-1" />);
+    renderWithProviders(<UnitMosaic entityId="entity-1" selectedMonth="2026-02" onMonthChange={() => {}} />);
 
     const apt1 = screen.getByRole("gridcell", {
       name: /Apt 1.*occupé/,

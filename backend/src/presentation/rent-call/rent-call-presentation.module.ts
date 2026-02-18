@@ -12,11 +12,13 @@ import { RecordManualPaymentController } from './controllers/record-manual-payme
 import { GetTenantAccountController } from './controllers/get-tenant-account.controller.js';
 import { GetRentCallPaymentsController } from './controllers/get-rent-call-payments.controller.js';
 import { GetUnpaidRentCallsController } from './controllers/get-unpaid-rent-calls.controller.js';
+import { GetDashboardKpisController } from './controllers/get-dashboard-kpis.controller.js';
 import { GetRentCallsHandler } from './queries/get-rent-calls.handler.js';
 import { GetUnpaidRentCallsHandler } from './queries/get-unpaid-rent-calls.query.js';
 import { GetTenantAccountHandler } from './queries/get-tenant-account.handler.js';
 import { GetRentCallPaymentsHandler } from './queries/get-rent-call-payments.handler.js';
 import { UnpaidRentCallFinder } from './finders/unpaid-rent-call.finder.js';
+import { DashboardKpisFinder } from './finders/dashboard-kpis.finder.js';
 import { GenerateRentCallsForMonthHandler } from '@billing/rent-call/commands/generate-rent-calls-for-month.handler';
 import { SendRentCallsByEmailHandler } from '@billing/rent-call/commands/send-rent-calls-by-email.handler';
 import { RentCallProjection } from './projections/rent-call.projection.js';
@@ -46,6 +48,7 @@ import { RentCallAggregate } from '@billing/rent-call/rent-call.aggregate';
     RecordManualPaymentController,
     GetTenantAccountController,
     GetRentCallPaymentsController,
+    GetDashboardKpisController,
   ],
   providers: [
     GetRentCallsHandler,
@@ -57,6 +60,7 @@ import { RentCallAggregate } from '@billing/rent-call/rent-call.aggregate';
     AccountEntryProjection,
     RentCallFinder,
     UnpaidRentCallFinder,
+    DashboardKpisFinder,
     GetUnpaidRentCallsHandler,
     AccountEntryFinder,
     PaymentFinder,
