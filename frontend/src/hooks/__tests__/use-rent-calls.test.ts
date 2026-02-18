@@ -8,6 +8,7 @@ const mockGenerateRentCalls = vi.fn();
 const mockGetRentCalls = vi.fn();
 const mockSendRentCallsByEmail = vi.fn();
 const mockGetDashboardKpis = vi.fn();
+const mockGetTreasuryChart = vi.fn();
 
 vi.mock("@/lib/api/rent-calls-api", () => ({
   useRentCallsApi: () => ({
@@ -15,6 +16,7 @@ vi.mock("@/lib/api/rent-calls-api", () => ({
     getRentCalls: mockGetRentCalls,
     sendRentCallsByEmail: mockSendRentCallsByEmail,
     getDashboardKpis: mockGetDashboardKpis,
+    getTreasuryChart: mockGetTreasuryChart,
   }),
 }));
 
@@ -23,6 +25,7 @@ import {
   useGenerateRentCalls,
   useSendRentCallsByEmail,
   useDashboardKpis,
+  useTreasuryChart,
 } from "../use-rent-calls";
 
 function createWrapper() {
@@ -208,5 +211,46 @@ describe("useDashboardKpis", () => {
     );
 
     expect(result.current.isFetching).toBe(false);
+  });
+});
+
+describe("useTreasuryChart", () => {
+  it("should fetch treasury chart data for entity", async () => {
+    const mockData = [
+      { month: "2026-01", calledCents: 100000, receivedCents: 80000 },
+      { month: "2026-02", calledCents: 120000, receivedCents: 120000 },
+    ];
+    mockGetTreasuryChart.mockResolvedValue(mockData);
+
+    const { result } = renderHook(
+      () => useTreasuryChart("entity-1", 12),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual(mockData);
+    expect(mockGetTreasuryChart).toHaveBeenCalledWith("entity-1", 12);
+  });
+
+  it("should not fetch when entityId is empty", () => {
+    const { result } = renderHook(
+      () => useTreasuryChart("", 12),
+      { wrapper: createWrapper() },
+    );
+
+    expect(result.current.isFetching).toBe(false);
+    expect(mockGetTreasuryChart).not.toHaveBeenCalled();
+  });
+
+  it("should pass months parameter correctly", async () => {
+    mockGetTreasuryChart.mockResolvedValue([]);
+
+    const { result } = renderHook(
+      () => useTreasuryChart("entity-1", 24),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockGetTreasuryChart).toHaveBeenCalledWith("entity-1", 24);
   });
 });

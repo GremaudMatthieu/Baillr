@@ -37,6 +37,9 @@ export function useValidateMatch(entityId: string) {
             queryKey: ["entities", entityId, "dashboard-kpis"],
           });
           void queryClient.invalidateQueries({
+            queryKey: ["entities", entityId, "treasury-chart"],
+          });
+          void queryClient.invalidateQueries({
             queryKey: ["entities"],
           });
           if (data.rentCallId) {
@@ -110,6 +113,9 @@ export function useManualAssignMatch(entityId: string) {
           });
           void queryClient.invalidateQueries({
             queryKey: ["entities", entityId, "dashboard-kpis"],
+          });
+          void queryClient.invalidateQueries({
+            queryKey: ["entities", entityId, "treasury-chart"],
           });
           void queryClient.invalidateQueries({
             queryKey: ["entities"],

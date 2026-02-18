@@ -46,6 +46,12 @@ vi.mock("../unit-mosaic-placeholder", () => ({
   UnitMosaicPlaceholder: () => <div data-testid="unit-mosaic-placeholder" />,
 }));
 
+vi.mock("../treasury-chart", () => ({
+  TreasuryChart: ({ entityId }: { entityId: string }) => (
+    <div data-testid="treasury-chart">{entityId}</div>
+  ),
+}));
+
 describe("DashboardContent", () => {
   it("should render KpiTiles when entityId is available", () => {
     mockUseCurrentEntity.mockReturnValue({
@@ -79,6 +85,20 @@ describe("DashboardContent", () => {
     );
   });
 
+  it("should render TreasuryChart when entityId is available", () => {
+    mockUseCurrentEntity.mockReturnValue({
+      entityId: "entity-1",
+      entity: null,
+      entities: [],
+      setCurrentEntityId: vi.fn(),
+      isLoading: false,
+    });
+
+    renderWithProviders(<DashboardContent />);
+    expect(screen.getByTestId("treasury-chart")).toBeInTheDocument();
+    expect(screen.getByTestId("treasury-chart")).toHaveTextContent("entity-1");
+  });
+
   it("should render placeholders when no entityId", () => {
     mockUseCurrentEntity.mockReturnValue({
       entityId: null,
@@ -94,5 +114,6 @@ describe("DashboardContent", () => {
     ).toBeInTheDocument();
     expect(screen.queryByTestId("kpi-tiles")).not.toBeInTheDocument();
     expect(screen.queryByTestId("unit-mosaic")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("treasury-chart")).not.toBeInTheDocument();
   });
 });

@@ -6,6 +6,7 @@ import { getCurrentMonth } from "@/lib/month-options";
 import { KpiTiles } from "./kpi-tiles";
 import { UnitMosaic } from "./unit-mosaic";
 import { UnitMosaicPlaceholder } from "./unit-mosaic-placeholder";
+import { TreasuryChart } from "./treasury-chart";
 
 export function DashboardContent() {
   const { entityId } = useCurrentEntity();
@@ -25,6 +26,11 @@ export function DashboardContent() {
             />
           ))}
         </div>
+      )}
+      {resolvedEntityId ? (
+        <TreasuryChart entityId={resolvedEntityId} />
+      ) : (
+        <div className="h-[380px] rounded-lg border-2 border-dashed border-muted-foreground/25" />
       )}
       {resolvedEntityId ? (
         <UnitMosaic

@@ -144,6 +144,12 @@ export interface DashboardKpisData {
   previousMonth: MonthKpisData;
 }
 
+export interface TreasuryMonthData {
+  month: string;
+  calledCents: number;
+  receivedCents: number;
+}
+
 export function useRentCallsApi() {
   const { getToken } = useAuth();
 
@@ -219,6 +225,18 @@ export function useRentCallsApi() {
         getToken,
       );
       return (await res.json()) as DashboardKpisData;
+    },
+
+    async getTreasuryChart(
+      entityId: string,
+      months: number,
+    ): Promise<TreasuryMonthData[]> {
+      const res = await fetchWithAuth(
+        `/entities/${entityId}/treasury-chart?months=${months}`,
+        getToken,
+      );
+      const body = (await res.json()) as { data: TreasuryMonthData[] };
+      return body.data;
     },
 
     async getRentCalls(

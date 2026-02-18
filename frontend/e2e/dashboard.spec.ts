@@ -304,4 +304,84 @@ test.describe('Dashboard UnitMosaic payment status', () => {
     const euroAmounts = page.locator('text=/\\d.*€/');
     await expect(euroAmounts.first()).toBeVisible();
   });
+
+  // --- Story 8.7: Treasury chart ---
+
+  test('8.7.1 — treasury chart container is visible on dashboard', async ({
+    page,
+  }) => {
+    test.skip(!entityId, 'Requires seed data');
+
+    await page.goto('/dashboard');
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Tableau de bord' }),
+    ).toBeVisible();
+
+    // Treasury chart heading should be visible
+    await expect(
+      page.getByText('Trésorerie'),
+    ).toBeVisible({ timeout: 10_000 });
+
+    // Time range selector buttons should be visible
+    await expect(page.getByRole('button', { name: '6 mois' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '12 mois' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '24 mois' })).toBeVisible();
+  });
+
+  test('8.7.2 — time range selector changes active state', async ({
+    page,
+  }) => {
+    test.skip(!entityId, 'Requires seed data');
+
+    await page.goto('/dashboard');
+
+    // Wait for treasury chart
+    await expect(page.getByText('Trésorerie')).toBeVisible({ timeout: 10_000 });
+
+    // 12 months should be active by default
+    const btn12 = page.getByRole('button', { name: '12 mois' });
+    await expect(btn12).toHaveAttribute('aria-pressed', 'true');
+
+    // Click 6 months
+    const btn6 = page.getByRole('button', { name: '6 mois' });
+    await btn6.click();
+    await expect(btn6).toHaveAttribute('aria-pressed', 'true');
+    await expect(btn12).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('8.7.3 — chart renders SVG content with data', async ({
+    page,
+  }) => {
+    test.skip(!entityId, 'Requires seed data');
+
+    await page.goto('/dashboard');
+
+    // Wait for treasury chart
+    await expect(page.getByText('Trésorerie')).toBeVisible({ timeout: 10_000 });
+
+    // Recharts renders SVG — verify an SVG element exists inside the chart area
+    const chartSvg = page.locator('.recharts-wrapper svg');
+    await expect(chartSvg.first()).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('8.7.4 — dashboard with chart loads within performance budget', async ({
+    page,
+  }) => {
+    test.skip(!entityId, 'Requires seed data');
+
+    const startTime = Date.now();
+
+    await page.goto('/dashboard');
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Tableau de bord' }),
+    ).toBeVisible();
+
+    // Wait for treasury chart to be visible
+    await expect(page.getByText('Trésorerie')).toBeVisible({ timeout: 10_000 });
+
+    const loadTime = Date.now() - startTime;
+
+    // AC #7 / NFR4: dashboard loads within 2-second budget (3s for CI tolerance)
+    expect(loadTime).toBeLessThan(3000);
+  });
 });

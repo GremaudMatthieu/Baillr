@@ -36,6 +36,9 @@ export function useRecordManualPayment(entityId: string) {
             queryKey: ["entities", entityId, "dashboard-kpis"],
           });
           void queryClient.invalidateQueries({
+            queryKey: ["entities", entityId, "treasury-chart"],
+          });
+          void queryClient.invalidateQueries({
             queryKey: ["entities"],
           });
           void queryClient.invalidateQueries({
