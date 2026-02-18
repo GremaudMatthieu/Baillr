@@ -120,7 +120,7 @@ development_status:
   8-1-implement-event-sourced-account-book-livre-de-comptes: done # reviewed 2026-02-16, 12 findings (2H/6M/4L), 12 fixes — tenantId-filtered getTotalBalance H2, tablet responsive hidden lg:table-cell H1, Prisma.AccountEntryWhereInput typed where M1, GetAccountBookQueryParamsDto with class-validator M2, green payment badge M4, UTC timezone date parsing M5, SQL query test verification M6, removed unused export L1, backend getAvailableCategories L2, aria-label table L3, removed redundant "use client" L4, File List count M3
   8-2-view-and-filter-the-account-book: done # absorbed by 8.1 — page, table, filters (date range, category, tenant), summary, responsive, 42 tests all already delivered in Story 8.1
   8-3-export-account-book-as-excel-for-2072-tax-declaration: done # reviewed 2026-02-16, 9 findings (1H/5M/3L), 7 fixes — CATEGORY_LABELS sync comment H1, unused param removed M1, grand total balance added M2, click test added M3, fake timers determinism M5, file count fix L1, number format applied L2
-  8-4-display-dashboard-with-unit-payment-status-mosaic: backlog
+  8-4-display-dashboard-with-unit-payment-status-mosaic: done # reviewed 2026-02-18, 12 findings (1C/3H/6M/2L), 10 fixes — middleware.ts rename reverted (C1), controller destructuring (H4), dead findAllByEntityAndMonth removed (M3), STATUS_LABELS consolidated (M4), 5 buildTooltipContent tests (M5), E2E legend 5/5 + perf 3s (H3/M6), File List corrected (H1/H2/M1/M2)
   8-5-display-kpis-and-collection-rate: backlog
   8-6-display-action-feed-with-pending-tasks: backlog
   8-7-display-treasury-chart-income-vs-expenses-over-time: backlog

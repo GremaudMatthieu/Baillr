@@ -5,13 +5,29 @@ import { useRouter } from "next/navigation";
 import { AlertCircle, Building2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useEntityUnits } from "@/hooks/use-units";
 import { useLeases } from "@/hooks/use-leases";
 import { useRentCalls } from "@/hooks/use-rent-calls";
 import { useUnpaidRentCalls } from "@/hooks/use-unpaid-rent-calls";
 import { UNIT_TYPE_LABELS } from "@/lib/constants/unit-types";
+import { getCurrentMonth, getMonthOptions } from "@/lib/month-options";
+import { formatCurrency } from "@/lib/utils/format-currency";
 import type { UnitWithPropertyData } from "@/lib/api/units-api";
+import type { RentCallData } from "@/lib/api/rent-calls-api";
 
 interface UnitMosaicProps {
   entityId: string;
@@ -107,17 +123,121 @@ function formatFloorAndSurface(
   return parts.join(" \u00B7 ");
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  unpaid: "Impayé",
+  paid: "Payé",
+  partial: "Partiellement payé",
+  sent: "Envoyé",
+  occupied: "Occupé",
+  vacant: "Vacant",
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  unpaid: "bg-red-500",
+  paid: "bg-green-500",
+  partial: "bg-amber-500",
+  sent: "bg-orange-400",
+  vacant: "bg-muted-foreground/40",
+};
+
+function UnitMosaicLegend() {
+  const items = [
+    { key: "paid", label: STATUS_LABELS.paid, color: STATUS_COLORS.paid },
+    { key: "partial", label: STATUS_LABELS.partial, color: STATUS_COLORS.partial },
+    { key: "sent", label: STATUS_LABELS.sent, color: STATUS_COLORS.sent },
+    { key: "unpaid", label: STATUS_LABELS.unpaid, color: STATUS_COLORS.unpaid },
+    { key: "vacant", label: STATUS_LABELS.vacant, color: STATUS_COLORS.vacant },
+  ];
+
+  return (
+    <ul className="flex flex-wrap gap-4 text-xs text-muted-foreground" aria-label="Légende des statuts">
+      {items.map((item) => (
+        <li key={item.key} className="flex items-center gap-1.5">
+          <span className={`inline-block h-3 w-3 rounded-sm ${item.color}`} aria-hidden="true" />
+          {item.label}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function getTileStatus(
+  unitId: string,
+  unpaidUnitIds: Set<string>,
+  paidUnitIds: Set<string>,
+  partiallyPaidUnitIds: Set<string>,
+  sentUnitIds: Set<string>,
+  occupiedUnitIds: Set<string>,
+): string {
+  if (unpaidUnitIds.has(unitId)) return "unpaid";
+  if (paidUnitIds.has(unitId)) return "paid";
+  if (partiallyPaidUnitIds.has(unitId)) return "partial";
+  if (sentUnitIds.has(unitId)) return "sent";
+  if (occupiedUnitIds.has(unitId)) return "occupied";
+  return "vacant";
+}
+
+function getStatusLabel(status: string): string {
+  const label = STATUS_LABELS[status];
+  return label ? label.toLowerCase() : status;
+}
+
+function getBgClass(status: string): string {
+  const classes: Record<string, string> = {
+    unpaid: "bg-red-100 dark:bg-red-900/30",
+    paid: "bg-green-100 dark:bg-green-900/30",
+    partial: "bg-amber-100 dark:bg-amber-900/30",
+    sent: "bg-orange-100 dark:bg-orange-900/30",
+    occupied: "bg-green-100 dark:bg-green-900/30",
+    vacant: "bg-muted",
+  };
+  return classes[status] ?? "bg-muted";
+}
+
+/** @internal Exported for testing */
+export function buildTooltipContent(
+  unit: UnitWithPropertyData,
+  status: string,
+  rentCallsByUnitId: Map<string, RentCallData>,
+): React.ReactNode {
+  if (status === "vacant") {
+    return <span>Vacant — Aucun bail actif</span>;
+  }
+
+  const rc = rentCallsByUnitId.get(unit.id);
+  if (!rc) {
+    return <span>Occupé — Aucun appel de loyer</span>;
+  }
+
+  const tenantName = rc.tenantCompanyName ?? `${rc.tenantFirstName} ${rc.tenantLastName}`;
+
+  return (
+    <div className="space-y-0.5">
+      <div>Locataire : {tenantName}</div>
+      <div>Loyer : {formatCurrency(rc.totalAmountCents)}</div>
+      <div>Statut : {getStatusLabel(status)}</div>
+      {status === "partial" && rc.paidAmountCents != null && (
+        <div>
+          Payé : {formatCurrency(rc.paidAmountCents)} / {formatCurrency(rc.totalAmountCents)}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function UnitMosaic({ entityId }: UnitMosaicProps) {
   const router = useRouter();
   const { data: units, isLoading, isError } = useEntityUnits(entityId);
   const { data: leases } = useLeases(entityId);
   const tileRefs = React.useRef<(HTMLButtonElement | null)[]>([]);
   const [activeIndex, setActiveIndex] = React.useState(0);
+  const [selectedMonth, setSelectedMonth] = React.useState(getCurrentMonth);
 
   const now = React.useMemo(() => new Date(), []);
-  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const { data: rentCalls } = useRentCalls(entityId, currentMonth);
+  const { data: rentCalls } = useRentCalls(entityId, selectedMonth);
   const { data: unpaidRentCalls } = useUnpaidRentCalls(entityId);
+
+  const monthOptions = React.useMemo(() => getMonthOptions(), []);
 
   const unpaidUnitIds = React.useMemo(() => {
     if (!unpaidRentCalls) return new Set<string>();
@@ -158,6 +278,15 @@ export function UnitMosaic({ entityId }: UnitMosaicProps) {
         .filter((rc) => rc.sentAt && !rc.paymentStatus)
         .map((rc) => rc.unitId),
     );
+  }, [rentCalls]);
+
+  const rentCallsByUnitId = React.useMemo(() => {
+    const map = new Map<string, RentCallData>();
+    if (!rentCalls) return map;
+    for (const rc of rentCalls) {
+      map.set(rc.unitId, rc);
+    }
+    return map;
   }, [rentCalls]);
 
   if (isLoading) {
@@ -210,85 +339,98 @@ export function UnitMosaic({ entityId }: UnitMosaicProps) {
   }
 
   return (
-    <div
-      className="space-y-6"
-      role="grid"
-      aria-label="Mosaique des lots"
-      onKeyDown={handleGridKeyDown}
-    >
-      {Array.from(groups.entries()).map(
-        ([propertyId, { propertyName, units: propertyUnits }]) => (
-          <section key={propertyId} aria-label={propertyName}>
-            <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
-              {propertyName}
-            </h3>
-            <div
-              className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-              role="row"
-            >
-              {propertyUnits.map((unit) => {
-                const idx = unitIndexMap.get(unit.id) ?? 0;
-                const isUnpaid = unpaidUnitIds.has(unit.id);
-                const isOccupied = occupiedUnitIds.has(unit.id);
-                const isPaid = paidUnitIds.has(unit.id);
-                const isPartiallyPaid = partiallyPaidUnitIds.has(unit.id);
-                const isSent = sentUnitIds.has(unit.id);
-                const statusLabel = isUnpaid
-                  ? "impayé"
-                  : isPaid
-                    ? "payé"
-                    : isPartiallyPaid
-                      ? "partiellement payé"
-                      : isSent
-                        ? "envoyé"
-                        : isOccupied
-                          ? "occupé"
-                          : "vacant";
-                const bgClass = isUnpaid
-                  ? "bg-red-100 dark:bg-red-900/30"
-                  : isPaid
-                    ? "bg-green-100 dark:bg-green-900/30"
-                    : isPartiallyPaid
-                      ? "bg-amber-100 dark:bg-amber-900/30"
-                      : isSent
-                        ? "bg-orange-100 dark:bg-orange-900/30"
-                        : isOccupied
-                          ? "bg-green-100 dark:bg-green-900/30"
-                          : "bg-muted";
-                return (
-                  <button
-                    key={unit.id}
-                    ref={(el) => {
-                      tileRefs.current[idx] = el;
-                    }}
-                    type="button"
-                    role="gridcell"
-                    tabIndex={idx === safeIndex ? 0 : -1}
-                    className={`flex min-w-[120px] cursor-pointer flex-col items-start rounded-lg ${bgClass} p-3 text-left transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none`}
-                    onClick={() =>
-                      router.push(
-                        `/properties/${unit.propertyId}/units/${unit.id}`,
-                      )
-                    }
-                    onFocus={() => setActiveIndex(idx)}
-                    aria-label={`${unit.identifier}, ${UNIT_TYPE_LABELS[unit.type] ?? unit.type}, ${statusLabel}`}
-                  >
-                    <span className="text-sm font-medium">
-                      {unit.identifier}
-                    </span>
-                    <Badge variant="secondary" className="mt-1">
-                      {UNIT_TYPE_LABELS[unit.type] ?? unit.type}
-                    </Badge>
-                    <span className="mt-1 text-xs text-muted-foreground">
-                      {formatFloorAndSurface(unit.floor, unit.surfaceArea)}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        ),
-      )}
-    </div>
+    <TooltipProvider>
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <label htmlFor="mosaic-month-selector" className="text-sm font-medium text-muted-foreground">
+            Mois
+          </label>
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+            <SelectTrigger id="mosaic-month-selector" className="w-[200px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {monthOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div
+          className="space-y-6"
+          role="grid"
+          aria-label="Mosaique des lots"
+          onKeyDown={handleGridKeyDown}
+        >
+          {Array.from(groups.entries()).map(
+            ([propertyId, { propertyName, units: propertyUnits }]) => (
+              <section key={propertyId} aria-label={propertyName}>
+                <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
+                  {propertyName}
+                </h3>
+                <div
+                  className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+                  role="row"
+                >
+                  {propertyUnits.map((unit) => {
+                    const idx = unitIndexMap.get(unit.id) ?? 0;
+                    const status = getTileStatus(
+                      unit.id,
+                      unpaidUnitIds,
+                      paidUnitIds,
+                      partiallyPaidUnitIds,
+                      sentUnitIds,
+                      occupiedUnitIds,
+                    );
+                    const statusLabel = getStatusLabel(status);
+                    const bgClass = getBgClass(status);
+                    return (
+                      <Tooltip key={unit.id}>
+                        <TooltipTrigger asChild>
+                          <button
+                            ref={(el) => {
+                              tileRefs.current[idx] = el;
+                            }}
+                            type="button"
+                            role="gridcell"
+                            tabIndex={idx === safeIndex ? 0 : -1}
+                            className={`flex min-w-[120px] cursor-pointer flex-col items-start rounded-lg ${bgClass} p-3 text-left transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none`}
+                            onClick={() =>
+                              router.push(
+                                `/properties/${unit.propertyId}/units/${unit.id}`,
+                              )
+                            }
+                            onFocus={() => setActiveIndex(idx)}
+                            aria-label={`${unit.identifier}, ${UNIT_TYPE_LABELS[unit.type] ?? unit.type}, ${statusLabel}`}
+                          >
+                            <span className="text-sm font-medium">
+                              {unit.identifier}
+                            </span>
+                            <Badge variant="secondary" className="mt-1">
+                              {UNIT_TYPE_LABELS[unit.type] ?? unit.type}
+                            </Badge>
+                            <span className="mt-1 text-xs text-muted-foreground">
+                              {formatFloorAndSurface(unit.floor, unit.surfaceArea)}
+                            </span>
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {buildTooltipContent(unit, status, rentCallsByUnitId)}
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+                </div>
+              </section>
+            ),
+          )}
+        </div>
+
+        <UnitMosaicLegend />
+      </div>
+    </TooltipProvider>
   );
 }

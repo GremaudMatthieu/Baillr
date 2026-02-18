@@ -33,6 +33,10 @@ export interface RentCallData {
   paymentStatus: "partial" | "paid" | "overpaid" | null;
   remainingBalanceCents: number | null;
   overpaymentCents: number | null;
+  tenantFirstName: string;
+  tenantLastName: string;
+  tenantCompanyName: string | null;
+  tenantType: string;
   createdAt: string;
 }
 

@@ -37,6 +37,10 @@ const baseRentCall: RentCallData = {
   paymentStatus: null,
   remainingBalanceCents: null,
   overpaymentCents: null,
+  tenantFirstName: "Jean",
+  tenantLastName: "Dupont",
+  tenantCompanyName: null,
+  tenantType: "individual",
   createdAt: "2026-03-01T00:00:00.000Z",
 };
 

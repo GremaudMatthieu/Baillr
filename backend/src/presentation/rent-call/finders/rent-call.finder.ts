@@ -2,6 +2,10 @@ import { Injectable } from '@nestjs/common';
 import type { RentCall, Tenant, Unit, Lease, OwnershipEntity, BankAccount } from '@prisma/client';
 import { PrismaService } from '@infrastructure/database/prisma.service';
 
+export type RentCallWithTenant = RentCall & {
+  tenant: Pick<Tenant, 'firstName' | 'lastName' | 'companyName' | 'type'>;
+};
+
 export type RentCallWithRelations = RentCall & {
   tenant: Tenant;
   unit: Unit;
@@ -13,27 +17,21 @@ export type RentCallWithRelations = RentCall & {
 export class RentCallFinder {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAllByEntityAndMonth(
-    entityId: string,
-    userId: string,
-    month: string,
-  ): Promise<RentCall[]> {
-    return this.prisma.rentCall.findMany({
-      where: { entityId, month, userId },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
   async findAllByEntityAndUser(
     entityId: string,
     userId: string,
     month?: string,
-  ): Promise<RentCall[]> {
+  ): Promise<RentCallWithTenant[]> {
     return this.prisma.rentCall.findMany({
       where: {
         entityId,
         userId,
         ...(month ? { month } : {}),
+      },
+      include: {
+        tenant: {
+          select: { firstName: true, lastName: true, companyName: true, type: true },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
