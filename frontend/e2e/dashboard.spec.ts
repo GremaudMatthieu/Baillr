@@ -200,6 +200,51 @@ test.describe('Dashboard UnitMosaic payment status', () => {
     await expect(selector).toBeVisible();
   });
 
+  // --- Story 8.6: Action feed ---
+
+  test('8.6.1 — ActionFeed section is visible on the dashboard', async ({
+    page,
+  }) => {
+    test.skip(!entityId, 'Requires seed data');
+
+    await page.goto('/dashboard');
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Tableau de bord' }),
+    ).toBeVisible();
+
+    // ActionFeed heading should be visible
+    await expect(
+      page.getByRole('heading', { name: 'Actions en attente' }),
+    ).toBeVisible({ timeout: 10_000 });
+
+    // The actions list should be present
+    await expect(
+      page.getByRole('list', { name: 'Actions en attente' }),
+    ).toBeVisible();
+  });
+
+  test('8.6.2 — clicking an action button navigates to the correct page', async ({
+    page,
+  }) => {
+    test.skip(!entityId, 'Requires seed data');
+
+    await page.goto('/dashboard');
+    await expect(
+      page.getByRole('heading', { name: 'Actions en attente' }),
+    ).toBeVisible({ timeout: 10_000 });
+
+    // At least one action link should be visible (seed data produces onboarding actions)
+    const actionLinks = page.getByRole('link', { name: /Commencer/ });
+    const count = await actionLinks.count();
+    expect(count).toBeGreaterThan(0);
+
+    // Click the first link and verify navigation
+    const href = await actionLinks.first().getAttribute('href');
+    expect(href).toBeTruthy();
+    await actionLinks.first().click();
+    await expect(page).toHaveURL(new RegExp(href!.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  });
+
   // --- Story 8.5: KPI tiles ---
 
   test('8.5.1 — dashboard displays 5 KPI tiles with correct labels', async ({

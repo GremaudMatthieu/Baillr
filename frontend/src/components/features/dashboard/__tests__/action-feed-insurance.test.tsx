@@ -87,6 +87,10 @@ vi.mock("@/hooks/use-charge-regularization", () => ({
   useChargeRegularizations: () => ({ data: [] }),
 }));
 
+vi.mock("@/hooks/use-revisions", () => ({
+  useRevisions: () => ({ data: [] }),
+}));
+
 describe("ActionFeed — insurance alerts", () => {
   beforeEach(() => {
     mockTenantsData = undefined;

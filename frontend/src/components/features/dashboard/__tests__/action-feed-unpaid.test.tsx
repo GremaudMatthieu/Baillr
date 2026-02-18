@@ -56,6 +56,10 @@ vi.mock("@/hooks/use-charge-regularization", () => ({
   useChargeRegularizations: () => ({ data: [] }),
 }));
 
+vi.mock("@/hooks/use-revisions", () => ({
+  useRevisions: () => ({ data: [] }),
+}));
+
 let mockEscalationData: { rentCallId: string; tier1SentAt: string | null; tier2SentAt: string | null; tier3SentAt: string | null }[] = [];
 
 describe("ActionFeed — unpaid alerts", () => {

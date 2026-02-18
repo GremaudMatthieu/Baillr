@@ -49,6 +49,10 @@ vi.mock("@/hooks/use-charge-regularization", () => ({
   useChargeRegularizations: () => ({ data: [] }),
 }));
 
+vi.mock("@/hooks/use-revisions", () => ({
+  useRevisions: () => ({ data: [] }),
+}));
+
 describe("ActionFeed", () => {
   it("should display section heading", () => {
     renderWithProviders(<ActionFeed actions={[]} />);
@@ -175,5 +179,152 @@ describe("ActionFeed", () => {
     expect(
       screen.queryByText("Envoyez les quittances de loyer"),
     ).not.toBeInTheDocument();
+  });
+
+  it("should display timestamp when action has a timestamp", () => {
+    const actions: ActionItem[] = [
+      {
+        id: "action-with-timestamp",
+        icon: "AlertTriangle",
+        title: "Action avec date",
+        description: "Description",
+        priority: "high",
+        timestamp: "2026-02-10T10:00:00Z",
+      },
+    ];
+
+    renderWithProviders(<ActionFeed actions={actions} />);
+    const timeEl = screen.getByRole("article").querySelector("time");
+    expect(timeEl).toBeInTheDocument();
+    expect(timeEl).toHaveAttribute("datetime", "2026-02-10T10:00:00Z");
+  });
+
+  it("should not display timestamp when action has no timestamp", () => {
+    const actions: ActionItem[] = [
+      {
+        id: "action-no-timestamp",
+        icon: "Plus",
+        title: "Action sans date",
+        description: "Description",
+        priority: "medium",
+      },
+    ];
+
+    renderWithProviders(<ActionFeed actions={actions} />);
+    const timeEl = screen.getByRole("article").querySelector("time");
+    expect(timeEl).not.toBeInTheDocument();
+  });
+
+  it("should display 'Aujourd'hui' for today's date", () => {
+    const today = new Date().toISOString();
+    const actions: ActionItem[] = [
+      {
+        id: "action-today",
+        icon: "Plus",
+        title: "Action today",
+        description: "Desc",
+        priority: "medium",
+        timestamp: today,
+      },
+    ];
+
+    renderWithProviders(<ActionFeed actions={actions} />);
+    const timeEl = screen.getByRole("article").querySelector("time");
+    expect(timeEl).toHaveTextContent("Aujourd'hui");
+  });
+
+  it("should display 'Hier' for yesterday's date", () => {
+    const yesterday = new Date(Date.now() - 86_400_000).toISOString();
+    const actions: ActionItem[] = [
+      {
+        id: "action-yesterday",
+        icon: "Plus",
+        title: "Action yesterday",
+        description: "Desc",
+        priority: "medium",
+        timestamp: yesterday,
+      },
+    ];
+
+    renderWithProviders(<ActionFeed actions={actions} />);
+    const timeEl = screen.getByRole("article").querySelector("time");
+    expect(timeEl).toHaveTextContent("Hier");
+  });
+
+  it("should display 'Il y a X jours' for dates within the past week", () => {
+    const threeDaysAgo = new Date(Date.now() - 3 * 86_400_000).toISOString();
+    const actions: ActionItem[] = [
+      {
+        id: "action-3days",
+        icon: "Plus",
+        title: "Action 3 days ago",
+        description: "Desc",
+        priority: "medium",
+        timestamp: threeDaysAgo,
+      },
+    ];
+
+    renderWithProviders(<ActionFeed actions={actions} />);
+    const timeEl = screen.getByRole("article").querySelector("time");
+    expect(timeEl).toHaveTextContent("Il y a 3 jours");
+  });
+
+  it("should display 'Le DD/MM/YYYY' for dates older than a week", () => {
+    const actions: ActionItem[] = [
+      {
+        id: "action-old",
+        icon: "Plus",
+        title: "Action old",
+        description: "Desc",
+        priority: "medium",
+        timestamp: "2026-01-01T10:00:00Z",
+      },
+    ];
+
+    renderWithProviders(<ActionFeed actions={actions} />);
+    const timeEl = screen.getByRole("article").querySelector("time");
+    expect(timeEl).toHaveTextContent(/^Le \d{2}\/\d{2}\/\d{4}$/);
+  });
+
+  it("should display 'Dans X jours' for future dates within a week", () => {
+    const threeDaysFromNow = new Date(Date.now() + 3 * 86_400_000).toISOString();
+    const actions: ActionItem[] = [
+      {
+        id: "action-future",
+        icon: "Plus",
+        title: "Action future",
+        description: "Desc",
+        priority: "medium",
+        timestamp: threeDaysFromNow,
+      },
+    ];
+
+    renderWithProviders(<ActionFeed actions={actions} />);
+    const timeEl = screen.getByRole("article").querySelector("time");
+    expect(timeEl).toHaveTextContent(/Dans \d jours/);
+  });
+
+  it("should display 'Demain' for tomorrow's date", () => {
+    const now = new Date();
+    const tomorrow = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + 1,
+      12,
+    );
+    const actions: ActionItem[] = [
+      {
+        id: "action-tomorrow",
+        icon: "Plus",
+        title: "Action tomorrow",
+        description: "Desc",
+        priority: "medium",
+        timestamp: tomorrow.toISOString(),
+      },
+    ];
+
+    renderWithProviders(<ActionFeed actions={actions} />);
+    const timeEl = screen.getByRole("article").querySelector("time");
+    expect(timeEl).toHaveTextContent("Demain");
   });
 });

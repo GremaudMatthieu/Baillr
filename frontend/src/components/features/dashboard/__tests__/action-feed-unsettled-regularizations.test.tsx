@@ -56,6 +56,10 @@ vi.mock("@/hooks/use-charge-regularization", () => ({
   useChargeRegularizations: () => ({ data: mockRegularizationsData }),
 }));
 
+vi.mock("@/hooks/use-revisions", () => ({
+  useRevisions: () => ({ data: [] }),
+}));
+
 const makeRegularization = (
   fiscalYear: number,
   appliedAt: string | null = null,

@@ -7,6 +7,7 @@ import {
   BookOpen,
   Building2,
   CircleDollarSign,
+  Clock,
   ClipboardList,
   FileText,
   Landmark,
@@ -40,12 +41,14 @@ import { useBankStatements } from "@/hooks/use-bank-statements";
 import { useUnpaidRentCalls } from "@/hooks/use-unpaid-rent-calls";
 import { useEscalationStatuses } from "@/hooks/use-escalation";
 import { useChargeRegularizations } from "@/hooks/use-charge-regularization";
+import { useRevisions } from "@/hooks/use-revisions";
 import { useMemo } from "react";
 
 const iconMap: Record<string, LucideIcon> = {
   AlertTriangle,
   BookOpen,
   CircleDollarSign,
+  Clock,
   Plus,
   Building2,
   ClipboardList,
@@ -67,6 +70,28 @@ export interface ActionItem {
   description: string;
   href?: string;
   priority: "critical" | "high" | "medium" | "low";
+  timestamp?: string;
+}
+
+function formatRelativeDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  // Use calendar day difference to avoid hour-of-day rounding issues
+  const startOfDay = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const diffDays = Math.round(
+    (startOfDay(now) - startOfDay(date)) / (1000 * 60 * 60 * 24),
+  );
+  if (diffDays < 0) {
+    const futureDays = Math.abs(diffDays);
+    if (futureDays === 1) return "Demain";
+    if (futureDays < 7) return `Dans ${futureDays} jours`;
+    return `Le ${date.toLocaleDateString("fr-FR")}`;
+  }
+  if (diffDays === 0) return "Aujourd'hui";
+  if (diffDays === 1) return "Hier";
+  if (diffDays < 7) return `Il y a ${diffDays} jours`;
+  return `Le ${date.toLocaleDateString("fr-FR")}`;
 }
 
 function useOnboardingActions(): ActionItem[] {
@@ -305,6 +330,7 @@ function useInsuranceAlerts(): ActionItem[] {
         description: `Contactez le locataire pour obtenir une attestation d\u2019assurance à jour.`,
         href: `/tenants/${tenant.id}`,
         priority: "high",
+        timestamp: tenant.renewalDate!,
       });
     } else if (diffDays <= 30) {
       actions.push({
@@ -314,6 +340,7 @@ function useInsuranceAlerts(): ActionItem[] {
         description: `L\u2019assurance expire dans ${diffDays} jour${diffDays > 1 ? "s" : ""}. Pensez à demander le renouvellement.`,
         href: `/tenants/${tenant.id}`,
         priority: "medium",
+        timestamp: tenant.renewalDate!,
       });
     }
   }
@@ -388,6 +415,7 @@ function useUnpaidAlerts(): ActionItem[] {
       description: `Lot ${rc.unitIdentifier} — Période ${rc.month}${escalationSuffix}`,
       href: `/rent-calls/${rc.id}`,
       priority: "critical",
+      timestamp: `${rc.month}-01`,
     });
   }
 
@@ -412,6 +440,10 @@ function useUnsettledRegularizationAlerts(): ActionItem[] {
     .sort((a, b) => b - a)
     .join(", ");
 
+  const earliestAppliedAt = unsettled
+    .map((r) => r.appliedAt!)
+    .sort()[0];
+
   actions.push({
     id: "unsettled-regularizations",
     icon: "CircleDollarSign",
@@ -419,6 +451,31 @@ function useUnsettledRegularizationAlerts(): ActionItem[] {
     description: `Exercice${unsettled.length > 1 ? "s" : ""} : ${fiscalYears} — Marquez les régularisations comme réglées une fois les paiements reçus.`,
     href: "/charges",
     priority: "high",
+    timestamp: earliestAppliedAt,
+  });
+
+  return actions;
+}
+
+function useRevisionAlerts(): ActionItem[] {
+  const { entityId } = useCurrentEntity();
+  const { data: revisions } = useRevisions(entityId ?? undefined);
+  const actions: ActionItem[] = [];
+
+  if (!revisions) return actions;
+
+  const pending = revisions.filter((r) => r.status === "pending");
+  if (pending.length === 0) return actions;
+
+  const names = pending.map((r) => r.tenantName).join(", ");
+  actions.push({
+    id: "revisions-pending-approval",
+    icon: "Clock",
+    title: `${pending.length} révision${pending.length > 1 ? "s" : ""} en attente d'approbation`,
+    description: `Locataires : ${names}`,
+    href: "/revisions",
+    priority: "high",
+    timestamp: pending[0].calculatedAt,
   });
 
   return actions;
@@ -455,6 +512,14 @@ function ActionCard({ action }: { action: ActionItem }) {
                 </span>
               </div>
               <CardDescription>{action.description}</CardDescription>
+              {action.timestamp && (
+                <time
+                  dateTime={action.timestamp}
+                  className="mt-1 block text-xs text-muted-foreground"
+                >
+                  {formatRelativeDate(action.timestamp)}
+                </time>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -496,7 +561,8 @@ export function ActionFeed({ actions }: ActionFeedProps) {
   const insuranceAlerts = useInsuranceAlerts();
   const unpaidAlerts = useUnpaidAlerts();
   const unsettledAlerts = useUnsettledRegularizationAlerts();
-  const displayActions = actions ?? [...unpaidAlerts, ...unsettledAlerts, ...insuranceAlerts, ...onboardingActions];
+  const revisionAlerts = useRevisionAlerts();
+  const displayActions = actions ?? [...unpaidAlerts, ...unsettledAlerts, ...revisionAlerts, ...insuranceAlerts, ...onboardingActions];
   const hasActions = displayActions.length > 0;
 
   return (
