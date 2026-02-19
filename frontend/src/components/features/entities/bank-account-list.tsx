@@ -16,13 +16,21 @@ import {
 } from "@/components/ui/alert-dialog";
 import { BankAccountCard } from "./bank-account-card";
 import { BankAccountForm } from "./bank-account-form";
+import { ConnectBankDialog } from "@/components/features/bank-connections/connect-bank-dialog";
+import { BankConnectionsList } from "@/components/features/bank-connections/bank-connections-list";
 import {
   useBankAccounts,
   useAddBankAccount,
   useUpdateBankAccount,
   useRemoveBankAccount,
 } from "@/hooks/use-bank-accounts";
+import {
+  useOpenBankingStatus,
+  useBankConnections,
+  useInitiateBankConnection,
+} from "@/hooks/use-bank-connections";
 import type { BankAccountData } from "@/lib/api/bank-accounts-api";
+import type { InstitutionData } from "@/lib/api/open-banking-api";
 
 interface BankAccountListProps {
   entityId: string;
@@ -34,12 +42,23 @@ export function BankAccountList({ entityId }: BankAccountListProps) {
   const updateMutation = useUpdateBankAccount(entityId);
   const removeMutation = useRemoveBankAccount(entityId);
 
+  const { data: obStatus } = useOpenBankingStatus();
+  const { data: connections } = useBankConnections(entityId);
+  const initiateMutation = useInitiateBankConnection(entityId);
+
   const [showForm, setShowForm] = React.useState(false);
   const [editingAccount, setEditingAccount] =
     React.useState<BankAccountData | null>(null);
   const [removingAccountId, setRemovingAccountId] = React.useState<
     string | null
   >(null);
+  const [connectingAccount, setConnectingAccount] =
+    React.useState<BankAccountData | null>(null);
+
+  const connectionsByBankAccount = React.useMemo(() => {
+    if (!connections) return new Map();
+    return new Map(connections.map((c) => [c.bankAccountId, c]));
+  }, [connections]);
 
   function handleEdit(account: BankAccountData) {
     setEditingAccount(account);
@@ -93,6 +112,29 @@ export function BankAccountList({ entityId }: BankAccountListProps) {
     }
   }
 
+  async function handleSelectInstitution(institution: InstitutionData) {
+    if (!connectingAccount) return;
+
+    const result = await initiateMutation.mutateAsync({
+      bankAccountId: connectingAccount.id,
+      institutionId: institution.id,
+    });
+
+    setConnectingAccount(null);
+
+    // Redirect to bank authorization flow — validate URL is HTTPS
+    try {
+      const redirectUrl = new URL(result.link);
+      if (redirectUrl.protocol !== "https:") {
+        throw new Error("Invalid redirect URL");
+      }
+    } catch {
+      console.error("Invalid bank connection redirect URL");
+      return;
+    }
+    window.location.href = result.link;
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -112,6 +154,7 @@ export function BankAccountList({ entityId }: BankAccountListProps) {
   }
 
   const removingAccount = accounts?.find((a) => a.id === removingAccountId);
+  const openBankingAvailable = obStatus?.available ?? false;
 
   return (
     <div className="space-y-6">
@@ -147,8 +190,11 @@ export function BankAccountList({ entityId }: BankAccountListProps) {
                 <li key={account.id}>
                   <BankAccountCard
                     account={account}
+                    connection={connectionsByBankAccount.get(account.id)}
+                    openBankingAvailable={openBankingAvailable}
                     onEdit={handleEdit}
                     onRemove={setRemovingAccountId}
+                    onConnect={setConnectingAccount}
                   />
                 </li>
               ))}
@@ -167,6 +213,10 @@ export function BankAccountList({ entityId }: BankAccountListProps) {
                 l&apos;IBAN correct
               </p>
             </div>
+          )}
+
+          {openBankingAvailable && connections && connections.length > 0 && (
+            <BankConnectionsList entityId={entityId} />
           )}
         </>
       )}
@@ -191,6 +241,17 @@ export function BankAccountList({ entityId }: BankAccountListProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {connectingAccount && (
+        <ConnectBankDialog
+          entityId={entityId}
+          bankAccountId={connectingAccount.id}
+          open={true}
+          onOpenChange={(open) => !open && setConnectingAccount(null)}
+          onSelectInstitution={handleSelectInstitution}
+          isPending={initiateMutation.isPending}
+        />
+      )}
     </div>
   );
 }

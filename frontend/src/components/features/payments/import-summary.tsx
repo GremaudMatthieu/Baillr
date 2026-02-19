@@ -21,8 +21,8 @@ export function ImportSummary({ result }: ImportSummaryProps) {
     }).format(cents / 100);
 
   return (
-    <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-      <div className="flex items-center gap-2 text-green-700">
+    <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950">
+      <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
         <Upload className="h-5 w-5" aria-hidden="true" />
         <span className="font-medium">Import réussi</span>
       </div>
@@ -33,20 +33,20 @@ export function ImportSummary({ result }: ImportSummaryProps) {
         </div>
         <div>
           <span className="text-muted-foreground">Crédits :</span>{" "}
-          <span className="font-medium text-green-600">
+          <span className="font-medium text-green-600 dark:text-green-400">
             {credits.length} ({formatAmount(totalCredits)})
           </span>
         </div>
         <div>
           <span className="text-muted-foreground">Débits :</span>{" "}
-          <span className="font-medium text-red-600">
+          <span className="font-medium text-red-600 dark:text-red-400">
             {debits.length} ({formatAmount(totalDebits)})
           </span>
         </div>
         {duplicates.length > 0 && (
           <div>
             <span className="text-muted-foreground">Doublons signalés :</span>{" "}
-            <span className="font-medium text-orange-600">
+            <span className="font-medium text-orange-600 dark:text-orange-400">
               {duplicates.length}
             </span>
           </div>

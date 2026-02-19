@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { CqrsModule } from '@nestjs/cqrs';
 import { AlertDetectionService } from './alert-detection.service.js';
 import { SendAlertsService } from './send-alerts.service.js';
 import { AlertPreferencePresentationModule } from '../../presentation/alert-preference/alert-preference-presentation.module.js';
@@ -9,6 +10,7 @@ import { EscalationPresentationModule } from '../../presentation/escalation/esca
 
 @Module({
   imports: [
+    CqrsModule,
     AlertPreferencePresentationModule,
     EntityPresentationModule,
     RentCallPresentationModule,

@@ -8,6 +8,10 @@ import type { BankAccountAddedData } from '@portfolio/entity/events/bank-account
 import type { BankAccountUpdatedData } from '@portfolio/entity/events/bank-account-updated.event';
 import type { BankAccountRemovedData } from '@portfolio/entity/events/bank-account-removed.event';
 import type { EntityLatePaymentDelayConfiguredData } from '@portfolio/entity/events/entity-late-payment-delay-configured.event';
+import type { BankConnectionLinkedData } from '@portfolio/entity/events/bank-connection-linked.event';
+import type { BankConnectionDisconnectedData } from '@portfolio/entity/events/bank-connection-disconnected.event';
+import type { BankConnectionExpiredData } from '@portfolio/entity/events/bank-connection-expired.event';
+import type { BankConnectionSyncedData } from '@portfolio/entity/events/bank-connection-synced.event';
 
 @Injectable()
 export class EntityProjection implements OnModuleInit {
@@ -72,6 +76,20 @@ export class EntityProjection implements OnModuleInit {
           await this.onEntityLatePaymentDelayConfigured(
             data as unknown as EntityLatePaymentDelayConfiguredData,
           );
+          break;
+        case 'BankConnectionLinked':
+          await this.onBankConnectionLinked(data as unknown as BankConnectionLinkedData);
+          break;
+        case 'BankConnectionDisconnected':
+          await this.onBankConnectionDisconnected(
+            data as unknown as BankConnectionDisconnectedData,
+          );
+          break;
+        case 'BankConnectionExpired':
+          await this.onBankConnectionExpired(data as unknown as BankConnectionExpiredData);
+          break;
+        case 'BankConnectionSynced':
+          await this.onBankConnectionSynced(data as unknown as BankConnectionSyncedData);
           break;
         default:
           break;
@@ -218,5 +236,91 @@ export class EntityProjection implements OnModuleInit {
       data: { latePaymentDelayDays: data.latePaymentDelayDays },
     });
     this.logger.log(`Projected EntityLatePaymentDelayConfigured for ${data.id}`);
+  }
+
+  private async onBankConnectionLinked(data: BankConnectionLinkedData): Promise<void> {
+    await this.prisma.bankConnection.upsert({
+      where: { id: data.connectionId },
+      create: {
+        id: data.connectionId,
+        entityId: data.entityId,
+        bankAccountId: data.bankAccountId,
+        provider: data.provider,
+        institutionId: data.institutionId,
+        institutionName: data.institutionName,
+        requisitionId: data.requisitionId,
+        agreementId: data.agreementId,
+        agreementExpiry: new Date(data.agreementExpiry),
+        accountIds: data.accountIds,
+        status: data.status,
+      },
+      update: {},
+    });
+    this.logger.log(
+      `Projected BankConnectionLinked ${data.connectionId} for entity ${data.entityId}`,
+    );
+  }
+
+  private async onBankConnectionDisconnected(data: BankConnectionDisconnectedData): Promise<void> {
+    const exists = await this.prisma.bankConnection.findUnique({
+      where: { id: data.connectionId },
+      select: { id: true },
+    });
+    if (!exists) {
+      this.logger.warn(
+        `BankConnectionDisconnected received for ${data.connectionId} but no read model exists`,
+      );
+      return;
+    }
+
+    await this.prisma.bankConnection.update({
+      where: { id: data.connectionId },
+      data: { status: 'disconnected' },
+    });
+    this.logger.log(
+      `Projected BankConnectionDisconnected ${data.connectionId} for entity ${data.entityId}`,
+    );
+  }
+
+  private async onBankConnectionExpired(data: BankConnectionExpiredData): Promise<void> {
+    const exists = await this.prisma.bankConnection.findUnique({
+      where: { id: data.connectionId },
+      select: { id: true },
+    });
+    if (!exists) {
+      this.logger.warn(
+        `BankConnectionExpired received for ${data.connectionId} but no read model exists`,
+      );
+      return;
+    }
+
+    await this.prisma.bankConnection.update({
+      where: { id: data.connectionId },
+      data: { status: 'expired' },
+    });
+    this.logger.log(
+      `Projected BankConnectionExpired ${data.connectionId} for entity ${data.entityId}`,
+    );
+  }
+
+  private async onBankConnectionSynced(data: BankConnectionSyncedData): Promise<void> {
+    const exists = await this.prisma.bankConnection.findUnique({
+      where: { id: data.connectionId },
+      select: { id: true },
+    });
+    if (!exists) {
+      this.logger.warn(
+        `BankConnectionSynced received for ${data.connectionId} but no read model exists`,
+      );
+      return;
+    }
+
+    await this.prisma.bankConnection.update({
+      where: { id: data.connectionId },
+      data: { lastSyncedAt: new Date(data.lastSyncedAt) },
+    });
+    this.logger.log(
+      `Projected BankConnectionSynced ${data.connectionId} for entity ${data.entityId}`,
+    );
   }
 }

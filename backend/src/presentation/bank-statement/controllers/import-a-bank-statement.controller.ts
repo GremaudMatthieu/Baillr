@@ -21,6 +21,7 @@ import { BankStatementParserService } from '@infrastructure/bank-import/bank-sta
 import type { ParsedTransaction } from '@infrastructure/bank-import/parsed-transaction.interface';
 import type { ColumnMapping } from '@infrastructure/bank-import/column-mapping.interface';
 import { DEFAULT_COLUMN_MAPPING } from '@infrastructure/bank-import/column-mapping.interface';
+import { buildExistingKeySet, markDuplicates } from '@infrastructure/bank-import/transaction-dedup.util';
 import { ImportABankStatementCommand } from '@billing/bank-statement/commands/import-a-bank-statement.command';
 import { PrismaService } from '@infrastructure/database/prisma.service';
 import { EntityFinder } from '../../entity/finders/entity.finder.js';
@@ -107,14 +108,8 @@ export class ImportABankStatementController {
       where: { entityId },
       select: { date: true, amountCents: true, reference: true },
     });
-    const existingKeys = new Set(
-      existingTransactions.map((t) => `${t.date.toISOString()}|${t.amountCents}|${t.reference}`),
-    );
-    for (const t of transactions) {
-      if (existingKeys.has(`${t.date}|${t.amountCents}|${t.reference}`)) {
-        t.isDuplicate = true;
-      }
-    }
+    const existingKeys = buildExistingKeySet(existingTransactions);
+    markDuplicates(transactions, existingKeys);
 
     // Generate UUID and dispatch command
     const bankStatementId = randomUUID();

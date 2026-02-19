@@ -21,6 +21,8 @@ import {
   ShieldAlert,
   ShieldX,
   FileCheck,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -44,6 +46,7 @@ import { useEscalationStatuses } from "@/hooks/use-escalation";
 import { useChargeRegularizations } from "@/hooks/use-charge-regularization";
 import { useRevisions } from "@/hooks/use-revisions";
 import { useAlertPreferences } from "@/hooks/use-alert-preferences";
+import { useBankConnections } from "@/hooks/use-bank-connections";
 import { useMemo } from "react";
 
 const iconMap: Record<string, LucideIcon> = {
@@ -64,6 +67,8 @@ const iconMap: Record<string, LucideIcon> = {
   ShieldAlert,
   ShieldX,
   FileCheck,
+  Wifi,
+  WifiOff,
 };
 
 export interface ActionItem {
@@ -484,6 +489,32 @@ function useRevisionAlerts(): ActionItem[] {
   return actions;
 }
 
+function useBankConnectionAlerts(): ActionItem[] {
+  const { entityId } = useCurrentEntity();
+  const { data: connections } = useBankConnections(entityId ?? "");
+  const actions: ActionItem[] = [];
+
+  if (!connections) return actions;
+
+  for (const connection of connections) {
+    if (connection.status === "expired" || connection.status === "suspended") {
+      actions.push({
+        id: `bank-connection-expired-${connection.id}`,
+        icon: "WifiOff",
+        title: `Connexion bancaire expirée — ${connection.institutionName}`,
+        description:
+          "Le consentement bancaire a expiré. Reconnectez-vous pour reprendre la synchronisation automatique des transactions.",
+        href: entityId
+          ? `/entities/${entityId}/bank-accounts`
+          : undefined,
+        priority: "high",
+      });
+    }
+  }
+
+  return actions;
+}
+
 function useAlertPreferencesInfo(): ActionItem[] {
   const { entityId } = useCurrentEntity();
   const { data: preferences } = useAlertPreferences(entityId ?? "");
@@ -589,8 +620,9 @@ export function ActionFeed({ actions }: ActionFeedProps) {
   const unpaidAlerts = useUnpaidAlerts();
   const unsettledAlerts = useUnsettledRegularizationAlerts();
   const revisionAlerts = useRevisionAlerts();
+  const bankConnectionAlerts = useBankConnectionAlerts();
   const alertPreferencesInfo = useAlertPreferencesInfo();
-  const displayActions = actions ?? [...unpaidAlerts, ...unsettledAlerts, ...revisionAlerts, ...insuranceAlerts, ...onboardingActions, ...alertPreferencesInfo];
+  const displayActions = actions ?? [...unpaidAlerts, ...unsettledAlerts, ...revisionAlerts, ...bankConnectionAlerts, ...insuranceAlerts, ...onboardingActions, ...alertPreferencesInfo];
   const hasActions = displayActions.length > 0;
 
   return (

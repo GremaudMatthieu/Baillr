@@ -58,14 +58,17 @@ export class MatchPaymentsController {
       month,
     );
 
-    // Map to domain types
-    const transactionData: TransactionData[] = transactions.map((tx) => ({
-      id: tx.id,
-      date: tx.date instanceof Date ? tx.date.toISOString().split('T')[0] : String(tx.date),
-      amountCents: tx.amountCents,
-      payerName: tx.payerName,
-      reference: tx.reference,
-    }));
+    // Map to domain types — filter out debits (negative amounts) which are
+    // bank fees, insurance, etc. and should not be matched against rent calls
+    const transactionData: TransactionData[] = transactions
+      .filter((tx) => tx.amountCents > 0)
+      .map((tx) => ({
+        id: tx.id,
+        date: tx.date instanceof Date ? tx.date.toISOString().split('T')[0] : String(tx.date),
+        amountCents: tx.amountCents,
+        payerName: tx.payerName,
+        reference: tx.reference,
+      }));
 
     const rentCallCandidates: RentCallCandidate[] = rentCalls.map((rc) => ({
       id: rc.id,

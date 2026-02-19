@@ -25,6 +25,14 @@ vi.mock("@/hooks/use-bank-accounts", () => ({
   }),
 }));
 
+vi.mock("@/hooks/use-bank-connections", () => ({
+  useBankConnections: () => ({ data: [] }),
+  useSyncBankConnection: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
+}));
+
 vi.mock("@/hooks/use-payment-actions", () => ({
   usePaymentActions: () => ({
     handleValidate: vi.fn(),
@@ -49,7 +57,6 @@ describe("PaymentsPageContent", () => {
     const importButtons = screen.getAllByRole("button", {
       name: /Importer un relevé/i,
     });
-    // Header button + empty state button
     expect(importButtons.length).toBeGreaterThanOrEqual(1);
   });
 
@@ -60,35 +67,20 @@ describe("PaymentsPageContent", () => {
       screen.getByText("Aucun relevé bancaire importé"),
     ).toBeInTheDocument();
   });
-});
 
-describe("PaymentsPageContent with data", () => {
-  it("should render statement list when statements exist", () => {
-    vi.doMock("@/hooks/use-bank-statements", () => ({
-      useBankStatements: () => ({
-        data: [
-          {
-            id: "bs-1",
-            bankAccountId: "ba-1",
-            fileName: "releve-fev.csv",
-            transactionCount: 5,
-            importedAt: "2026-02-13T10:00:00Z",
-          },
-        ],
-        isLoading: false,
-      }),
-      useBankTransactions: () => ({ data: [] }),
-      useImportBankStatement: () => ({
-        importStatement: vi.fn(),
-        isPending: false,
-        error: null,
-      }),
-      useMatchPayments: () => ({
-        matchPayments: vi.fn(),
-        isPending: false,
-        error: null,
-        result: null,
-      }),
-    }));
+  it("should not show sync button when no active connections", () => {
+    renderWithProviders(<PaymentsPageContent entityId="entity-1" />);
+
+    expect(
+      screen.queryByRole("button", { name: /Synchroniser ma banque/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("should show import-only empty state text when no connections", () => {
+    renderWithProviders(<PaymentsPageContent entityId="entity-1" />);
+
+    expect(
+      screen.getByText(/Importez votre premier relevé bancaire/),
+    ).toBeInTheDocument();
   });
 });

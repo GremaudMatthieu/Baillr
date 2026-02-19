@@ -27,6 +27,12 @@ import { LatePaymentDelayDays } from './late-payment-delay-days.js';
 import {
   EntityLatePaymentDelayConfigured,
 } from './events/entity-late-payment-delay-configured.event.js';
+import { BankConnectionLinked } from './events/bank-connection-linked.event.js';
+import { BankConnectionDisconnected } from './events/bank-connection-disconnected.event.js';
+import { BankConnectionExpired } from './events/bank-connection-expired.event.js';
+import { BankConnectionSynced } from './events/bank-connection-synced.event.js';
+import { BankConnectionStatus } from './bank-connection-status.js';
+import { BankConnectionNotFoundException } from './exceptions/bank-connection-not-found.exception.js';
 
 export interface UpdateEntityFields {
   name?: string;
@@ -54,6 +60,20 @@ interface BankAccountState {
   isDefault: boolean;
 }
 
+interface BankConnectionState {
+  connectionId: string;
+  bankAccountId: string;
+  provider: string;
+  institutionId: string;
+  institutionName: string;
+  requisitionId: string;
+  agreementId: string;
+  agreementExpiry: string;
+  accountIds: string[];
+  status: string;
+  lastSyncedAt: string | null;
+}
+
 export class EntityAggregate extends AggregateRoot {
   private userId!: UserId;
   private type!: EntityType;
@@ -65,6 +85,7 @@ export class EntityAggregate extends AggregateRoot {
   private latePaymentDelayDays!: LatePaymentDelayDays;
   private created = false;
   private bankAccounts: Map<string, BankAccountState> = new Map();
+  private bankConnections: Map<string, BankConnectionState> = new Map();
 
   static readonly streamName = 'entity';
 
@@ -335,6 +356,117 @@ export class EntityAggregate extends AggregateRoot {
     );
   }
 
+  linkBankConnection(
+    userId: string,
+    connectionId: string,
+    bankAccountId: string,
+    provider: string,
+    institutionId: string,
+    institutionName: string,
+    requisitionId: string,
+    agreementId: string,
+    agreementExpiry: string,
+    accountIds: string[],
+  ): void {
+    if (!this.created) {
+      throw EntityNotFoundException.create();
+    }
+    if (this.userId.value !== userId) {
+      throw UnauthorizedEntityAccessException.create();
+    }
+
+    // Validate bank account exists
+    if (!this.bankAccounts.has(bankAccountId)) {
+      throw BankAccountNotFoundException.create(bankAccountId);
+    }
+
+    // No-op guard: already connected for this bank account
+    const existingForBankAccount = [...this.bankConnections.values()].find(
+      (c) => c.bankAccountId === bankAccountId,
+    );
+    if (existingForBankAccount) {
+      return;
+    }
+
+    // Validate status VO
+    BankConnectionStatus.linked();
+
+    this.apply(
+      new BankConnectionLinked({
+        id: this.id,
+        entityId: this.id,
+        connectionId,
+        bankAccountId,
+        provider,
+        institutionId,
+        institutionName,
+        requisitionId,
+        agreementId,
+        agreementExpiry,
+        accountIds,
+        status: 'linked',
+      }),
+    );
+  }
+
+  disconnectBankConnection(userId: string, connectionId: string): void {
+    if (!this.created) {
+      throw EntityNotFoundException.create();
+    }
+    if (this.userId.value !== userId) {
+      throw UnauthorizedEntityAccessException.create();
+    }
+
+    const connection = this.bankConnections.get(connectionId);
+    if (!connection) {
+      throw BankConnectionNotFoundException.create(connectionId);
+    }
+
+    this.apply(
+      new BankConnectionDisconnected({
+        id: this.id,
+        entityId: this.id,
+        connectionId,
+      }),
+    );
+  }
+
+  markBankConnectionExpired(connectionId: string): void {
+    const connection = this.bankConnections.get(connectionId);
+    if (!connection) {
+      throw BankConnectionNotFoundException.create(connectionId);
+    }
+
+    // No-op if already expired
+    if (connection.status === 'expired') {
+      return;
+    }
+
+    this.apply(
+      new BankConnectionExpired({
+        id: this.id,
+        entityId: this.id,
+        connectionId,
+      }),
+    );
+  }
+
+  markBankConnectionSynced(connectionId: string, lastSyncedAt: string): void {
+    const connection = this.bankConnections.get(connectionId);
+    if (!connection) {
+      throw BankConnectionNotFoundException.create(connectionId);
+    }
+
+    this.apply(
+      new BankConnectionSynced({
+        id: this.id,
+        entityId: this.id,
+        connectionId,
+        lastSyncedAt,
+      }),
+    );
+  }
+
   @EventHandler(EntityCreated)
   onEntityCreated(event: EntityCreated): void {
     this.userId = UserId.fromString(event.data.userId);
@@ -398,5 +530,43 @@ export class EntityAggregate extends AggregateRoot {
   @EventHandler(BankAccountRemoved)
   onBankAccountRemoved(event: BankAccountRemoved): void {
     this.bankAccounts.delete(event.data.accountId);
+  }
+
+  @EventHandler(BankConnectionLinked)
+  onBankConnectionLinked(event: BankConnectionLinked): void {
+    this.bankConnections.set(event.data.connectionId, {
+      connectionId: event.data.connectionId,
+      bankAccountId: event.data.bankAccountId,
+      provider: event.data.provider,
+      institutionId: event.data.institutionId,
+      institutionName: event.data.institutionName,
+      requisitionId: event.data.requisitionId,
+      agreementId: event.data.agreementId,
+      agreementExpiry: event.data.agreementExpiry,
+      accountIds: event.data.accountIds,
+      status: event.data.status,
+      lastSyncedAt: null,
+    });
+  }
+
+  @EventHandler(BankConnectionDisconnected)
+  onBankConnectionDisconnected(event: BankConnectionDisconnected): void {
+    this.bankConnections.delete(event.data.connectionId);
+  }
+
+  @EventHandler(BankConnectionExpired)
+  onBankConnectionExpired(event: BankConnectionExpired): void {
+    const connection = this.bankConnections.get(event.data.connectionId);
+    if (connection) {
+      connection.status = 'expired';
+    }
+  }
+
+  @EventHandler(BankConnectionSynced)
+  onBankConnectionSynced(event: BankConnectionSynced): void {
+    const connection = this.bankConnections.get(event.data.connectionId);
+    if (connection) {
+      connection.lastSyncedAt = event.data.lastSyncedAt;
+    }
   }
 }

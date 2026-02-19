@@ -23,11 +23,13 @@ import { AnnualChargesPresentationModule } from './presentation/annual-charges/a
 import { ChargeCategoryPresentationModule } from './presentation/charge-category/charge-category-presentation.module';
 import { WaterMeterReadingsPresentationModule } from './presentation/water-meter-readings/water-meter-readings-presentation.module';
 import { ChargeRegularizationPresentationModule } from './presentation/charge-regularization/charge-regularization-presentation.module';
+import { OpenBankingPresentationModule } from './presentation/open-banking/open-banking-presentation.module';
 import { AccountingPresentationModule } from './presentation/accounting/accounting-presentation.module';
 import { AlertPreferencePresentationModule } from './presentation/alert-preference/alert-preference-presentation.module';
 import { DocumentModule } from './infrastructure/document/document.module';
 import { EmailModule } from './infrastructure/email/email.module';
 import { BankImportModule } from './infrastructure/bank-import/bank-import.module';
+import { OpenBankingModule } from './infrastructure/open-banking/open-banking.module';
 import { SchedulingModule } from './infrastructure/scheduling/scheduling.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
@@ -44,6 +46,7 @@ import { AppService } from './app.service';
     DocumentModule,
     EmailModule,
     BankImportModule,
+    OpenBankingModule,
     PortfolioModule,
     TenancyModule,
     BillingModule,
@@ -62,6 +65,7 @@ import { AppService } from './app.service';
     ChargeCategoryPresentationModule,
     WaterMeterReadingsPresentationModule,
     ChargeRegularizationPresentationModule,
+    OpenBankingPresentationModule,
     AccountingPresentationModule,
     AlertPreferencePresentationModule,
     ScheduleModule.forRoot(),

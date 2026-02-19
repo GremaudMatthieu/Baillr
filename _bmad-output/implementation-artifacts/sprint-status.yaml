@@ -133,8 +133,8 @@ development_status:
   c2-2-close-open-circuits-from-epic-7: done # reviewed 2026-02-16, 10 findings (3H/4M/3L), 10 fixes — entityId scoping on findBillingLinesByLeaseIds + deleteChargeCategory, await res.json(), settle tests, cache invalidation plural key, email trim, settle isSent guard, multi-tenant batch test, CircleDollarSign icon
 
   # Epic 9: Integrations & Advanced Features (4 stories)
-  epic-9: backlog
-  9-1-connect-to-bank-via-open-banking-api: backlog
+  epic-9: in-progress
+  9-1-connect-to-bank-via-open-banking-api: done # reviewed 2026-02-19 (pass 1: 12 findings, 10 fixes), pass 2: 2026-02-20 (10 findings, 6 fixes — H1-H3 accepted GoCardless→Bridge, M1 date normalization, M2 deleteItem throws, M4 HTTPS redirect validation, M5 accountIds runtime check, L1 soft delete, L2 staleTime 5min)
   9-2-send-registered-mail-via-ar24-maileva-integration: backlog
   9-3-automatic-insee-index-retrieval: backlog
   9-4-grant-accountant-read-only-access: backlog

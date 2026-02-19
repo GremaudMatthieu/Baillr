@@ -24,6 +24,7 @@ model OwnershipEntity {
   updatedAt              DateTime @updatedAt @map("updated_at")
 
   bankAccounts     BankAccount[]
+  bankConnections  BankConnection[]
   properties       Property[]
   tenants          Tenant[]
   leases           Lease[]
@@ -91,8 +92,9 @@ model BankAccount {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  entity         OwnershipEntity @relation(fields: [entityId], references: [id])
-  bankStatements BankStatement[]
+  entity          OwnershipEntity  @relation(fields: [entityId], references: [id])
+  bankStatements  BankStatement[]
+  bankConnection  BankConnection?
 
   @@map("bank_accounts")
   @@index([entityId])
@@ -442,6 +444,30 @@ model AlertPreference {
 
   @@unique([entityId, userId, alertType])
   @@map("alert_preferences")
+  @@index([entityId])
+}
+
+model BankConnection {
+  id              String    @id @default(uuid())
+  entityId        String    @map("entity_id")
+  bankAccountId   String    @map("bank_account_id")
+  provider        String    @default("bridge")
+  institutionId   String    @map("institution_id")
+  institutionName String    @map("institution_name")
+  requisitionId   String    @map("requisition_id")
+  agreementId     String    @map("agreement_id")
+  agreementExpiry DateTime  @map("agreement_expiry")
+  accountIds      Json      @default("[]") @map("account_ids")
+  status          String    @default("linked")
+  lastSyncedAt    DateTime? @map("last_synced_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  entity      OwnershipEntity @relation(fields: [entityId], references: [id])
+  bankAccount BankAccount     @relation(fields: [bankAccountId], references: [id])
+
+  @@unique([bankAccountId])
+  @@map("bank_connections")
   @@index([entityId])
 }
 

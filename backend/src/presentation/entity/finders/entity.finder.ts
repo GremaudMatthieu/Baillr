@@ -19,6 +19,12 @@ export class EntityFinder {
     });
   }
 
+  async findById(id: string): Promise<OwnershipEntity | null> {
+    return this.prisma.ownershipEntity.findUnique({
+      where: { id },
+    });
+  }
+
   async findByIdAndUserId(id: string, userId: string): Promise<OwnershipEntity | null> {
     return this.prisma.ownershipEntity.findFirst({
       where: { id, userId },

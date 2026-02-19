@@ -1,6 +1,6 @@
 "use client";
 
-import { Landmark, Banknote, Pencil, Trash2 } from "lucide-react";
+import { Landmark, Banknote, Pencil, Trash2, Link2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +11,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { BankConnectionBadge } from "@/components/features/bank-connections/bank-connection-badge";
 import type { BankAccountData } from "@/lib/api/bank-accounts-api";
+import type { BankConnectionData } from "@/lib/api/open-banking-api";
 
 function maskIban(iban: string): string {
   if (iban.length < 6) return iban;
@@ -31,16 +33,27 @@ const typeLabels: Record<string, string> = {
 
 interface BankAccountCardProps {
   account: BankAccountData;
+  connection?: BankConnectionData | null;
+  openBankingAvailable?: boolean;
   onEdit: (account: BankAccountData) => void;
   onRemove: (accountId: string) => void;
+  onConnect?: (account: BankAccountData) => void;
 }
 
 export function BankAccountCard({
   account,
+  connection,
+  openBankingAvailable,
   onEdit,
   onRemove,
+  onConnect,
 }: BankAccountCardProps) {
   const Icon = account.type === "cash_register" ? Banknote : Landmark;
+  const showConnectButton =
+    openBankingAvailable &&
+    account.type === "bank_account" &&
+    account.iban &&
+    !connection;
 
   return (
     <Card>
@@ -59,6 +72,9 @@ export function BankAccountCard({
                 {account.isDefault && (
                   <Badge variant="secondary">Par défaut</Badge>
                 )}
+                {connection && (
+                  <BankConnectionBadge status={connection.status} />
+                )}
               </div>
               <CardDescription>
                 {typeLabels[account.type] ?? account.type}
@@ -67,6 +83,17 @@ export function BankAccountCard({
             </div>
           </div>
           <div className="flex gap-1">
+            {showConnectButton && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onConnect?.(account)}
+                aria-label={`Connecter ${account.label}`}
+              >
+                <Link2 className="mr-1 h-3 w-3" aria-hidden="true" />
+                Connecter ma banque
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon-sm"

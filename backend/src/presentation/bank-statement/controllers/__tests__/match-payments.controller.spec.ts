@@ -186,4 +186,48 @@ describe('MatchPaymentsController', () => {
     );
     expect(matchingService.match).toHaveBeenCalledWith([], [], new Set(['rc-2', 'rc-4']));
   });
+
+  it('should filter out debit transactions (negative amounts) from matching', async () => {
+    const transactions = [
+      {
+        id: 'tx-credit',
+        date: new Date('2026-02-15'),
+        amountCents: 85000,
+        payerName: 'DUPONT JEAN',
+        reference: 'LOYER-FEV',
+      },
+      {
+        id: 'tx-debit',
+        date: new Date('2026-02-10'),
+        amountCents: -12050,
+        payerName: 'PRELEVEMENT EDF',
+        reference: 'EDF-ELEC',
+      },
+      {
+        id: 'tx-zero',
+        date: new Date('2026-02-12'),
+        amountCents: 0,
+        payerName: 'AJUSTEMENT',
+        reference: 'ADJ',
+      },
+    ];
+    bankStatementFinder.findTransactions.mockResolvedValue(transactions);
+
+    await controller.handle('user-1', 'entity-1', 'bs-1', '2026-02');
+
+    // Only the credit transaction should be passed to matching
+    expect(matchingService.match).toHaveBeenCalledWith(
+      [
+        {
+          id: 'tx-credit',
+          date: '2026-02-15',
+          amountCents: 85000,
+          payerName: 'DUPONT JEAN',
+          reference: 'LOYER-FEV',
+        },
+      ],
+      [],
+      new Set(),
+    );
+  });
 });
