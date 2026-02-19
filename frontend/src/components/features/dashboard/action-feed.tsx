@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import {
   AlertTriangle,
+  Bell,
   BookOpen,
   Building2,
   CircleDollarSign,
@@ -42,10 +43,12 @@ import { useUnpaidRentCalls } from "@/hooks/use-unpaid-rent-calls";
 import { useEscalationStatuses } from "@/hooks/use-escalation";
 import { useChargeRegularizations } from "@/hooks/use-charge-regularization";
 import { useRevisions } from "@/hooks/use-revisions";
+import { useAlertPreferences } from "@/hooks/use-alert-preferences";
 import { useMemo } from "react";
 
 const iconMap: Record<string, LucideIcon> = {
   AlertTriangle,
+  Bell,
   BookOpen,
   CircleDollarSign,
   Clock,
@@ -481,6 +484,30 @@ function useRevisionAlerts(): ActionItem[] {
   return actions;
 }
 
+function useAlertPreferencesInfo(): ActionItem[] {
+  const { entityId } = useCurrentEntity();
+  const { data: preferences } = useAlertPreferences(entityId ?? "");
+  const actions: ActionItem[] = [];
+
+  if (!entityId || !preferences) return actions;
+
+  const enabledCount = preferences.filter((p) => p.enabled).length;
+
+  if (enabledCount > 0) {
+    actions.push({
+      id: "alert-preferences-active",
+      icon: "Bell",
+      title: `Alertes email actives (${enabledCount} type${enabledCount > 1 ? "s" : ""})`,
+      description:
+        "Vous recevez des alertes par email pour cette entité. Gérez vos préférences dans les paramètres.",
+      href: `/entities/${entityId}/edit`,
+      priority: "low",
+    });
+  }
+
+  return actions;
+}
+
 const priorityLabels: Record<ActionItem["priority"], string> = {
   critical: "Urgent",
   high: "Recommandé",
@@ -562,7 +589,8 @@ export function ActionFeed({ actions }: ActionFeedProps) {
   const unpaidAlerts = useUnpaidAlerts();
   const unsettledAlerts = useUnsettledRegularizationAlerts();
   const revisionAlerts = useRevisionAlerts();
-  const displayActions = actions ?? [...unpaidAlerts, ...unsettledAlerts, ...revisionAlerts, ...insuranceAlerts, ...onboardingActions];
+  const alertPreferencesInfo = useAlertPreferencesInfo();
+  const displayActions = actions ?? [...unpaidAlerts, ...unsettledAlerts, ...revisionAlerts, ...insuranceAlerts, ...onboardingActions, ...alertPreferencesInfo];
   const hasActions = displayActions.length > 0;
 
   return (

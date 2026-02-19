@@ -60,6 +60,10 @@ vi.mock("@/hooks/use-revisions", () => ({
   useRevisions: () => ({ data: [] }),
 }));
 
+vi.mock("@/hooks/use-alert-preferences", () => ({
+  useAlertPreferences: () => ({ data: undefined, isLoading: false }),
+}));
+
 let mockEscalationData: { rentCallId: string; tier1SentAt: string | null; tier2SentAt: string | null; tier3SentAt: string | null }[] = [];
 
 describe("ActionFeed — unpaid alerts", () => {

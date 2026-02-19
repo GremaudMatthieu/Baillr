@@ -1,23 +1,24 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
+import { QueryBus } from '@nestjs/cqrs';
 import { GetDashboardKpisController } from '../controllers/get-dashboard-kpis.controller';
 import { EntityFinder } from '../../entity/finders/entity.finder';
-import { DashboardKpisFinder } from '../finders/dashboard-kpis.finder';
+import { GetDashboardKpisQuery } from '../queries/get-dashboard-kpis.query';
 
 describe('GetDashboardKpisController', () => {
   let controller: GetDashboardKpisController;
   let entityFinder: { findByIdAndUserId: jest.Mock };
-  let dashboardKpisFinder: { getKpis: jest.Mock };
+  let queryBus: { execute: jest.Mock };
 
   beforeEach(async () => {
     entityFinder = { findByIdAndUserId: jest.fn() };
-    dashboardKpisFinder = { getKpis: jest.fn() };
+    queryBus = { execute: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [GetDashboardKpisController],
       providers: [
         { provide: EntityFinder, useValue: entityFinder },
-        { provide: DashboardKpisFinder, useValue: dashboardKpisFinder },
+        { provide: QueryBus, useValue: queryBus },
       ],
     }).compile();
 
@@ -42,7 +43,7 @@ describe('GetDashboardKpisController', () => {
         outstandingDebtCents: 0,
       },
     };
-    dashboardKpisFinder.getKpis.mockResolvedValue(mockKpis);
+    queryBus.execute.mockResolvedValue(mockKpis);
 
     const result = await controller.handle(
       'entity-1',
@@ -52,7 +53,13 @@ describe('GetDashboardKpisController', () => {
 
     expect(result).toEqual(mockKpis);
     expect(entityFinder.findByIdAndUserId).toHaveBeenCalledWith('entity-1', 'user_123');
-    expect(dashboardKpisFinder.getKpis).toHaveBeenCalledWith('entity-1', 'user_123', '2026-02');
+    expect(queryBus.execute).toHaveBeenCalledWith(
+      expect.any(GetDashboardKpisQuery),
+    );
+    const query = queryBus.execute.mock.calls[0][0];
+    expect(query.entityId).toBe('entity-1');
+    expect(query.userId).toBe('user_123');
+    expect(query.month).toBe('2026-02');
   });
 
   it('should throw UnauthorizedException when entity not found', async () => {
@@ -62,6 +69,6 @@ describe('GetDashboardKpisController', () => {
       controller.handle('entity-1', { month: '2026-02' } as any, 'user_123'),
     ).rejects.toThrow(UnauthorizedException);
 
-    expect(dashboardKpisFinder.getKpis).not.toHaveBeenCalled();
+    expect(queryBus.execute).not.toHaveBeenCalled();
   });
 });

@@ -6,6 +6,12 @@ import { PrismaService } from '@infrastructure/database/prisma.service';
 export class EntityFinder {
   constructor(private readonly prisma: PrismaService) {}
 
+  async findAll(): Promise<OwnershipEntity[]> {
+    return this.prisma.ownershipEntity.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async findAllByUserId(userId: string): Promise<OwnershipEntity[]> {
     return this.prisma.ownershipEntity.findMany({
       where: { userId },

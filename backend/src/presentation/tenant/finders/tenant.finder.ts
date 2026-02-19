@@ -13,6 +13,21 @@ export class TenantFinder {
     });
   }
 
+  async findWithExpiringInsurance(
+    entityId: string,
+    cutoffDate: Date,
+  ): Promise<Tenant[]> {
+    return this.prisma.tenant.findMany({
+      where: {
+        entityId,
+        renewalDate: {
+          not: null,
+          lte: cutoffDate,
+        },
+      },
+    });
+  }
+
   async findByIdAndUser(id: string, userId: string): Promise<Tenant | null> {
     return this.prisma.tenant.findFirst({
       where: { id, userId },

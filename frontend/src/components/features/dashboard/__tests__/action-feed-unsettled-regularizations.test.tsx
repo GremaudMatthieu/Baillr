@@ -60,6 +60,10 @@ vi.mock("@/hooks/use-revisions", () => ({
   useRevisions: () => ({ data: [] }),
 }));
 
+vi.mock("@/hooks/use-alert-preferences", () => ({
+  useAlertPreferences: () => ({ data: undefined, isLoading: false }),
+}));
+
 const makeRegularization = (
   fiscalYear: number,
   appliedAt: string | null = null,

@@ -24,9 +24,12 @@ import { ChargeCategoryPresentationModule } from './presentation/charge-category
 import { WaterMeterReadingsPresentationModule } from './presentation/water-meter-readings/water-meter-readings-presentation.module';
 import { ChargeRegularizationPresentationModule } from './presentation/charge-regularization/charge-regularization-presentation.module';
 import { AccountingPresentationModule } from './presentation/accounting/accounting-presentation.module';
+import { AlertPreferencePresentationModule } from './presentation/alert-preference/alert-preference-presentation.module';
 import { DocumentModule } from './infrastructure/document/document.module';
 import { EmailModule } from './infrastructure/email/email.module';
 import { BankImportModule } from './infrastructure/bank-import/bank-import.module';
+import { SchedulingModule } from './infrastructure/scheduling/scheduling.module';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -60,6 +63,9 @@ import { AppService } from './app.service';
     WaterMeterReadingsPresentationModule,
     ChargeRegularizationPresentationModule,
     AccountingPresentationModule,
+    AlertPreferencePresentationModule,
+    ScheduleModule.forRoot(),
+    SchedulingModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ClerkAuthGuard }],

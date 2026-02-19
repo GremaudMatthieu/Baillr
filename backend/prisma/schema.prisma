@@ -430,3 +430,30 @@ model ChargeRegularization {
   @@map("charge_regularizations")
   @@index([entityId])
 }
+
+model AlertPreference {
+  id        String   @id @default(uuid())
+  entityId  String   @map("entity_id")
+  userId    String   @map("user_id")
+  alertType String   @map("alert_type")
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([entityId, userId, alertType])
+  @@map("alert_preferences")
+  @@index([entityId])
+}
+
+model AlertLog {
+  id          String   @id @default(uuid())
+  entityId    String   @map("entity_id")
+  userId      String   @map("user_id")
+  alertType   String   @map("alert_type")
+  referenceId String   @map("reference_id")
+  sentAt      DateTime @default(now()) @map("sent_at")
+
+  @@unique([entityId, userId, alertType, referenceId])
+  @@map("alert_logs")
+  @@index([entityId])
+}

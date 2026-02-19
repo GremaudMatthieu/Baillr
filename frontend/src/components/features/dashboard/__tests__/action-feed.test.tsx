@@ -53,6 +53,10 @@ vi.mock("@/hooks/use-revisions", () => ({
   useRevisions: () => ({ data: [] }),
 }));
 
+vi.mock("@/hooks/use-alert-preferences", () => ({
+  useAlertPreferences: () => ({ data: undefined, isLoading: false }),
+}));
+
 describe("ActionFeed", () => {
   it("should display section heading", () => {
     renderWithProviders(<ActionFeed actions={[]} />);

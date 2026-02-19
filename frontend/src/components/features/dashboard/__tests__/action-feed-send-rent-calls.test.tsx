@@ -64,6 +64,14 @@ vi.mock("@/hooks/use-charge-regularization", () => ({
   useChargeRegularizations: () => ({ data: [] }),
 }));
 
+vi.mock("@/hooks/use-revisions", () => ({
+  useRevisions: () => ({ data: [] }),
+}));
+
+vi.mock("@/hooks/use-alert-preferences", () => ({
+  useAlertPreferences: () => ({ data: undefined, isLoading: false }),
+}));
+
 describe("ActionFeed — send rent calls step 8", () => {
   beforeEach(() => {
     mockLeasesData = [

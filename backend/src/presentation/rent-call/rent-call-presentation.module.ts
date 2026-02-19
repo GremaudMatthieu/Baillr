@@ -18,6 +18,8 @@ import { GetRentCallsHandler } from './queries/get-rent-calls.handler.js';
 import { GetUnpaidRentCallsHandler } from './queries/get-unpaid-rent-calls.query.js';
 import { GetTenantAccountHandler } from './queries/get-tenant-account.handler.js';
 import { GetRentCallPaymentsHandler } from './queries/get-rent-call-payments.handler.js';
+import { GetDashboardKpisHandler } from './queries/get-dashboard-kpis.handler.js';
+import { GetTreasuryChartHandler } from './queries/get-treasury-chart.handler.js';
 import { UnpaidRentCallFinder } from './finders/unpaid-rent-call.finder.js';
 import { DashboardKpisFinder } from './finders/dashboard-kpis.finder.js';
 import { TreasuryChartFinder } from './finders/treasury-chart.finder.js';
@@ -57,6 +59,8 @@ import { RentCallAggregate } from '@billing/rent-call/rent-call.aggregate';
     GetRentCallsHandler,
     GetTenantAccountHandler,
     GetRentCallPaymentsHandler,
+    GetDashboardKpisHandler,
+    GetTreasuryChartHandler,
     GenerateRentCallsForMonthHandler,
     SendRentCallsByEmailHandler,
     RentCallProjection,

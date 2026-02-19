@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useEntity } from "@/hooks/use-entities";
 import { EntityForm } from "@/components/features/entities/entity-form";
 import { LatePaymentDelaySettings } from "@/components/features/entities/late-payment-delay-settings";
+import { AlertPreferencesForm } from "@/components/features/alert-preferences/alert-preferences-form";
 
 export default function EditEntityPage({
   params,
@@ -47,6 +48,11 @@ export default function EditEntityPage({
             entityId={id}
             currentDelay={entity.latePaymentDelayDays}
           />
+        </div>
+
+        <div className="mt-8 border-t pt-6">
+          <h2 className="mb-4 text-lg font-semibold">Alertes email</h2>
+          <AlertPreferencesForm entityId={id} />
         </div>
 
         <div className="mt-8 border-t pt-6">

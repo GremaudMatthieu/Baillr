@@ -6,16 +6,18 @@ import {
   ParseUUIDPipe,
   UnauthorizedException,
 } from '@nestjs/common';
+import { QueryBus } from '@nestjs/cqrs';
 import { CurrentUser } from '@infrastructure/auth/user.decorator';
 import { EntityFinder } from '../../entity/finders/entity.finder.js';
-import { DashboardKpisFinder } from '../finders/dashboard-kpis.finder.js';
 import { GetDashboardKpisDto } from '../dto/get-dashboard-kpis.dto.js';
+import { GetDashboardKpisQuery } from '../queries/get-dashboard-kpis.query.js';
+import type { DashboardKpisResult } from '../finders/dashboard-kpis.finder.js';
 
 @Controller('entities/:entityId')
 export class GetDashboardKpisController {
   constructor(
+    private readonly queryBus: QueryBus,
     private readonly entityFinder: EntityFinder,
-    private readonly dashboardKpisFinder: DashboardKpisFinder,
   ) {}
 
   @Get('dashboard-kpis')
@@ -29,6 +31,8 @@ export class GetDashboardKpisController {
       throw new UnauthorizedException();
     }
 
-    return this.dashboardKpisFinder.getKpis(entityId, userId, dto.month);
+    return this.queryBus.execute<GetDashboardKpisQuery, DashboardKpisResult>(
+      new GetDashboardKpisQuery(entityId, userId, dto.month),
+    );
   }
 }

@@ -74,6 +74,14 @@ vi.mock("@/hooks/use-charge-regularization", () => ({
   useChargeRegularizations: () => ({ data: [] }),
 }));
 
+vi.mock("@/hooks/use-revisions", () => ({
+  useRevisions: () => ({ data: [] }),
+}));
+
+vi.mock("@/hooks/use-alert-preferences", () => ({
+  useAlertPreferences: () => ({ data: undefined, isLoading: false }),
+}));
+
 describe("ActionFeed — rent calls onboarding step 7", () => {
   beforeEach(() => {
     mockLeasesData = [

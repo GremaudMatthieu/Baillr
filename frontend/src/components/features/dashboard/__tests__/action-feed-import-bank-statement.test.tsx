@@ -88,6 +88,14 @@ vi.mock("@/hooks/use-charge-regularization", () => ({
   useChargeRegularizations: () => ({ data: [] }),
 }));
 
+vi.mock("@/hooks/use-revisions", () => ({
+  useRevisions: () => ({ data: [] }),
+}));
+
+vi.mock("@/hooks/use-alert-preferences", () => ({
+  useAlertPreferences: () => ({ data: undefined, isLoading: false }),
+}));
+
 describe("ActionFeed — step 9 import bank statement", () => {
   it("should show import bank statement action when rent calls sent and no statements", () => {
     renderWithProviders(<ActionFeed />);

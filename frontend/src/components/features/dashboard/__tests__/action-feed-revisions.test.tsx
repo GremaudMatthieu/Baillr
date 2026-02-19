@@ -60,6 +60,10 @@ vi.mock("@/hooks/use-revisions", () => ({
   useRevisions: () => ({ data: mockRevisionsData }),
 }));
 
+vi.mock("@/hooks/use-alert-preferences", () => ({
+  useAlertPreferences: () => ({ data: undefined, isLoading: false }),
+}));
+
 const makeRevision = (
   overrides: Partial<Revision> = {},
 ): Revision => ({

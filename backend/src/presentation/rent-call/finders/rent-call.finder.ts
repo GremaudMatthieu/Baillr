@@ -100,6 +100,33 @@ export class RentCallFinder {
     return count > 0;
   }
 
+  async findUnpaidBeforeMonth(
+    entityId: string,
+    currentMonth: string,
+  ): Promise<(RentCall & { tenant: Tenant; unit: Unit })[]> {
+    return this.prisma.rentCall.findMany({
+      where: {
+        entityId,
+        paidAt: null,
+        month: { lt: currentMonth },
+      },
+      include: {
+        tenant: true,
+        unit: true,
+      },
+    });
+  }
+
+  async findUnpaidByIds(
+    rentCallIds: string[],
+  ): Promise<(RentCall & { tenant: Tenant })[]> {
+    if (rentCallIds.length === 0) return [];
+    return this.prisma.rentCall.findMany({
+      where: { id: { in: rentCallIds }, paidAt: null },
+      include: { tenant: true },
+    });
+  }
+
   async findPaidRentCallIds(entityId: string, userId: string, month: string): Promise<string[]> {
     const paidCalls = await this.prisma.rentCall.findMany({
       where: {
