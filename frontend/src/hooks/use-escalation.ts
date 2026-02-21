@@ -7,6 +7,7 @@ import {
   useEscalationApi,
   downloadFormalNoticePdf,
   downloadStakeholderLetterPdf,
+  fetchRegisteredMailStatus,
   type EscalationStatusData,
 } from "@/lib/api/escalation-api";
 
@@ -167,4 +168,47 @@ export function useDownloadStakeholderLetter(entityId: string) {
   );
 
   return { download, isDownloading, downloadingType, error };
+}
+
+export function useRegisteredMailStatus() {
+  return useQuery<{ available: boolean }>({
+    queryKey: ["registered-mail", "status"],
+    queryFn: () => fetchRegisteredMailStatus(),
+    staleTime: 60_000,
+  });
+}
+
+export function useRegisteredMailCost(entityId: string) {
+  const api = useEscalationApi();
+  return useQuery<{ costCentsHt: number; costCentsTtc: number }>({
+    queryKey: ["entities", entityId, "registered-mail", "cost"],
+    queryFn: () => api.getRegisteredMailCost(entityId),
+    enabled: !!entityId,
+    staleTime: 300_000,
+  });
+}
+
+export function useSendRegisteredMail(entityId: string) {
+  const api = useEscalationApi();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (rentCallId: string) =>
+      api.sendRegisteredMail(entityId, rentCallId),
+    onSettled: (_data, _error, rentCallId) => {
+      setTimeout(() => {
+        void queryClient.invalidateQueries({
+          queryKey: [
+            "entities",
+            entityId,
+            "rent-calls",
+            rentCallId,
+            "escalation",
+          ],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["entities", entityId, "rent-calls", "unpaid"],
+        });
+      }, 1500);
+    },
+  });
 }

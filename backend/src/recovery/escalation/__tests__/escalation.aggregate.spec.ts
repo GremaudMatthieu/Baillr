@@ -8,6 +8,7 @@ import { EscalationInitiated } from '../events/escalation-initiated.event';
 import { ReminderEmailSent } from '../events/reminder-email-sent.event';
 import { FormalNoticeGenerated } from '../events/formal-notice-generated.event';
 import { StakeholderNotificationGenerated } from '../events/stakeholder-notification-generated.event';
+import { RegisteredMailDispatched } from '../events/registered-mail-dispatched.event';
 
 describe('EscalationAggregate', () => {
   const rentCallId = 'rent-call-123';
@@ -191,6 +192,85 @@ describe('EscalationAggregate', () => {
       aggregate.commit();
 
       aggregate.generateStakeholderNotifications(sentAt);
+
+      const events = aggregate.getUncommittedEvents();
+      expect(events).toHaveLength(1);
+      expect(events[0]).toBeInstanceOf(StakeholderNotificationGenerated);
+    });
+  });
+
+  describe('dispatchViaRegisteredMail', () => {
+    beforeEach(() => {
+      aggregate.initiate(rentCallId, entityId, tenantId);
+      aggregate.commit();
+    });
+
+    it('should emit RegisteredMailDispatched event after formal notice generated', () => {
+      aggregate.generateFormalNotice(sentAt);
+      aggregate.commit();
+
+      aggregate.dispatchViaRegisteredMail('LRE-2026-001', 'ar24', 479);
+
+      const events = aggregate.getUncommittedEvents();
+      expect(events).toHaveLength(1);
+      expect(events[0]).toBeInstanceOf(RegisteredMailDispatched);
+      const eventData = (events[0] as RegisteredMailDispatched).data;
+      expect(eventData.rentCallId).toBe(rentCallId);
+      expect(eventData.trackingId).toBe('LRE-2026-001');
+      expect(eventData.provider).toBe('ar24');
+      expect(eventData.costCents).toBe(479);
+      expect(eventData.dispatchedAt).toBeTruthy();
+    });
+
+    it('should no-op if already dispatched', () => {
+      aggregate.generateFormalNotice(sentAt);
+      aggregate.commit();
+
+      aggregate.dispatchViaRegisteredMail('LRE-2026-001', 'ar24', 479);
+      aggregate.commit();
+
+      aggregate.dispatchViaRegisteredMail('LRE-2026-002', 'ar24', 479);
+
+      const events = aggregate.getUncommittedEvents();
+      expect(events).toHaveLength(0);
+    });
+
+    it('should throw if formal notice not generated yet', () => {
+      expect(() => {
+        aggregate.dispatchViaRegisteredMail('LRE-2026-001', 'ar24', 479);
+      }).toThrow('Formal notice must be generated before dispatching via registered mail');
+    });
+  });
+
+  describe('full escalation flow with registered mail', () => {
+    it('should support tier 2 → registered mail dispatch', () => {
+      aggregate.initiate(rentCallId, entityId, tenantId);
+      aggregate.commit();
+
+      aggregate.generateFormalNotice(sentAt);
+      aggregate.commit();
+
+      aggregate.dispatchViaRegisteredMail('LRE-2026-001', 'ar24', 479);
+
+      const events = aggregate.getUncommittedEvents();
+      expect(events).toHaveLength(1);
+      expect(events[0]).toBeInstanceOf(RegisteredMailDispatched);
+    });
+
+    it('should support tier 1 → tier 2 → registered mail → tier 3', () => {
+      aggregate.initiate(rentCallId, entityId, tenantId);
+      aggregate.commit();
+
+      aggregate.sendReminderEmail(recipientEmail, new Date('2026-02-10'));
+      aggregate.commit();
+
+      aggregate.generateFormalNotice(new Date('2026-02-18'));
+      aggregate.commit();
+
+      aggregate.dispatchViaRegisteredMail('LRE-2026-001', 'ar24', 479);
+      aggregate.commit();
+
+      aggregate.generateStakeholderNotifications(new Date('2026-02-26'));
 
       const events = aggregate.getUncommittedEvents();
       expect(events).toHaveLength(1);

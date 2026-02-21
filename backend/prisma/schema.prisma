@@ -262,11 +262,18 @@ model Escalation {
   tier1RecipientEmail String? @map("tier1_recipient_email")
   tier2SentAt       DateTime? @map("tier2_sent_at")
   tier3SentAt       DateTime? @map("tier3_sent_at")
+  registeredMailTrackingId   String?   @map("registered_mail_tracking_id")
+  registeredMailProvider     String?   @map("registered_mail_provider")
+  registeredMailCostCents    Int?      @map("registered_mail_cost_cents")
+  registeredMailDispatchedAt DateTime? @map("registered_mail_dispatched_at")
+  registeredMailStatus       String?   @map("registered_mail_status")
+  registeredMailProofUrl     String?   @map("registered_mail_proof_url")
   createdAt         DateTime  @default(now()) @map("created_at")
 
   @@map("escalations")
   @@index([entityId])
   @@index([userId])
+  @@index([registeredMailTrackingId])
 }
 
 model BankStatement {

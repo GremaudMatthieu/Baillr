@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Receipt } from "lucide-react";
 
@@ -14,8 +15,12 @@ import {
   useSendReminderEmail,
   useDownloadFormalNotice,
   useDownloadStakeholderLetter,
+  useRegisteredMailStatus,
+  useRegisteredMailCost,
+  useSendRegisteredMail,
 } from "@/hooks/use-escalation";
 import { StatusTimeline } from "./status-timeline";
+import { SendRegisteredMailDialog } from "./send-registered-mail-dialog";
 
 interface RentCallDetailContentProps {
   rentCallId: string;
@@ -55,6 +60,23 @@ export function RentCallDetailContent({
     downloadingType: downloadingStakeholderType,
     error: stakeholderError,
   } = useDownloadStakeholderLetter(entityId ?? "");
+
+  const { data: registeredMailStatus } = useRegisteredMailStatus();
+  const isRegisteredMailAvailable = registeredMailStatus?.available ?? false;
+
+  const { data: registeredMailCost } = useRegisteredMailCost(entityId ?? "");
+  const sendRegisteredMail = useSendRegisteredMail(entityId ?? "");
+
+  const [showRegisteredMailDialog, setShowRegisteredMailDialog] = useState(false);
+
+  const handleSendRegisteredMail = async () => {
+    try {
+      await sendRegisteredMail.mutateAsync(rentCallId);
+      setShowRegisteredMailDialog(false);
+    } catch {
+      // error is in mutation state
+    }
+  };
 
   if (!entityId) {
     return (
@@ -215,8 +237,27 @@ export function RentCallDetailContent({
           }
           isDownloadingStakeholder={isDownloadingStakeholder}
           downloadingStakeholderType={downloadingStakeholderType}
+          isRegisteredMailAvailable={isRegisteredMailAvailable}
+          onSendRegisteredMail={() => setShowRegisteredMailDialog(true)}
+          isSendingRegisteredMail={sendRegisteredMail.isPending}
         />
       )}
+
+      <SendRegisteredMailDialog
+        open={showRegisteredMailDialog}
+        onOpenChange={setShowRegisteredMailDialog}
+        costCentsTtc={registeredMailCost?.costCentsTtc ?? 479}
+        costCentsHt={registeredMailCost?.costCentsHt ?? 399}
+        isSending={sendRegisteredMail.isPending}
+        onConfirm={handleSendRegisteredMail}
+        error={
+          sendRegisteredMail.error instanceof Error
+            ? sendRegisteredMail.error.message
+            : sendRegisteredMail.error
+              ? "Erreur lors de l'envoi"
+              : null
+        }
+      />
     </div>
   );
 }

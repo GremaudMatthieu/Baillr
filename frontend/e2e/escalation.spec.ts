@@ -182,4 +182,38 @@ test.describe('Escalation actions', () => {
       await expect(tier2Completed).toBeVisible();
     }
   });
+
+  test('9.2.E2E.1 — graceful degradation: registered mail button hidden when AR24 not configured', async ({
+    page,
+  }) => {
+    // Navigate to rent call detail page
+    await page.goto(`/rent-calls/${rentCallId}`);
+    await page.waitForLoadState('networkidle');
+
+    const timeline = page.getByText('Procédure de recouvrement');
+    const isVisible = await timeline.isVisible({ timeout: 10000 }).catch(() => false);
+    if (!isVisible) {
+      test.skip();
+      return;
+    }
+
+    // The "Envoyer en recommandé" button should NOT be visible
+    // because AR24 is not configured in the E2E environment
+    const registeredMailBtn = page.getByRole('button', { name: /Envoyer en recommandé/ });
+    await expect(registeredMailBtn).not.toBeVisible();
+  });
+
+  test('9.2.E2E.2 — registered mail status endpoint returns availability', async ({
+    page,
+    request,
+  }) => {
+    // Call the public status endpoint directly
+    const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+    const response = await request.get(`${baseUrl}/api/registered-mail/status`);
+    expect(response.ok()).toBe(true);
+
+    const body = await response.json();
+    expect(body).toHaveProperty('available');
+    expect(typeof body.available).toBe('boolean');
+  });
 });

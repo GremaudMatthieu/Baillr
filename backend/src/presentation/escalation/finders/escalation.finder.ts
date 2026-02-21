@@ -25,4 +25,10 @@ export class EscalationFinder {
       where: { rentCallId: { in: rentCallIds }, userId },
     });
   }
+
+  async findByRegisteredMailTrackingId(trackingId: string): Promise<Escalation | null> {
+    return this.prisma.escalation.findFirst({
+      where: { registeredMailTrackingId: trackingId },
+    });
+  }
 }

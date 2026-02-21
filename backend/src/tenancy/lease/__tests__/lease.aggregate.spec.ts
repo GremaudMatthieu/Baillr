@@ -563,6 +563,21 @@ describe('LeaseAggregate', () => {
       );
     });
 
+    it('should be idempotent — no-op when same revisionId replayed on terminated lease', () => {
+      const aggregate = createExistingLease();
+      aggregate.reviseRent(65000, 142.06, 'Q2', 2025, 'rev-1');
+      aggregate.commit();
+
+      aggregate.terminate('2027-01-01T00:00:00.000Z');
+      aggregate.commit();
+
+      // Same revisionId replayed after termination — should be a no-op, not throw
+      aggregate.reviseRent(65000, 142.06, 'Q2', 2025, 'rev-1');
+
+      const events = aggregate.getUncommittedEvents();
+      expect(events).toHaveLength(0);
+    });
+
     it('should be idempotent — no-op when same revisionId applied twice', () => {
       const aggregate = createExistingLease();
       aggregate.reviseRent(65000, 142.06, 'Q2', 2025, 'rev-1');

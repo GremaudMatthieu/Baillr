@@ -49,6 +49,12 @@ describe('GetBatchEscalationStatusHandler', () => {
         tier1RecipientEmail: null,
         tier2SentAt: null,
         tier3SentAt: null,
+        registeredMailTrackingId: null,
+        registeredMailProvider: null,
+        registeredMailCostCents: null,
+        registeredMailDispatchedAt: null,
+        registeredMailStatus: null,
+        registeredMailProofUrl: null,
       },
       {
         rentCallId: 'rc-2',
@@ -56,6 +62,12 @@ describe('GetBatchEscalationStatusHandler', () => {
         tier1RecipientEmail: null,
         tier2SentAt: null,
         tier3SentAt: null,
+        registeredMailTrackingId: null,
+        registeredMailProvider: null,
+        registeredMailCostCents: null,
+        registeredMailDispatchedAt: null,
+        registeredMailStatus: null,
+        registeredMailProofUrl: null,
       },
     ]);
   });
@@ -69,6 +81,12 @@ describe('GetBatchEscalationStatusHandler', () => {
         tier1RecipientEmail: 'tenant@test.com',
         tier2SentAt: null,
         tier3SentAt: null,
+        registeredMailTrackingId: null,
+        registeredMailProvider: null,
+        registeredMailCostCents: null,
+        registeredMailDispatchedAt: null,
+        registeredMailStatus: null,
+        registeredMailProofUrl: null,
       },
     ]);
 
@@ -83,6 +101,12 @@ describe('GetBatchEscalationStatusHandler', () => {
         tier1RecipientEmail: 'tenant@test.com',
         tier2SentAt: null,
         tier3SentAt: null,
+        registeredMailTrackingId: null,
+        registeredMailProvider: null,
+        registeredMailCostCents: null,
+        registeredMailDispatchedAt: null,
+        registeredMailStatus: null,
+        registeredMailProofUrl: null,
       },
       {
         rentCallId: 'rc-2',
@@ -90,6 +114,12 @@ describe('GetBatchEscalationStatusHandler', () => {
         tier1RecipientEmail: null,
         tier2SentAt: null,
         tier3SentAt: null,
+        registeredMailTrackingId: null,
+        registeredMailProvider: null,
+        registeredMailCostCents: null,
+        registeredMailDispatchedAt: null,
+        registeredMailStatus: null,
+        registeredMailProofUrl: null,
       },
     ]);
   });

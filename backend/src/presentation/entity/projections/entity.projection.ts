@@ -240,7 +240,7 @@ export class EntityProjection implements OnModuleInit {
 
   private async onBankConnectionLinked(data: BankConnectionLinkedData): Promise<void> {
     await this.prisma.bankConnection.upsert({
-      where: { id: data.connectionId },
+      where: { bankAccountId: data.bankAccountId },
       create: {
         id: data.connectionId,
         entityId: data.entityId,
@@ -254,7 +254,18 @@ export class EntityProjection implements OnModuleInit {
         accountIds: data.accountIds,
         status: data.status,
       },
-      update: {},
+      update: {
+        id: data.connectionId,
+        entityId: data.entityId,
+        provider: data.provider,
+        institutionId: data.institutionId,
+        institutionName: data.institutionName,
+        requisitionId: data.requisitionId,
+        agreementId: data.agreementId,
+        agreementExpiry: new Date(data.agreementExpiry),
+        accountIds: data.accountIds,
+        status: data.status,
+      },
     });
     this.logger.log(
       `Projected BankConnectionLinked ${data.connectionId} for entity ${data.entityId}`,

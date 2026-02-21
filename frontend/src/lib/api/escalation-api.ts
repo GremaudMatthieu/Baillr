@@ -7,6 +7,12 @@ export interface EscalationStatusData {
   tier1RecipientEmail: string | null;
   tier2SentAt: string | null;
   tier3SentAt: string | null;
+  registeredMailTrackingId: string | null;
+  registeredMailProvider: string | null;
+  registeredMailCostCents: number | null;
+  registeredMailDispatchedAt: string | null;
+  registeredMailStatus: string | null;
+  registeredMailProofUrl: string | null;
 }
 
 const BACKEND_URL =
@@ -128,5 +134,39 @@ export function useEscalationApi() {
       );
       return (await res.json()) as { sent: boolean };
     },
+
+    async getRegisteredMailCost(
+      entityId: string,
+    ): Promise<{ costCentsHt: number; costCentsTtc: number }> {
+      const res = await fetchWithAuth(
+        `/entities/${entityId}/escalation/registered-mail/cost`,
+        getToken,
+      );
+      return (await res.json()) as { costCentsHt: number; costCentsTtc: number };
+    },
+
+    async sendRegisteredMail(
+      entityId: string,
+      rentCallId: string,
+    ): Promise<{ trackingId: string; status: string; costCentsTtc: number }> {
+      const res = await fetchWithAuth(
+        `/entities/${entityId}/rent-calls/${rentCallId}/escalation/formal-notice/registered-mail`,
+        getToken,
+        { method: "POST" },
+      );
+      return (await res.json()) as { trackingId: string; status: string; costCentsTtc: number };
+    },
   };
+}
+
+export async function fetchRegisteredMailStatus(): Promise<{ available: boolean }> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/registered-mail/status`);
+    if (!res.ok) {
+      return { available: false };
+    }
+    return (await res.json()) as { available: boolean };
+  } catch {
+    return { available: false };
+  }
 }

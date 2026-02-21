@@ -11,6 +11,8 @@ import {
   Shield,
   Scale,
   UserCheck,
+  Send,
+  Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,6 +30,9 @@ interface StatusTimelineProps {
   ) => void;
   isDownloadingStakeholder: boolean;
   downloadingStakeholderType: string | null;
+  isRegisteredMailAvailable?: boolean;
+  onSendRegisteredMail?: () => void;
+  isSendingRegisteredMail?: boolean;
 }
 
 function formatDate(iso: string | null): string {
@@ -87,6 +92,45 @@ function statusLabel(status: TierStatus): string {
   return "Disponible";
 }
 
+function registeredMailStatusLabel(status: string | null): string {
+  switch (status) {
+    case "waiting":
+      return "En attente";
+    case "sent":
+      return "Envoyé";
+    case "AR":
+      return "Accusé de réception";
+    case "negligence":
+      return "Négligence (15 jours)";
+    case "refused":
+      return "Refusé";
+    case "bounced":
+      return "Non délivré";
+    case "error":
+      return "Erreur technique";
+    default:
+      return status ?? "";
+  }
+}
+
+function registeredMailStatusVariant(
+  status: string | null,
+): "default" | "destructive" | "outline" | "secondary" {
+  switch (status) {
+    case "AR":
+      return "default";
+    case "refused":
+    case "bounced":
+    case "error":
+      return "destructive";
+    case "sent":
+    case "waiting":
+      return "secondary";
+    default:
+      return "outline";
+  }
+}
+
 export function StatusTimeline({
   escalation,
   onSendReminder,
@@ -96,8 +140,12 @@ export function StatusTimeline({
   onDownloadStakeholderLetter,
   isDownloadingStakeholder,
   downloadingStakeholderType,
+  isRegisteredMailAvailable = false,
+  onSendRegisteredMail,
+  isSendingRegisteredMail = false,
 }: StatusTimelineProps) {
   const { tier1, tier2, tier3 } = getTierStatuses(escalation);
+  const hasRegisteredMail = !!escalation?.registeredMailTrackingId;
 
   return (
     <Card>
@@ -175,24 +223,94 @@ export function StatusTimeline({
                 </p>
               )}
               {tier2 !== "locked" && (
-                <Button
-                  size="sm"
-                  variant={tier2 === "completed" ? "outline" : "default"}
-                  onClick={onDownloadFormalNotice}
-                  disabled={isDownloadingFormalNotice}
-                >
-                  {isDownloadingFormalNotice ? (
-                    <Loader2
-                      className="mr-1 h-4 w-4 animate-spin"
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    variant={tier2 === "completed" ? "outline" : "default"}
+                    onClick={onDownloadFormalNotice}
+                    disabled={isDownloadingFormalNotice}
+                  >
+                    {isDownloadingFormalNotice ? (
+                      <Loader2
+                        className="mr-1 h-4 w-4 animate-spin"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <Download className="mr-1 h-4 w-4" aria-hidden="true" />
+                    )}
+                    {tier2 === "completed"
+                      ? "Re-télécharger le PDF"
+                      : "Générer la mise en demeure"}
+                  </Button>
+                  {tier2 === "completed" &&
+                    isRegisteredMailAvailable &&
+                    !hasRegisteredMail &&
+                    onSendRegisteredMail && (
+                      <Button
+                        size="sm"
+                        onClick={onSendRegisteredMail}
+                        disabled={isSendingRegisteredMail}
+                      >
+                        {isSendingRegisteredMail ? (
+                          <Loader2
+                            className="mr-1 h-4 w-4 animate-spin"
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <Send
+                            className="mr-1 h-4 w-4"
+                            aria-hidden="true"
+                          />
+                        )}
+                        Envoyer en recommandé
+                      </Button>
+                    )}
+                </div>
+              )}
+              {hasRegisteredMail && (
+                <div className="rounded-md border p-3 space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <Package
+                      className="h-4 w-4 text-muted-foreground"
                       aria-hidden="true"
                     />
-                  ) : (
-                    <Download className="mr-1 h-4 w-4" aria-hidden="true" />
-                  )}
-                  {tier2 === "completed"
-                    ? "Re-télécharger le PDF"
-                    : "Générer la mise en demeure"}
-                </Button>
+                    <span className="text-sm font-medium">
+                      Lettre recommandée
+                    </span>
+                    <Badge variant={registeredMailStatusVariant(escalation?.registeredMailStatus ?? null)}>
+                      {registeredMailStatusLabel(escalation?.registeredMailStatus ?? null)}
+                    </Badge>
+                  </div>
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    <dt>N° de suivi</dt>
+                    <dd className="font-mono">
+                      {escalation?.registeredMailTrackingId}
+                    </dd>
+                    {escalation?.registeredMailDispatchedAt && (
+                      <>
+                        <dt>Envoyé le</dt>
+                        <dd>
+                          {formatDate(escalation.registeredMailDispatchedAt)}
+                        </dd>
+                      </>
+                    )}
+                    {escalation?.registeredMailProofUrl?.startsWith("https://") && (
+                      <>
+                        <dt>Preuve</dt>
+                        <dd>
+                          <a
+                            href={escalation.registeredMailProofUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 underline dark:text-blue-400"
+                          >
+                            Télécharger
+                          </a>
+                        </dd>
+                      </>
+                    )}
+                  </dl>
+                </div>
               )}
             </div>
           </li>

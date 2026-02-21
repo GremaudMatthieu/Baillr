@@ -38,6 +38,12 @@ describe('GetEscalationStatusHandler', () => {
       tier1RecipientEmail: null,
       tier2SentAt: null,
       tier3SentAt: null,
+      registeredMailTrackingId: null,
+      registeredMailProvider: null,
+      registeredMailCostCents: null,
+      registeredMailDispatchedAt: null,
+      registeredMailStatus: null,
+      registeredMailProofUrl: null,
     });
   });
 
@@ -49,6 +55,12 @@ describe('GetEscalationStatusHandler', () => {
       tier1RecipientEmail: 'tenant@test.com',
       tier2SentAt: new Date('2026-02-15T10:00:00.000Z'),
       tier3SentAt: null,
+      registeredMailTrackingId: null,
+      registeredMailProvider: null,
+      registeredMailCostCents: null,
+      registeredMailDispatchedAt: null,
+      registeredMailStatus: null,
+      registeredMailProofUrl: null,
     });
 
     const result = await handler.execute(
@@ -61,6 +73,12 @@ describe('GetEscalationStatusHandler', () => {
       tier1RecipientEmail: 'tenant@test.com',
       tier2SentAt: '2026-02-15T10:00:00.000Z',
       tier3SentAt: null,
+      registeredMailTrackingId: null,
+      registeredMailProvider: null,
+      registeredMailCostCents: null,
+      registeredMailDispatchedAt: null,
+      registeredMailStatus: null,
+      registeredMailProofUrl: null,
     });
   });
 });

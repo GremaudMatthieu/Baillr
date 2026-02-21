@@ -15,6 +15,9 @@ const defaultProps = {
   ) => void,
   isDownloadingStakeholder: false,
   downloadingStakeholderType: null,
+  isRegisteredMailAvailable: false,
+  onSendRegisteredMail: vi.fn(),
+  isSendingRegisteredMail: false,
 };
 
 describe("StatusTimeline", () => {
@@ -59,6 +62,12 @@ describe("StatusTimeline", () => {
       tier1RecipientEmail: "jean@test.com",
       tier2SentAt: null,
       tier3SentAt: null,
+      registeredMailTrackingId: null,
+      registeredMailProvider: null,
+      registeredMailCostCents: null,
+      registeredMailDispatchedAt: null,
+      registeredMailStatus: null,
+      registeredMailProofUrl: null,
     };
 
     renderWithProviders(
@@ -80,6 +89,12 @@ describe("StatusTimeline", () => {
       tier1RecipientEmail: "jean@test.com",
       tier2SentAt: "2026-02-12T10:00:00Z",
       tier3SentAt: "2026-02-14T10:00:00Z",
+      registeredMailTrackingId: null,
+      registeredMailProvider: null,
+      registeredMailCostCents: null,
+      registeredMailDispatchedAt: null,
+      registeredMailStatus: null,
+      registeredMailProofUrl: null,
     };
 
     renderWithProviders(
@@ -172,6 +187,12 @@ describe("StatusTimeline", () => {
       tier1RecipientEmail: null,
       tier2SentAt: "2026-02-12T10:00:00Z",
       tier3SentAt: null,
+      registeredMailTrackingId: null,
+      registeredMailProvider: null,
+      registeredMailCostCents: null,
+      registeredMailDispatchedAt: null,
+      registeredMailStatus: null,
+      registeredMailProofUrl: null,
     };
 
     renderWithProviders(
@@ -200,5 +221,207 @@ describe("StatusTimeline", () => {
     expect(
       screen.getByText("Procédure de recouvrement"),
     ).toBeInTheDocument();
+  });
+
+  it("should hide registered mail button when not available", () => {
+    const escalation: EscalationStatusData = {
+      rentCallId: "rc-1",
+      tier1SentAt: null,
+      tier1RecipientEmail: null,
+      tier2SentAt: "2026-02-12T10:00:00Z",
+      tier3SentAt: null,
+      registeredMailTrackingId: null,
+      registeredMailProvider: null,
+      registeredMailCostCents: null,
+      registeredMailDispatchedAt: null,
+      registeredMailStatus: null,
+      registeredMailProofUrl: null,
+    };
+
+    renderWithProviders(
+      <StatusTimeline
+        escalation={escalation}
+        {...defaultProps}
+        isRegisteredMailAvailable={false}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: /Envoyer en recommandé/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("should show registered mail button when available and tier 2 completed", () => {
+    const escalation: EscalationStatusData = {
+      rentCallId: "rc-1",
+      tier1SentAt: null,
+      tier1RecipientEmail: null,
+      tier2SentAt: "2026-02-12T10:00:00Z",
+      tier3SentAt: null,
+      registeredMailTrackingId: null,
+      registeredMailProvider: null,
+      registeredMailCostCents: null,
+      registeredMailDispatchedAt: null,
+      registeredMailStatus: null,
+      registeredMailProofUrl: null,
+    };
+
+    renderWithProviders(
+      <StatusTimeline
+        escalation={escalation}
+        {...defaultProps}
+        isRegisteredMailAvailable={true}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: /Envoyer en recommandé/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("should call onSendRegisteredMail when clicking registered mail button", async () => {
+    const user = userEvent.setup();
+    const onSendRegisteredMail = vi.fn();
+
+    const escalation: EscalationStatusData = {
+      rentCallId: "rc-1",
+      tier1SentAt: null,
+      tier1RecipientEmail: null,
+      tier2SentAt: "2026-02-12T10:00:00Z",
+      tier3SentAt: null,
+      registeredMailTrackingId: null,
+      registeredMailProvider: null,
+      registeredMailCostCents: null,
+      registeredMailDispatchedAt: null,
+      registeredMailStatus: null,
+      registeredMailProofUrl: null,
+    };
+
+    renderWithProviders(
+      <StatusTimeline
+        escalation={escalation}
+        {...defaultProps}
+        isRegisteredMailAvailable={true}
+        onSendRegisteredMail={onSendRegisteredMail}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: /Envoyer en recommandé/ }),
+    );
+
+    expect(onSendRegisteredMail).toHaveBeenCalledTimes(1);
+  });
+
+  it("should hide registered mail button when already dispatched", () => {
+    const escalation: EscalationStatusData = {
+      rentCallId: "rc-1",
+      tier1SentAt: null,
+      tier1RecipientEmail: null,
+      tier2SentAt: "2026-02-12T10:00:00Z",
+      tier3SentAt: null,
+      registeredMailTrackingId: "LRE-2026-001",
+      registeredMailProvider: "ar24",
+      registeredMailCostCents: 479,
+      registeredMailDispatchedAt: "2026-02-13T10:00:00Z",
+      registeredMailStatus: "waiting",
+      registeredMailProofUrl: null,
+    };
+
+    renderWithProviders(
+      <StatusTimeline
+        escalation={escalation}
+        {...defaultProps}
+        isRegisteredMailAvailable={true}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: /Envoyer en recommandé/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("should show tracking info when registered mail dispatched", () => {
+    const escalation: EscalationStatusData = {
+      rentCallId: "rc-1",
+      tier1SentAt: null,
+      tier1RecipientEmail: null,
+      tier2SentAt: "2026-02-12T10:00:00Z",
+      tier3SentAt: null,
+      registeredMailTrackingId: "LRE-2026-001",
+      registeredMailProvider: "ar24",
+      registeredMailCostCents: 479,
+      registeredMailDispatchedAt: "2026-02-13T10:00:00Z",
+      registeredMailStatus: "waiting",
+      registeredMailProofUrl: null,
+    };
+
+    renderWithProviders(
+      <StatusTimeline escalation={escalation} {...defaultProps} />,
+    );
+
+    expect(screen.getByText("Lettre recommandée")).toBeInTheDocument();
+    expect(screen.getByText("LRE-2026-001")).toBeInTheDocument();
+    expect(screen.getByText("En attente")).toBeInTheDocument();
+    expect(screen.getByText(/13 février 2026/)).toBeInTheDocument();
+  });
+
+  it("should show AR status badge for acknowledged receipt", () => {
+    const escalation: EscalationStatusData = {
+      rentCallId: "rc-1",
+      tier1SentAt: null,
+      tier1RecipientEmail: null,
+      tier2SentAt: "2026-02-12T10:00:00Z",
+      tier3SentAt: null,
+      registeredMailTrackingId: "LRE-2026-001",
+      registeredMailProvider: "ar24",
+      registeredMailCostCents: 479,
+      registeredMailDispatchedAt: "2026-02-13T10:00:00Z",
+      registeredMailStatus: "AR",
+      registeredMailProofUrl: "https://ar24.fr/proof/123",
+    };
+
+    renderWithProviders(
+      <StatusTimeline escalation={escalation} {...defaultProps} />,
+    );
+
+    expect(screen.getByText("Accusé de réception")).toBeInTheDocument();
+    expect(screen.getByText("Télécharger")).toBeInTheDocument();
+  });
+
+  it("should not render proof URL link for non-https URLs", () => {
+    const escalation: EscalationStatusData = {
+      rentCallId: "rc-1",
+      tier1SentAt: null,
+      tier1RecipientEmail: null,
+      tier2SentAt: "2026-02-12T10:00:00Z",
+      tier3SentAt: null,
+      registeredMailTrackingId: "LRE-2026-001",
+      registeredMailProvider: "ar24",
+      registeredMailCostCents: 479,
+      registeredMailDispatchedAt: "2026-02-13T10:00:00Z",
+      registeredMailStatus: "AR",
+      registeredMailProofUrl: "javascript:alert(1)",
+    };
+
+    renderWithProviders(
+      <StatusTimeline escalation={escalation} {...defaultProps} />,
+    );
+
+    expect(screen.queryByText("Télécharger")).not.toBeInTheDocument();
+  });
+
+  it("should not show registered mail button when tier 2 not completed", () => {
+    renderWithProviders(
+      <StatusTimeline
+        escalation={null}
+        {...defaultProps}
+        isRegisteredMailAvailable={true}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: /Envoyer en recommandé/ }),
+    ).not.toBeInTheDocument();
   });
 });

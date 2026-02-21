@@ -31,6 +31,12 @@ const mockEscalation = {
   tier1RecipientEmail: null,
   tier2SentAt: null,
   tier3SentAt: null,
+  registeredMailTrackingId: null,
+  registeredMailProvider: null,
+  registeredMailCostCents: null,
+  registeredMailDispatchedAt: null,
+  registeredMailStatus: null,
+  registeredMailProofUrl: null,
 };
 
 let mockEntityId: string | undefined = "entity-1";
@@ -68,6 +74,18 @@ vi.mock("@/hooks/use-escalation", () => ({
     download: vi.fn(),
     isDownloading: false,
     downloadingType: null,
+    error: null,
+  }),
+  useRegisteredMailStatus: () => ({
+    data: { available: false },
+  }),
+  useRegisteredMailCost: () => ({
+    data: { costCentsHt: 399, costCentsTtc: 479 },
+  }),
+  useSendRegisteredMail: () => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
     error: null,
   }),
 }));

@@ -229,11 +229,11 @@ export class LeaseAggregate extends AggregateRoot {
     if (!this.created) {
       throw LeaseNotCreatedException.create();
     }
+    if (this.lastAppliedRevisionId === revisionId) {
+      return; // idempotent — already applied (even if lease is now terminated)
+    }
     if (this.terminated) {
       throw LeaseAlreadyTerminatedException.create();
-    }
-    if (this.lastAppliedRevisionId === revisionId) {
-      return; // idempotent — already applied
     }
 
     this.apply(

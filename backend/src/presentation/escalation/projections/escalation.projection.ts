@@ -6,6 +6,8 @@ import type { EscalationInitiatedData } from '@recovery/escalation/events/escala
 import type { ReminderEmailSentData } from '@recovery/escalation/events/reminder-email-sent.event';
 import type { FormalNoticeGeneratedData } from '@recovery/escalation/events/formal-notice-generated.event';
 import type { StakeholderNotificationGeneratedData } from '@recovery/escalation/events/stakeholder-notification-generated.event';
+import type { RegisteredMailDispatchedData } from '@recovery/escalation/events/registered-mail-dispatched.event';
+import type { RegisteredMailStatusUpdatedData } from '@recovery/escalation/events/registered-mail-status-updated.event';
 
 @Injectable()
 export class EscalationProjection implements OnModuleInit {
@@ -77,6 +79,16 @@ export class EscalationProjection implements OnModuleInit {
         case 'StakeholderNotificationGenerated':
           await this.onStakeholderNotificationGenerated(
             data as unknown as StakeholderNotificationGeneratedData,
+          );
+          break;
+        case 'RegisteredMailDispatched':
+          await this.onRegisteredMailDispatched(
+            data as unknown as RegisteredMailDispatchedData,
+          );
+          break;
+        case 'RegisteredMailStatusUpdated':
+          await this.onRegisteredMailStatusUpdated(
+            data as unknown as RegisteredMailStatusUpdatedData,
           );
           break;
         default:
@@ -185,5 +197,50 @@ export class EscalationProjection implements OnModuleInit {
       },
     });
     this.logger.log(`Projected StakeholderNotificationGenerated for rent call ${data.rentCallId}`);
+  }
+
+  private async onRegisteredMailDispatched(data: RegisteredMailDispatchedData): Promise<void> {
+    const existing = await this.prisma.escalation.findUnique({
+      where: { rentCallId: data.rentCallId },
+    });
+    if (!existing) {
+      this.logger.warn(
+        `Escalation for rent call ${data.rentCallId} not found for RegisteredMailDispatched — skipping`,
+      );
+      return;
+    }
+
+    await this.prisma.escalation.update({
+      where: { rentCallId: data.rentCallId },
+      data: {
+        registeredMailTrackingId: data.trackingId,
+        registeredMailProvider: data.provider,
+        registeredMailCostCents: data.costCents,
+        registeredMailDispatchedAt: new Date(data.dispatchedAt),
+        registeredMailStatus: 'waiting',
+      },
+    });
+    this.logger.log(`Projected RegisteredMailDispatched for rent call ${data.rentCallId}`);
+  }
+
+  private async onRegisteredMailStatusUpdated(data: RegisteredMailStatusUpdatedData): Promise<void> {
+    const existing = await this.prisma.escalation.findUnique({
+      where: { rentCallId: data.rentCallId },
+    });
+    if (!existing) {
+      this.logger.warn(
+        `Escalation for rent call ${data.rentCallId} not found for RegisteredMailStatusUpdated — skipping`,
+      );
+      return;
+    }
+
+    await this.prisma.escalation.update({
+      where: { rentCallId: data.rentCallId },
+      data: {
+        registeredMailStatus: data.status,
+        registeredMailProofUrl: data.proofUrl,
+      },
+    });
+    this.logger.log(`Projected RegisteredMailStatusUpdated for rent call ${data.rentCallId} — status: ${data.status}`);
   }
 }

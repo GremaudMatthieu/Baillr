@@ -38,6 +38,12 @@ export class GetBatchEscalationStatusHandler implements IQueryHandler<GetBatchEs
           tier1RecipientEmail: null,
           tier2SentAt: null,
           tier3SentAt: null,
+          registeredMailTrackingId: null,
+          registeredMailProvider: null,
+          registeredMailCostCents: null,
+          registeredMailDispatchedAt: null,
+          registeredMailStatus: null,
+          registeredMailProofUrl: null,
         };
       }
       return {
@@ -46,6 +52,12 @@ export class GetBatchEscalationStatusHandler implements IQueryHandler<GetBatchEs
         tier1RecipientEmail: escalation.tier1RecipientEmail ?? null,
         tier2SentAt: escalation.tier2SentAt?.toISOString() ?? null,
         tier3SentAt: escalation.tier3SentAt?.toISOString() ?? null,
+        registeredMailTrackingId: escalation.registeredMailTrackingId ?? null,
+        registeredMailProvider: escalation.registeredMailProvider ?? null,
+        registeredMailCostCents: escalation.registeredMailCostCents ?? null,
+        registeredMailDispatchedAt: escalation.registeredMailDispatchedAt?.toISOString() ?? null,
+        registeredMailStatus: escalation.registeredMailStatus ?? null,
+        registeredMailProofUrl: escalation.registeredMailProofUrl ?? null,
       };
     });
   }
