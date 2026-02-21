@@ -31,6 +31,7 @@ import { EmailModule } from './infrastructure/email/email.module';
 import { BankImportModule } from './infrastructure/bank-import/bank-import.module';
 import { OpenBankingModule } from './infrastructure/open-banking/open-banking.module';
 import { RegisteredMailModule } from './infrastructure/registered-mail/registered-mail.module';
+import { InseeModule } from './infrastructure/insee/insee.module';
 import { SchedulingModule } from './infrastructure/scheduling/scheduling.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
@@ -49,6 +50,7 @@ import { AppService } from './app.service';
     BankImportModule,
     OpenBankingModule,
     RegisteredMailModule,
+    InseeModule,
     PortfolioModule,
     TenancyModule,
     BillingModule,

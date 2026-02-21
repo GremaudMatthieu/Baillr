@@ -123,7 +123,7 @@ export function InseeIndexForm({ onSubmit, isSubmitting }: InseeIndexFormProps) 
             type="number"
             step="0.01"
             min="0.001"
-            max="500"
+            max="10000"
             placeholder="Ex: 142.06"
             {...form.register("value", { valueAsNumber: true })}
           />

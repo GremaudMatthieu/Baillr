@@ -21,6 +21,7 @@ export class RecordAnInseeIndexHandler
       command.value,
       command.entityId,
       command.userId,
+      command.source,
     );
     await this.repository.save(aggregate);
   }

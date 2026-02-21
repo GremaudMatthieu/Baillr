@@ -9,6 +9,7 @@ vi.mock("@/lib/api/insee-indices-api", () => ({
   useInseeIndicesApi: () => ({
     getInseeIndices: vi.fn().mockResolvedValue([]),
     recordInseeIndex: mockRecordInseeIndex,
+    fetchInseeIndices: vi.fn().mockResolvedValue({ fetched: 0, newIndices: 0, skipped: 0 }),
   }),
 }));
 

@@ -34,6 +34,6 @@ export class RecordAnInseeIndexDto {
 
   @IsNumber()
   @Min(0.001)
-  @Max(500)
+  @Max(10000)
   value!: number;
 }

@@ -17,7 +17,7 @@ export class InvalidIndexValueException extends DomainException {
 
   static outOfRange(value: number): InvalidIndexValueException {
     return new InvalidIndexValueException(
-      `Index value ${value} is outside plausible range (50-500)`,
+      `Index value ${value} is outside plausible range (50-10000)`,
     );
   }
 }

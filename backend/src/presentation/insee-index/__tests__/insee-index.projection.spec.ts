@@ -35,7 +35,7 @@ describe('InseeIndexProjection', () => {
   });
 
   describe('handleEvent (via private method access)', () => {
-    it('should create InseeIndex on IndexRecorded event', async () => {
+    it('should create InseeIndex on IndexRecorded event with source', async () => {
       mockPrisma.inseeIndex.findUnique.mockResolvedValue(null);
       mockPrisma.inseeIndex.create.mockResolvedValue({});
 
@@ -48,9 +48,9 @@ describe('InseeIndexProjection', () => {
         entityId: 'entity-1',
         userId: 'user-1',
         recordedAt: '2026-02-14T10:00:00Z',
+        source: 'auto',
       };
 
-      // Access private method via prototype
       await (
         projection as unknown as {
           handleEvent: (t: string, d: Record<string, unknown>) => Promise<void>;
@@ -66,6 +66,43 @@ describe('InseeIndexProjection', () => {
           value: 142.06,
           entityId: 'entity-1',
           userId: 'user-1',
+          source: 'auto',
+        },
+      });
+    });
+
+    it('should default source to "manual" for old events without source field', async () => {
+      mockPrisma.inseeIndex.findUnique.mockResolvedValue(null);
+      mockPrisma.inseeIndex.create.mockResolvedValue({});
+
+      const data = {
+        indexId: 'test-id',
+        type: 'IRL',
+        quarter: 'Q1',
+        year: 2026,
+        value: 142.06,
+        entityId: 'entity-1',
+        userId: 'user-1',
+        recordedAt: '2026-02-14T10:00:00Z',
+        // No source field — simulates old event
+      };
+
+      await (
+        projection as unknown as {
+          handleEvent: (t: string, d: Record<string, unknown>) => Promise<void>;
+        }
+      ).handleEvent('IndexRecorded', data as unknown as Record<string, unknown>);
+
+      expect(mockPrisma.inseeIndex.create).toHaveBeenCalledWith({
+        data: {
+          id: 'test-id',
+          type: 'IRL',
+          quarter: 'Q1',
+          year: 2026,
+          value: 142.06,
+          entityId: 'entity-1',
+          userId: 'user-1',
+          source: 'manual',
         },
       });
     });

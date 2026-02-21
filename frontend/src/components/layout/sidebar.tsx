@@ -11,11 +11,9 @@ import {
   Receipt,
   CreditCard,
   BookOpen,
-  FolderOpen,
   TrendingUp,
   BarChart3,
   Coins,
-  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -46,17 +44,10 @@ const navItems = [
   { label: "Appels de loyer", icon: Receipt, href: "/rent-calls" },
   { label: "Paiements", icon: CreditCard, href: "/payments" },
   { label: "Comptabilité", icon: BookOpen, href: "/accounting" },
-  { label: "Documents", icon: FolderOpen, href: "/documents" },
   { label: "Indices", icon: TrendingUp, href: "/indices" },
   { label: "Révisions", icon: BarChart3, href: "/revisions" },
   { label: "Charges", icon: Coins, href: "/charges" },
 ] as const;
-
-const settingsItem = {
-  label: "Réglages",
-  icon: Settings,
-  href: "/settings",
-} as const;
 
 interface SidebarProps {
   mobileOpen: boolean;
@@ -122,44 +113,6 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate
         </ul>
       </ScrollArea>
 
-      <Separator className="bg-sidebar-border" />
-
-      <div className="px-3 py-4">
-        {(() => {
-          const isActive = pathname === settingsItem.href || pathname.startsWith(settingsItem.href + "/");
-          const linkContent = (
-            <Link
-              href={settingsItem.href}
-              onClick={onNavigate}
-              className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                collapsed && "justify-center px-2",
-                isActive
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-bold"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent/50"
-              )}
-              aria-current={isActive ? "page" : undefined}
-            >
-              <settingsItem.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-              {!collapsed && <span>{settingsItem.label}</span>}
-            </Link>
-          );
-
-          if (collapsed) {
-            return (
-              <Tooltip>
-                <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
-                <TooltipContent side="right" sideOffset={8}>
-                  {settingsItem.label}
-                </TooltipContent>
-              </Tooltip>
-            );
-          }
-
-          return linkContent;
-        })()}
-      </div>
     </nav>
   );
 }

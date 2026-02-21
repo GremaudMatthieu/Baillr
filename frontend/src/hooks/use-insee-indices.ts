@@ -5,6 +5,7 @@ import {
   useInseeIndicesApi,
   type RecordInseeIndexPayload,
   type InseeIndexData,
+  type FetchInseeIndicesResult,
 } from "@/lib/api/insee-indices-api";
 
 export function useInseeIndices(entityId: string) {
@@ -36,6 +37,7 @@ export function useRecordInseeIndex(entityId: string) {
         value: payload.value,
         entityId,
         userId: "",
+        source: "manual",
         createdAt: new Date().toISOString(),
       };
 
@@ -55,6 +57,21 @@ export function useRecordInseeIndex(entityId: string) {
       }
     },
     onSettled: () => {
+      setTimeout(() => {
+        void queryClient.invalidateQueries({
+          queryKey: ["entities", entityId, "insee-indices"],
+        });
+      }, 1500);
+    },
+  });
+}
+
+export function useFetchInseeIndices(entityId: string) {
+  const api = useInseeIndicesApi();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.fetchInseeIndices(entityId),
+    onSuccess: () => {
       setTimeout(() => {
         void queryClient.invalidateQueries({
           queryKey: ["entities", entityId, "insee-indices"],

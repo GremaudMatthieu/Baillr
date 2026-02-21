@@ -7,5 +7,6 @@ export class RecordAnInseeIndexCommand {
     public readonly value: number,
     public readonly entityId: string,
     public readonly userId: string,
+    public readonly source: string = 'manual',
   ) {}
 }

@@ -9,7 +9,14 @@ export interface InseeIndexData {
   value: number;
   entityId: string;
   userId: string;
+  source: "manual" | "auto";
   createdAt: string;
+}
+
+export interface FetchInseeIndicesResult {
+  fetched: number;
+  newIndices: number;
+  skipped: number;
 }
 
 export interface RecordInseeIndexPayload {
@@ -45,6 +52,17 @@ export function useInseeIndicesApi() {
         method: "POST",
         body: JSON.stringify(payload),
       });
+    },
+
+    async fetchInseeIndices(
+      entityId: string,
+    ): Promise<FetchInseeIndicesResult> {
+      const res = await fetchWithAuth(
+        `/entities/${entityId}/insee-indices/fetch`,
+        getToken,
+        { method: "POST" },
+      );
+      return (await res.json()) as FetchInseeIndicesResult;
     },
   };
 }

@@ -98,6 +98,7 @@ export class InseeIndexProjection implements OnModuleInit {
         value: data.value,
         entityId: data.entityId,
         userId: data.userId,
+        source: data.source ?? 'manual',
       },
     });
     this.logger.log(`Projected IndexRecorded for ${data.indexId}`);

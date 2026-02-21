@@ -13,6 +13,7 @@ const mockIndices: InseeIndexData[] = [
     value: 142.06,
     entityId: "ent-1",
     userId: "user-1",
+    source: "manual",
     createdAt: "2025-04-15T10:00:00.000Z",
   },
   {
@@ -23,6 +24,7 @@ const mockIndices: InseeIndexData[] = [
     value: 143.15,
     entityId: "ent-1",
     userId: "user-1",
+    source: "auto",
     createdAt: "2025-07-20T10:00:00.000Z",
   },
   {
@@ -33,6 +35,7 @@ const mockIndices: InseeIndexData[] = [
     value: 134.2,
     entityId: "ent-1",
     userId: "user-1",
+    source: "manual",
     createdAt: "2025-01-10T10:00:00.000Z",
   },
 ];
@@ -92,6 +95,7 @@ describe("InseeIndexList", () => {
         value: 140,
         entityId: "e",
         userId: "u",
+        source: "manual",
         createdAt: "2024-01-01T00:00:00.000Z",
       },
       {
@@ -102,6 +106,7 @@ describe("InseeIndexList", () => {
         value: 145,
         entityId: "e",
         userId: "u",
+        source: "manual",
         createdAt: "2025-01-01T00:00:00.000Z",
       },
       {
@@ -112,6 +117,7 @@ describe("InseeIndexList", () => {
         value: 142,
         entityId: "e",
         userId: "u",
+        source: "manual",
         createdAt: "2025-01-01T00:00:00.000Z",
       },
     ];
@@ -127,6 +133,22 @@ describe("InseeIndexList", () => {
     expect(cells[2]).toContain("140");
   });
 
+  it("renders source badges for indices", () => {
+    renderWithProviders(<InseeIndexList indices={mockIndices} />);
+
+    // idx-1 is manual, idx-2 is auto
+    expect(screen.getByText("Auto")).toBeInTheDocument();
+    expect(screen.getAllByText("Manuel")).toHaveLength(2); // idx-1 and idx-3
+  });
+
+  it("renders Source column header", () => {
+    renderWithProviders(<InseeIndexList indices={mockIndices} />);
+
+    const headers = screen.getAllByRole("columnheader");
+    const sourceHeaders = headers.filter((h) => h.textContent === "Source");
+    expect(sourceHeaders.length).toBeGreaterThan(0);
+  });
+
   it("does not render types with no data", () => {
     const irlOnly: InseeIndexData[] = [
       {
@@ -137,6 +159,7 @@ describe("InseeIndexList", () => {
         value: 142.06,
         entityId: "ent-1",
         userId: "user-1",
+        source: "manual",
         createdAt: "2025-04-15T10:00:00.000Z",
       },
     ];

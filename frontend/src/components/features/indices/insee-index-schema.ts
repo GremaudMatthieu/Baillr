@@ -11,7 +11,7 @@ export const inseeIndexSchema = z.object({
   value: z
     .number({ error: "Valeur requise" })
     .min(0.001, { error: "La valeur doit être positive" })
-    .max(500, { error: "La valeur ne peut pas dépasser 500" }),
+    .max(10000, { error: "La valeur ne peut pas dépasser 10 000" }),
 });
 
 export type InseeIndexFormData = z.infer<typeof inseeIndexSchema>;

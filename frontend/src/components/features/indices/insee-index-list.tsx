@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import type { InseeIndexData } from "@/lib/api/insee-indices-api";
 import { REVISION_INDEX_TYPE_LABELS } from "@/lib/constants/revision-index-types";
 import { REFERENCE_QUARTER_LABELS } from "@/lib/constants/reference-quarters";
+import { InseeSourceBadge } from "./insee-source-badge";
 
 interface InseeIndexListProps {
   indices: InseeIndexData[];
@@ -63,6 +64,7 @@ export function InseeIndexList({ indices }: InseeIndexListProps) {
                     <th className="pb-2 pr-4 font-medium">Trimestre</th>
                     <th className="pb-2 pr-4 font-medium">Année</th>
                     <th className="pb-2 pr-4 font-medium">Valeur</th>
+                    <th className="pb-2 pr-4 font-medium">Source</th>
                     <th className="pb-2 font-medium">
                       Date d&apos;enregistrement
                     </th>
@@ -77,6 +79,9 @@ export function InseeIndexList({ indices }: InseeIndexListProps) {
                       </td>
                       <td className="py-2 pr-4">{index.year}</td>
                       <td className="py-2 pr-4 font-mono">{index.value}</td>
+                      <td className="py-2 pr-4">
+                        <InseeSourceBadge source={index.source} />
+                      </td>
                       <td className="py-2 text-muted-foreground">
                         {formatDate(index.createdAt)}
                       </td>

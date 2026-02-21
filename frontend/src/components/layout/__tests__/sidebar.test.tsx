@@ -65,8 +65,6 @@ describe("Sidebar", () => {
     expect(screen.getAllByText("Locataires").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Baux").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Comptabilité").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Documents").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Réglages").length).toBeGreaterThan(0);
   });
 
   it("should mark current page as active (aria-current)", () => {

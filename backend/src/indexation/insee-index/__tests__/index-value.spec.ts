@@ -17,9 +17,14 @@ describe('IndexValue', () => {
       expect(value.value).toBe(50);
     });
 
-    it('should accept boundary value 500', () => {
-      const value = IndexValue.create(500);
-      expect(value.value).toBe(500);
+    it('should accept boundary value 10000', () => {
+      const value = IndexValue.create(10000);
+      expect(value.value).toBe(10000);
+    });
+
+    it('should accept ICC-range values (e.g. 2056)', () => {
+      const value = IndexValue.create(2056);
+      expect(value.value).toBe(2056);
     });
 
     it('should accept 3 decimal places', () => {
@@ -43,8 +48,8 @@ describe('IndexValue', () => {
       expect(() => IndexValue.create(49.99)).toThrow('outside plausible range');
     });
 
-    it('should throw for value above 500', () => {
-      expect(() => IndexValue.create(500.01)).toThrow('outside plausible range');
+    it('should throw for value above 10000', () => {
+      expect(() => IndexValue.create(10000.01)).toThrow('outside plausible range');
     });
   });
 

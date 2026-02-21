@@ -97,6 +97,43 @@ test.describe("INSEE Indices", () => {
     ).toBeVisible({ timeout: 10_000 });
   });
 
+  test("fetch INSEE indices from API and verify summary (AC #1, #2)", async ({
+    page,
+  }) => {
+    test.skip(!entityId, "Requires entity from seed test");
+
+    await page.goto("/indices");
+    await expect(
+      page.getByRole("heading", { name: "Indices INSEE" }),
+    ).toBeVisible({ timeout: 10_000 });
+
+    // Click fetch button
+    await page
+      .getByRole("button", { name: "Récupérer les indices INSEE" })
+      .click();
+
+    // Verify result summary appears (real API call — INSEE BDM is open)
+    await expect(
+      page.getByText(/nouveaux indices enregistrés/),
+    ).toBeVisible({ timeout: 30_000 });
+  });
+
+  test("verify auto source badge for fetched indices (AC #4)", async ({
+    page,
+  }) => {
+    test.skip(!entityId, "Requires entity from seed test");
+
+    await page.goto("/indices");
+    await expect(
+      page.getByRole("heading", { name: "Indices INSEE" }),
+    ).toBeVisible({ timeout: 10_000 });
+
+    // Wait for indices to load — should see "Auto" badges from previous fetch
+    await expect(page.getByText("Auto").first()).toBeVisible({
+      timeout: 10_000,
+    });
+  });
+
   test("sidebar navigation includes Indices link", async ({ page }) => {
     await page.goto("/dashboard");
     await expect(

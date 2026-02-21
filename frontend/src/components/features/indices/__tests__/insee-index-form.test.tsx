@@ -73,7 +73,7 @@ describe("InseeIndexForm", () => {
     expect(valueInput.type).toBe("number");
     expect(valueInput.step).toBe("0.01");
     expect(valueInput.min).toBe("0.001");
-    expect(valueInput.max).toBe("500");
+    expect(valueInput.max).toBe("10000");
     expect(valueInput.placeholder).toBe("Ex: 142.06");
   });
 

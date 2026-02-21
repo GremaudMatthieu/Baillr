@@ -303,6 +303,7 @@ model InseeIndex {
   value     Float    // Stored as decimal (e.g., 142.06)
   entityId  String   @map("entity_id")
   userId    String   @map("user_id")
+  source    String   @default("manual") // "manual" | "auto"
   createdAt DateTime @default(now()) @map("created_at")
 
   @@unique([type, quarter, year, entityId])

@@ -8,7 +8,7 @@ import { IndexRecorded } from '../events/index-recorded.event';
 
 describe('InseeIndexAggregate', () => {
   describe('record', () => {
-    it('should emit IndexRecorded event with valid data', () => {
+    it('should emit IndexRecorded event with valid data and default source "manual"', () => {
       const aggregate = new InseeIndexAggregate('test-id');
       aggregate.record('IRL', 'Q1', 2026, 142.06, 'entity-1', 'user-1');
 
@@ -25,6 +25,16 @@ describe('InseeIndexAggregate', () => {
       expect(event.data.entityId).toBe('entity-1');
       expect(event.data.userId).toBe('user-1');
       expect(event.data.recordedAt).toBeDefined();
+      expect(event.data.source).toBe('manual');
+    });
+
+    it('should emit IndexRecorded event with source "auto" when specified', () => {
+      const aggregate = new InseeIndexAggregate('test-id');
+      aggregate.record('IRL', 'Q1', 2026, 142.06, 'entity-1', 'user-1', 'auto');
+
+      const events = aggregate.getUncommittedEvents();
+      const event = events[0] as IndexRecorded;
+      expect(event.data.source).toBe('auto');
     });
 
     it('should be a no-op if already recorded (replay guard)', () => {

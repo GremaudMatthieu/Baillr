@@ -74,8 +74,8 @@ describe('RecordAnInseeIndexDto', () => {
     expect(errors.length).toBeGreaterThan(0);
   });
 
-  it('should fail with value above 500', async () => {
-    const dto = createDto({ value: 501 });
+  it('should fail with value above 10000', async () => {
+    const dto = createDto({ value: 10001 });
     const errors = await validate(dto);
     expect(errors.length).toBeGreaterThan(0);
   });

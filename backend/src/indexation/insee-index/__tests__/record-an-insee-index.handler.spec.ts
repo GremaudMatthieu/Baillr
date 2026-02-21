@@ -40,6 +40,26 @@ describe('RecordAnInseeIndexHandler', () => {
     expect(events[0].data.value).toBe(142.06);
     expect(events[0].data.entityId).toBe('entity-1');
     expect(events[0].data.userId).toBe('user-1');
+    expect(events[0].data.source).toBe('manual');
+  });
+
+  it('should pass source through to aggregate', async () => {
+    const command = new RecordAnInseeIndexCommand(
+      'test-id',
+      'IRL',
+      'Q1',
+      2026,
+      142.06,
+      'entity-1',
+      'user-1',
+      'auto',
+    );
+
+    await handler.execute(command);
+
+    const savedAggregate = mockRepository.save.mock.calls[0][0];
+    const events = savedAggregate.getUncommittedEvents();
+    expect(events[0].data.source).toBe('auto');
   });
 
   it('should propagate VO validation errors', async () => {

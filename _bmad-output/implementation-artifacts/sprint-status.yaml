@@ -136,5 +136,5 @@ development_status:
   epic-9: in-progress
   9-1-connect-to-bank-via-open-banking-api: done # reviewed 2026-02-19 (pass 1: 12 findings, 10 fixes), pass 2: 2026-02-20 (10 findings, 6 fixes — H1-H3 accepted GoCardless→Bridge, M1 date normalization, M2 deleteItem throws, M4 HTTPS redirect validation, M5 accountIds runtime check, L1 soft delete, L2 staleTime 5min)
   9-2-send-registered-mail-via-ar24-maileva-integration: done # reviewed 2026-02-21, 12 findings (3H/5M/4L), 8 fixes — H1 Ar24WebhookDto class-validator, H2 IP whitelist all non-test envs, H3 initiate() only on stream-not-found, M5 dead randomBytes export removed, M8 pricing source comment, M9 fetchRegisteredMailStatus try/catch, M10 proof URL https:// sanitization, L11 webhook controller test (5 tests); accepted: M4 (double-click already guarded), M6 (process.env is project pattern), M7 (webhook context has no userId)
-  9-3-automatic-insee-index-retrieval: backlog
+  9-3-automatic-insee-index-retrieval: done # reviewed 2026-02-21, 9 findings (2H/4M/3L), 9 fixes — H1 AbortController 15s timeout on INSEE fetch, H2 5 missing indices-page tests (fetch button + messages), M1 aria-live on fetch message, M2 removed unnecessary "use client", M3 better 0-indices UX message, M4 auto-clear success 10s, L1 source union type, L2 dead ?? fallback removed, L3 File List merged
   epic-9-retrospective: optional

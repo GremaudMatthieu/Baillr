@@ -22,6 +22,7 @@ export class InseeIndexAggregate extends AggregateRoot {
     value: number,
     entityId: string,
     userId: string,
+    source: string = 'manual',
   ): void {
     if (this.recorded) {
       return; // no-op guard for replays
@@ -43,6 +44,7 @@ export class InseeIndexAggregate extends AggregateRoot {
         entityId,
         userId,
         recordedAt: new Date().toISOString(),
+        source,
       }),
     );
   }

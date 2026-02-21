@@ -12,7 +12,7 @@ export class IndexValue {
     if (Math.abs(scaled - Math.round(scaled)) > 1e-9) {
       throw InvalidIndexValueException.tooManyDecimals();
     }
-    if (value < 50 || value > 500) {
+    if (value < 50 || value > 10000) {
       throw InvalidIndexValueException.outOfRange(value);
     }
     return new IndexValue(value);
